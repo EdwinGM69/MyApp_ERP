@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 46, "column": 0}, "map": {"version":3,"sources":["file:///C:/Personal/Emprendimientos/StartUp%20Tecnolog%C3%ADa/ERP%20SaaS2/src/app/api/auth/logout/route.ts"],"sourcesContent":["import { NextResponse } from 'next/server'\n\nexport async function POST() {\n  const response = NextResponse.json({ ok: true })\n  response.cookies.set('access_token', '', { maxAge: 0, path: '/' })\n  response.cookies.set('refresh_token', '', { maxAge: 0, path: '/' })\n  return response\n}\n"],"names":[],"mappings":";;;;AAAA;;AAEO,eAAe;IACpB,MAAM,WAAW,gJAAY,CAAC,IAAI,CAAC;QAAE,IAAI;IAAK;IAC9C,SAAS,OAAO,CAAC,GAAG,CAAC,gBAAgB,IAAI;QAAE,QAAQ;QAAG,MAAM;IAAI;IAChE,SAAS,OAAO,CAAC,GAAG,CAAC,iBAAiB,IAAI;QAAE,QAAQ;QAAG,MAAM;IAAI;IACjE,OAAO;AACT"}}]
+}

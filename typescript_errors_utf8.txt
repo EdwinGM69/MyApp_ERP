@@ -1,0 +1,21 @@
+﻿src/app/(dashboard)/maestros/clientes/page.tsx(177,20): error TS2322: Type '({ key: string; header: string; width: string; render?: undefined; } | { key: string; header: string; render: (r: Cliente) => string | Element; width?: undefined; })[]' is not assignable to type 'Column<Record<string, unknown>>[]'.
+  Type '{ key: string; header: string; width: string; render?: undefined; } | { key: string; header: string; render: (r: Cliente) => string | Element; width?: undefined; }' is not assignable to type 'Column<Record<string, unknown>>'.
+    Type '{ key: string; header: string; render: (r: Cliente) => string | JSX.Element; width?: undefined; }' is not assignable to type 'Column<Record<string, unknown>>'.
+      Types of property 'render' are incompatible.
+        Type '(r: Cliente) => string | JSX.Element' is not assignable to type '(row: Record<string, unknown>) => ReactNode'.
+          Types of parameters 'r' and 'row' are incompatible.
+            Type 'Record<string, unknown>' is missing the following properties from type 'Cliente': id, codigo, tipo, nombre, activo
+src/app/(dashboard)/maestros/clientes/page.tsx(177,38): error TS2322: Type 'Cliente[]' is not assignable to type 'Record<string, unknown>[]'.
+  Type 'Cliente' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'Cliente'.
+src/app/(dashboard)/maestros/materiales/page.tsx(197,20): error TS2322: Type '({ key: string; header: string; width: string; render?: undefined; } | { key: string; header: string; render: (r: Material) => Element; width?: undefined; })[]' is not assignable to type 'Column<Record<string, unknown>>[]'.
+  Type '{ key: string; header: string; width: string; render?: undefined; } | { key: string; header: string; render: (r: Material) => Element; width?: undefined; }' is not assignable to type 'Column<Record<string, unknown>>'.
+    Type '{ key: string; header: string; render: (r: Material) => JSX.Element; width?: undefined; }' is not assignable to type 'Column<Record<string, unknown>>'.
+      Types of property 'render' are incompatible.
+        Type '(r: Material) => JSX.Element' is not assignable to type '(row: Record<string, unknown>) => ReactNode'.
+          Types of parameters 'r' and 'row' are incompatible.
+            Type 'Record<string, unknown>' is missing the following properties from type 'Material': id, codigo, descripcion, tipo, and 5 more.
+src/app/(dashboard)/maestros/materiales/page.tsx(197,38): error TS2322: Type 'Material[]' is not assignable to type 'Record<string, unknown>[]'.
+  Type 'Material' is not assignable to type 'Record<string, unknown>'.
+    Index signature for type 'string' is missing in type 'Material'.
+src/hooks/useAuth.ts(3,24): error TS2307: Cannot find module 'zustand' or its corresponding type declarations.

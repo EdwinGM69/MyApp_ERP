@@ -1,0 +1,430 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Empresa {
+  id               Int       @id @default(autoincrement())
+  nombre           String
+  nif              String    @unique
+  industria        String?
+  representante    String?
+  logo_url         String?
+  email            String?
+  telefono         String?
+  direccion_fiscal String?
+  sitio_web        String?
+  moneda_default   String    @default("USD")
+  zona_horaria     String    @default("UTC")
+  codigo_impuesto  String?
+  activo           Boolean   @default(true)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  created_by       Int?
+  updated_by       Int?
+
+  usuarios    Usuario[]
+  materiales  Material[]
+  clientes    Cliente[]
+  proveedores Proveedor[]
+  impuestos   Impuesto[]
+  ventas      Venta[]
+  cajas       Caja[]
+  movimientos MovimientoAlmacen[]
+  cupones     Cupon[]
+  promociones Promocion[]
+  precios     Precio[]
+  descuentos  Descuento[]
+}
+
+model Rol {
+  id          Int       @id @default(autoincrement())
+  nombre      String    @unique
+  descripcion String?
+  usuarios    Usuario[]
+}
+
+model Usuario {
+  id            Int       @id @default(autoincrement())
+  empresa_id    Int
+  rol_id        Int
+  nombre        String
+  email         String
+  password_hash String
+  avatar_url    String?
+  activo        Boolean   @default(true)
+  recordar      Boolean   @default(false)
+  reset_token   String?
+  reset_expiry  DateTime?
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  created_by    Int?
+  updated_by    Int?
+
+  empresa Empresa @relation(fields: [empresa_id], references: [id])
+  rol     Rol     @relation(fields: [rol_id], references: [id])
+
+  @@unique([empresa_id, email])
+}
+
+model Impuesto {
+  id          Int      @id @default(autoincrement())
+  empresa_id  Int
+  codigo      String
+  descripcion String
+  porcentaje  Decimal  @db.Decimal(5, 2)
+  tipo        String
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  created_by  Int?
+  updated_by  Int?
+
+  empresa    Empresa    @relation(fields: [empresa_id], references: [id])
+  materiales Material[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model Material {
+  id            Int      @id @default(autoincrement())
+  empresa_id    Int
+  codigo        String
+  descripcion   String
+  categoria     String?
+  tipo          String   @default("producto")
+  unidad_medida String?
+  precio_costo  Decimal  @default(0) @db.Decimal(12, 2)
+  precio_venta  Decimal  @default(0) @db.Decimal(12, 2)
+  stock_actual  Decimal  @default(0) @db.Decimal(12, 3)
+  stock_minimo  Decimal  @default(0) @db.Decimal(12, 3)
+  imagen_url    String?
+  impuesto_id   Int?
+  activo        Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  created_by    Int?
+  updated_by    Int?
+
+  empresa    Empresa   @relation(fields: [empresa_id], references: [id])
+  impuesto   Impuesto? @relation(fields: [impuesto_id], references: [id])
+
+  sustitutos      MaterialSustituto[] @relation("MaterialPrincipal")
+  es_sustituto_de MaterialSustituto[] @relation("MaterialSustituto")
+
+  precios        Precio[]
+  descuentos     Descuento[]
+  venta_detalles VentaDetalle[]
+  mov_detalles   MovimientoAlmacenDetalle[]
+  cupon_detalles CuponDetalle[]
+  promo_detalles PromocionDetalle[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model MaterialSustituto {
+  id           Int      @id @default(autoincrement())
+  material_id  Int
+  sustituto_id Int
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  created_by   Int?
+  updated_by   Int?
+
+  material  Material @relation("MaterialPrincipal", fields: [material_id], references: [id])
+  sustituto Material @relation("MaterialSustituto", fields: [sustituto_id], references: [id])
+
+  @@unique([material_id, sustituto_id])
+}
+
+model Cliente {
+  id         Int      @id @default(autoincrement())
+  empresa_id Int
+  codigo     String
+  tipo       String   @default("natural")
+  nombre     String
+  nif        String?
+  email      String?
+  telefono   String?
+  direccion  String?
+  contacto   String?
+  activo     Boolean  @default(true)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  created_by Int?
+  updated_by Int?
+
+  empresa Empresa @relation(fields: [empresa_id], references: [id])
+  ventas  Venta[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model Proveedor {
+  id            Int      @id @default(autoincrement())
+  empresa_id    Int
+  codigo        String
+  tipo          String   @default("empresa")
+  nombre        String
+  nif           String?
+  email         String?
+  telefono      String?
+  direccion     String?
+  banco_cuenta  String?
+  banco_swift   String?
+  banco_titular String?
+  activo        Boolean  @default(true)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  created_by    Int?
+  updated_by    Int?
+
+  empresa     Empresa             @relation(fields: [empresa_id], references: [id])
+  movimientos MovimientoAlmacen[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model Precio {
+  id           Int       @id @default(autoincrement())
+  material_id  Int
+  empresa_id   Int
+  moneda       String    @default("USD")
+  precio       Decimal   @db.Decimal(12, 2)
+  fecha_inicio DateTime
+  fecha_fin    DateTime?
+  activo       Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  created_by   Int?
+  updated_by   Int?
+
+  material Material @relation(fields: [material_id], references: [id])
+  empresa  Empresa  @relation(fields: [empresa_id], references: [id])
+}
+
+model Descuento {
+  id           Int       @id @default(autoincrement())
+  material_id  Int
+  empresa_id   Int
+  tipo         String
+  valor        Decimal   @db.Decimal(10, 2)
+  fecha_inicio DateTime
+  fecha_fin    DateTime?
+  activo       Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  created_by   Int?
+  updated_by   Int?
+
+  material Material @relation(fields: [material_id], references: [id])
+  empresa  Empresa  @relation(fields: [empresa_id], references: [id])
+}
+
+model Cupon {
+  id            Int       @id @default(autoincrement())
+  empresa_id    Int
+  codigo        String
+  tipo          String
+  valor         Decimal   @db.Decimal(10, 2)
+  limite_uso    Int?
+  usos_actuales Int       @default(0)
+  fecha_inicio  DateTime
+  fecha_fin     DateTime?
+  activo        Boolean   @default(true)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  created_by    Int?
+  updated_by    Int?
+
+  empresa  Empresa        @relation(fields: [empresa_id], references: [id])
+  detalles CuponDetalle[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model CuponDetalle {
+  id          Int      @id @default(autoincrement())
+  cupon_id    Int
+  material_id Int
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  created_by  Int?
+  updated_by  Int?
+
+  cupon    Cupon    @relation(fields: [cupon_id], references: [id])
+  material Material @relation(fields: [material_id], references: [id])
+}
+
+model Promocion {
+  id           Int       @id @default(autoincrement())
+  empresa_id   Int
+  nombre       String
+  descripcion  String?
+  fecha_inicio DateTime
+  fecha_fin    DateTime?
+  activo       Boolean   @default(true)
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+  created_by   Int?
+  updated_by   Int?
+
+  empresa  Empresa            @relation(fields: [empresa_id], references: [id])
+  detalles PromocionDetalle[]
+}
+
+model PromocionDetalle {
+  id           Int      @id @default(autoincrement())
+  promocion_id Int
+  material_id  Int
+  cantidad     Decimal  @db.Decimal(10, 3)
+  precio_combo Decimal? @db.Decimal(12, 2)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  created_by   Int?
+  updated_by   Int?
+
+  promocion Promocion @relation(fields: [promocion_id], references: [id])
+  material  Material  @relation(fields: [material_id], references: [id])
+}
+
+model Venta {
+  id            Int      @id @default(autoincrement())
+  empresa_id    Int
+  numero_pedido String
+  comprobante   String?
+  cliente_id    Int?
+  caja_id       Int?
+  estado        String   @default("procesada")
+  subtotal      Decimal  @db.Decimal(12, 2)
+  impuesto      Decimal  @db.Decimal(12, 2)
+  descuento     Decimal  @default(0) @db.Decimal(12, 2)
+  total         Decimal  @db.Decimal(12, 2)
+  metodo_pago   String?
+  fecha_venta   DateTime @default(now())
+  observaciones String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  created_by    Int?
+  updated_by    Int?
+
+  empresa  Empresa        @relation(fields: [empresa_id], references: [id])
+  cliente  Cliente?       @relation(fields: [cliente_id], references: [id])
+  detalles VentaDetalle[]
+
+  @@unique([empresa_id, numero_pedido])
+}
+
+model VentaDetalle {
+  id           Int      @id @default(autoincrement())
+  venta_id     Int
+  material_id  Int
+  cantidad     Decimal  @db.Decimal(10, 3)
+  precio_unit  Decimal  @db.Decimal(12, 2)
+  descuento    Decimal  @default(0) @db.Decimal(12, 2)
+  impuesto     Decimal  @default(0) @db.Decimal(12, 2)
+  subtotal     Decimal  @db.Decimal(12, 2)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  created_by   Int?
+  updated_by   Int?
+
+  venta    Venta    @relation(fields: [venta_id], references: [id])
+  material Material @relation(fields: [material_id], references: [id])
+}
+
+model Caja {
+  id             Int       @id @default(autoincrement())
+  id_caja        String?
+  empresa_id     Int
+  usuario_id     Int
+  fecha_apertura DateTime
+  fecha_cierre   DateTime?
+  saldo_inicial  Decimal   @db.Decimal(12, 2)
+  saldo_cierre   Decimal?  @db.Decimal(12, 2)
+  moneda         String    @default("USD")
+  estado         String    @default("abierta")
+  obs_apertura   String?
+  obs_cierre     String?
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  created_by     Int?
+  updated_by     Int?
+
+  empresa       Empresa           @relation(fields: [empresa_id], references: [id])
+  transacciones TransaccionCaja[]
+  nominaciones  NominacionCaja[]
+}
+
+model TransaccionCaja {
+  id         Int      @id @default(autoincrement())
+  caja_id    Int
+  tipo       String
+  concepto   String
+  monto      Decimal  @db.Decimal(12, 2)
+  referencia String?
+  fecha      DateTime @default(now())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  created_by Int?
+  updated_by Int?
+
+  caja Caja @relation(fields: [caja_id], references: [id])
+}
+
+model NominacionCaja {
+  id           Int      @id @default(autoincrement())
+  caja_id      Int
+  denominacion Decimal  @db.Decimal(10, 2)
+  tipo         String
+  cantidad     Int
+  subtotal     Decimal  @db.Decimal(12, 2)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  created_by   Int?
+  updated_by   Int?
+
+  caja Caja @relation(fields: [caja_id], references: [id])
+}
+
+model MovimientoAlmacen {
+  id            Int      @id @default(autoincrement())
+  empresa_id    Int
+  numero_mov    String
+  tipo          String
+  almacen       String   @default("Principal")
+  documento     String?
+  proveedor_id  Int?
+  referencia    String?
+  fecha         DateTime @default(now())
+  observaciones String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  created_by    Int?
+  updated_by    Int?
+
+  empresa   Empresa                    @relation(fields: [empresa_id], references: [id])
+  proveedor Proveedor?                 @relation(fields: [proveedor_id], references: [id])
+  detalles  MovimientoAlmacenDetalle[]
+
+  @@unique([empresa_id, numero_mov])
+}
+
+model MovimientoAlmacenDetalle {
+  id            Int      @id @default(autoincrement())
+  movimiento_id Int
+  material_id   Int
+  cantidad      Decimal  @db.Decimal(12, 3)
+  costo_unit    Decimal? @db.Decimal(12, 2)
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  created_by    Int?
+  updated_by    Int?
+
+  movimiento MovimientoAlmacen @relation(fields: [movimiento_id], references: [id])
+  material   Material          @relation(fields: [material_id], references: [id])
+}
