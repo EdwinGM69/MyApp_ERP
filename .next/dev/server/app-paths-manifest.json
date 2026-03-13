@@ -1,10 +1,13 @@
 {
   "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(dashboard)/almacen/movimientos/page": "app/(dashboard)/almacen/movimientos/page.js",
+  "/(dashboard)/caja/transacciones/page": "app/(dashboard)/caja/transacciones/page.js",
   "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
   "/(dashboard)/maestros/clientes/page": "app/(dashboard)/maestros/clientes/page.js",
-  "/_not-found/page": "app/_not-found/page.js",
+  "/api/almacen/route": "app/api/almacen/route.js",
   "/api/auth/login/route": "app/api/auth/login/route.js",
   "/api/auth/logout/route": "app/api/auth/logout/route.js",
+  "/api/caja/route": "app/api/caja/route.js",
   "/api/clientes/route": "app/api/clientes/route.js",
   "/api/dashboard/route": "app/api/dashboard/route.js"
 }

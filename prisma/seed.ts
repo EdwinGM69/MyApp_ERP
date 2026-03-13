@@ -65,17 +65,17 @@ async function main() {
   })
 
   // Create sample materials
-  const materiales = [
-    { codigo: 'MAT-001', descripcion: 'Laptop Dell Inspiron 15', categoria: 'Electrónicos', tipo: 'producto', precio_costo: 1200, precio_venta: 1599, stock_actual: 25, stock_minimo: 5 },
-    { codigo: 'MAT-002', descripcion: 'Mouse Inalámbrico Logitech', categoria: 'Periféricos', tipo: 'producto', precio_costo: 25, precio_venta: 45, stock_actual: 120, stock_minimo: 20 },
-    { codigo: 'MAT-003', descripcion: 'Teclado Mecánico RGB', categoria: 'Periféricos', tipo: 'producto', precio_costo: 80, precio_venta: 129, stock_actual: 45, stock_minimo: 10 },
-    { codigo: 'MAT-004', descripcion: 'Monitor 24" Full HD', categoria: 'Monitores', tipo: 'producto', precio_costo: 200, precio_venta: 299, stock_actual: 30, stock_minimo: 5 },
-    { codigo: 'MAT-005', descripcion: 'Auriculares Bluetooth Sony', categoria: 'Audio', tipo: 'producto', precio_costo: 60, precio_venta: 99, stock_actual: 80, stock_minimo: 15 },
-  ]
+  const materialesCount = await prisma.material.count({ where: { empresa_id: empresa.id } })
+  if (materialesCount === 0) {
+    const materiales = [
+      { codigo: 'MAT-001', descripcion: 'Laptop Dell Inspiron 15', categoria: 'Electrónicos', tipo: 'producto', precio_costo: 1200, precio_venta: 1599, stock_actual: 25, stock_minimo: 5 },
+      { codigo: 'MAT-002', descripcion: 'Mouse Inalámbrico Logitech', categoria: 'Periféricos', tipo: 'producto', precio_costo: 25, precio_venta: 45, stock_actual: 120, stock_minimo: 20 },
+      { codigo: 'MAT-003', descripcion: 'Teclado Mecánico RGB', categoria: 'Periféricos', tipo: 'producto', precio_costo: 80, precio_venta: 129, stock_actual: 45, stock_minimo: 10 },
+      { codigo: 'MAT-004', descripcion: 'Monitor 24" Full HD', categoria: 'Monitores', tipo: 'producto', precio_costo: 200, precio_venta: 299, stock_actual: 30, stock_minimo: 5 },
+      { codigo: 'MAT-005', descripcion: 'Auriculares Bluetooth Sony', categoria: 'Audio', tipo: 'producto', precio_costo: 60, precio_venta: 99, stock_actual: 80, stock_minimo: 15 },
+    ]
 
-  for (const m of materiales) {
-    const existing = await prisma.material.findFirst({ where: { empresa_id: empresa.id, codigo: m.codigo } })
-    if (!existing) {
+    for (const m of materiales) {
       await prisma.material.create({ data: { ...m, empresa_id: empresa.id, impuesto_id: igv.id } })
     }
   }
