@@ -107,6 +107,24 @@
       "namedRegex": "^/api/materiales(?:/)?$"
     },
     {
+      "page": "/api/precios/cupones",
+      "regex": "^/api/precios/cupones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/precios/cupones(?:/)?$"
+    },
+    {
+      "page": "/api/precios/descuentos",
+      "regex": "^/api/precios/descuentos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/precios/descuentos(?:/)?$"
+    },
+    {
+      "page": "/api/precios/promociones",
+      "regex": "^/api/precios/promociones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/precios/promociones(?:/)?$"
+    },
+    {
       "page": "/api/proveedores",
       "regex": "^/api/proveedores(?:/)?$",
       "routeKeys": {},
@@ -147,6 +165,36 @@
       "regex": "^/maestros/materiales(?:/)?$",
       "routeKeys": {},
       "namedRegex": "^/maestros/materiales(?:/)?$"
+    },
+    {
+      "page": "/maestros/proveedores",
+      "regex": "^/maestros/proveedores(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/proveedores(?:/)?$"
+    },
+    {
+      "page": "/precios/cupones",
+      "regex": "^/precios/cupones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/precios/cupones(?:/)?$"
+    },
+    {
+      "page": "/precios/descuentos",
+      "regex": "^/precios/descuentos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/precios/descuentos(?:/)?$"
+    },
+    {
+      "page": "/precios/lista",
+      "regex": "^/precios/lista(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/precios/lista(?:/)?$"
+    },
+    {
+      "page": "/precios/promociones",
+      "regex": "^/precios/promociones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/precios/promociones(?:/)?$"
     },
     {
       "page": "/ventas",

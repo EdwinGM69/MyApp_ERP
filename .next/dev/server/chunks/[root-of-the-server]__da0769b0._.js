@@ -181,7 +181,7 @@ const materialSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modu
 });
 async function GET(req) {
     try {
-        const { empresaId } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["requireAuth"])(req);
+        const { empresaId } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["requireAuth"])(req);
         const { searchParams } = req.nextUrl;
         const page = parseInt(searchParams.get('page') ?? '1');
         const pageSize = parseInt(searchParams.get('pageSize') ?? '10');
@@ -251,7 +251,7 @@ async function GET(req) {
 }
 async function POST(req) {
     try {
-        const { empresaId, userId } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["requireAuth"])(req);
+        const { empresaId, userId } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["requireAuth"])(req);
         const body = await req.json();
         const data = materialSchema.parse(body);
         const material = await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$prisma$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["prisma"].material.create({
@@ -279,7 +279,7 @@ async function POST(req) {
 }
 async function PUT(req) {
     try {
-        const { empresaId, userId } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["requireAuth"])(req);
+        const { empresaId, userId } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["requireAuth"])(req);
         const body = await req.json();
         const { id, ...rest } = body;
         const data = materialSchema.parse(rest);
@@ -309,7 +309,7 @@ async function PUT(req) {
 }
 async function DELETE(req) {
     try {
-        const { empresaId } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["requireAuth"])(req);
+        const { empresaId } = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$auth$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["requireAuth"])(req);
         const { id } = await req.json();
         await __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$prisma$2e$ts__$5b$app$2d$route$5d$__$28$ecmascript$29$__["prisma"].material.update({
             where: {

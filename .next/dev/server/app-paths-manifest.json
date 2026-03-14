@@ -1,9 +1,13 @@
 {
   "/(auth)/login/page": "app/(auth)/login/page.js",
+  "/(dashboard)/caja/transacciones/page": "app/(dashboard)/caja/transacciones/page.js",
   "/(dashboard)/dashboard/page": "app/(dashboard)/dashboard/page.js",
-  "/(dashboard)/maestros/clientes/page": "app/(dashboard)/maestros/clientes/page.js",
+  "/(dashboard)/ventas/page": "app/(dashboard)/ventas/page.js",
+  "/(dashboard)/ventas/pos/page": "app/(dashboard)/ventas/pos/page.js",
   "/api/auth/login/route": "app/api/auth/login/route.js",
-  "/api/auth/logout/route": "app/api/auth/logout/route.js",
+  "/api/caja/route": "app/api/caja/route.js",
   "/api/clientes/route": "app/api/clientes/route.js",
-  "/api/dashboard/route": "app/api/dashboard/route.js"
+  "/api/dashboard/route": "app/api/dashboard/route.js",
+  "/api/materiales/route": "app/api/materiales/route.js",
+  "/api/ventas/route": "app/api/ventas/route.js"
 }

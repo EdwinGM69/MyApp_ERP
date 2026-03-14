@@ -36,6 +36,10 @@ export default function POSPage() {
   const [cupon, setCupon] = useState('')
   const [descuentoCupon, setDescuentoCupon] = useState(0)
 
+  const [nif, setNif] = useState('')
+  const [clienteNombre, setClienteNombre] = useState('')
+  const [clienteId, setClienteId] = useState<number | null>(null)
+
   const fetchMateriales = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams({ search, pageSize: '50', page: '1' })
@@ -46,6 +50,29 @@ export default function POSPage() {
   }, [search])
 
   useEffect(() => { fetchMateriales() }, [fetchMateriales])
+
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (nif.trim().length >= 3) {
+        try {
+          const res = await apiFetch(`/api/clientes?search=${nif.trim()}`)
+          const json = await res.json()
+          const found = (json.data ?? []).find((c: any) => c.nif === nif.trim() || c.codigo === nif.trim())
+          if (found) {
+            setClienteNombre(found.nombre)
+            setClienteId(found.id)
+          } else {
+            setClienteNombre('')
+            setClienteId(null)
+          }
+        } catch {}
+      } else {
+        setClienteNombre('')
+        setClienteId(null)
+      }
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [nif])
 
   function addToCart(material: Material) {
     setCart((prev) => {
@@ -114,6 +141,7 @@ export default function POSPage() {
         method: 'POST',
         body: JSON.stringify({
           numero_pedido: generateOrderNumber(),
+          cliente_id: clienteId,
           estado,
           subtotal,
           impuesto: totalImpuesto,
@@ -135,6 +163,9 @@ export default function POSPage() {
       setCart([])
       setCupon('')
       setDescuentoCupon(0)
+      setNif('')
+      setClienteNombre('')
+      setClienteId(null)
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Error al procesar')
     } finally {
@@ -267,13 +298,32 @@ export default function POSPage() {
           {/* Totals and actions */}
           {cart.length > 0 && (
             <div className="p-4 border-t border-slate-200 dark:border-slate-800 space-y-3">
-              {/* Coupon */}
+              {/* Cliente */}
               <div className="flex gap-2">
-                <input value={cupon} onChange={(e) => setCupon(e.target.value.toUpperCase())}
-                  placeholder="Código de cupón"
-                  className="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 outline-none" />
+                <div className="w-1/3 space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 tracking-wider">TIPO NIF</label>
+                  <input value={nif} onChange={(e) => setNif(e.target.value)}
+                    placeholder="Doc / RUC"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 outline-none" />
+                </div>
+                <div className="flex-1 space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 tracking-wider">CLIENTE</label>
+                  <input value={clienteNombre} readOnly
+                    placeholder="Nombre del cliente"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm bg-slate-50 dark:bg-slate-900/50 text-slate-500 outline-none cursor-not-allowed" />
+                </div>
+              </div>
+
+              {/* Coupon */}
+              <div className="flex gap-2 items-end pt-2 border-t border-slate-100 dark:border-slate-800/50">
+                <div className="flex-1 space-y-1">
+                  <label className="text-[10px] font-bold text-slate-500 tracking-wider">CUPÓN</label>
+                  <input value={cupon} onChange={(e) => setCupon(e.target.value.toUpperCase())}
+                    placeholder="Código de cupón"
+                    className="w-full border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm bg-white dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 outline-none" />
+                </div>
                 <button onClick={applyCupon}
-                  className="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors">
+                  className="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm font-medium hover:bg-slate-200 transition-colors h-[38px]">
                   Aplicar
                 </button>
               </div>

@@ -1,37 +1,81 @@
-[00:00:04.090] Server  WARN    ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
-[00:00:04.613] Server  LOG     ✓ Ready in 3.3s
-[00:00:08.267] Server  LOG     [MIDDLEWARE] GET /
-[00:00:08.267] Server  LOG     [MIDDLEWARE] Checking token for /, found: no
-[00:00:08.268] Server  LOG     [MIDDLEWARE] No token, redirecting to /login
-[00:00:08.296] Server  LOG     [MIDDLEWARE] GET /login
-[00:00:10.141] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:19.592] Server  LOG     [MIDDLEWARE] POST /api/auth/login
-[00:00:21.967] Server  LOG     prisma:query "SELECT \"public\".\"Usuario\".\"id\", \"public\".\"Usuario\".\"empresa_id\", \"public\".\"Usuario\".\"rol_id\", \"public\".\"Usuario\".\"nombre\", \"public\".\"Usuario\".\"email\", \"public\".\"Usuario\".\"password_hash\", \"public\".\"Usuario\".\"avatar_url\", \"public\".\"Usuario\".\"activo\", \"public\".\"Usuario\".\"recordar\", \"public\".\"Usuario\".\"reset_token\", \"public\".\"Usuario\".\"reset_expiry\", \"public\".\"Usuario\".\"created_at\", \"public\".\"Usuario\".\"updated_at\", \"public\".\"Usuario\".\"created_by\", \"public\".\"Usuario\".\"updated_by\" FROM \"public\".\"Usuario\" WHERE (\"public\".\"Usuario\".\"email\" = $1 AND \"public\".\"Usuario\".\"activo\" = $2) LIMIT $3 OFFSET $4"
-[00:00:22.267] Server  LOG     prisma:query "SELECT \"public\".\"Empresa\".\"id\", \"public\".\"Empresa\".\"nombre\", \"public\".\"Empresa\".\"nif\", \"public\".\"Empresa\".\"industria\", \"public\".\"Empresa\".\"representante\", \"public\".\"Empresa\".\"logo_url\", \"public\".\"Empresa\".\"email\", \"public\".\"Empresa\".\"telefono\", \"public\".\"Empresa\".\"direccion_fiscal\", \"public\".\"Empresa\".\"sitio_web\", \"public\".\"Empresa\".\"moneda_default\", \"public\".\"Empresa\".\"zona_horaria\", \"public\".\"Empresa\".\"codigo_impuesto\", \"public\".\"Empresa\".\"activo\", \"public\".\"Empresa\".\"created_at\", \"public\".\"Empresa\".\"updated_at\", \"public\".\"Empresa\".\"created_by\", \"public\".\"Empresa\".\"updated_by\" FROM \"public\".\"Empresa\" WHERE \"public\".\"Empresa\".\"id\" IN ($1) OFFSET $2"
-[00:00:22.563] Server  LOG     prisma:query "SELECT \"public\".\"Rol\".\"id\", \"public\".\"Rol\".\"nombre\", \"public\".\"Rol\".\"descripcion\" FROM \"public\".\"Rol\" WHERE \"public\".\"Rol\".\"id\" IN ($1) OFFSET $2"
-[00:00:23.074] Server  LOG     [MIDDLEWARE] GET /dashboard
-[00:00:23.075] Server  LOG     [MIDDLEWARE] Checking token for /dashboard, found: yes
-[00:00:23.082] Server  LOG     [MIDDLEWARE] Token valid, allowing access
-[00:00:23.472] Server  LOG     [MIDDLEWARE] GET /api/dashboard
-[00:00:23.844] Server  LOG     prisma:query "SELECT SUM(\"precio_costo\") FROM (SELECT \"public\".\"Material\".\"precio_costo\" FROM \"public\".\"Material\" WHERE (\"public\".\"Material\".\"empresa_id\" = $1 AND \"public\".\"Material\".\"activo\" = $2) OFFSET $3) AS \"sub\""
-[00:00:24.798] Server  LOG     prisma:query "SELECT SUM(\"total\"), COUNT(*) FROM (SELECT \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"id\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"estado\" = $2 AND \"public\".\"Venta\".\"fecha_venta\" >= $3) OFFSET $4) AS \"sub\""
-[00:00:24.799] Server  LOG     prisma:query "SELECT SUM(\"total\"), COUNT(*) FROM (SELECT \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"id\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"estado\" = $2 AND \"public\".\"Venta\".\"fecha_venta\" >= $3) OFFSET $4) AS \"sub\""
-[00:00:24.800] Server  LOG     prisma:query "SELECT \"public\".\"Venta\".\"id\", \"public\".\"Venta\".\"empresa_id\", \"public\".\"Venta\".\"numero_pedido\", \"public\".\"Venta\".\"comprobante\", \"public\".\"Venta\".\"cliente_id\", \"public\".\"Venta\".\"caja_id\", \"public\".\"Venta\".\"estado\", \"public\".\"Venta\".\"subtotal\", \"public\".\"Venta\".\"impuesto\", \"public\".\"Venta\".\"descuento\", \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"metodo_pago\", \"public\".\"Venta\".\"fecha_venta\", \"public\".\"Venta\".\"observaciones\", \"public\".\"Venta\".\"created_at\", \"public\".\"Venta\".\"updated_at\", \"public\".\"Venta\".\"created_by\", \"public\".\"Venta\".\"updated_by\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"fecha_venta\" >= $2) ORDER BY \"public\".\"Venta\".\"fecha_venta\" DESC LIMIT $3 OFFSET $4"
-[00:00:24.806] Server  LOG     prisma:query "SELECT SUM(\"public\".\"VentaDetalle\".\"subtotal\"), SUM(\"public\".\"VentaDetalle\".\"cantidad\"), \"public\".\"VentaDetalle\".\"material_id\" FROM \"public\".\"VentaDetalle\" LEFT JOIN \"public\".\"Venta\" AS \"j1\" ON (\"j1\".\"id\") = (\"public\".\"VentaDetalle\".\"venta_id\") WHERE (\"j1\".\"empresa_id\" = $1 AND \"j1\".\"estado\" = $2 AND (\"j1\".\"id\" IS NOT NULL)) GROUP BY \"public\".\"VentaDetalle\".\"material_id\" ORDER BY SUM(\"public\".\"VentaDetalle\".\"subtotal\") DESC LIMIT $3 OFFSET $4"
-[00:00:24.831] Server  LOG     prisma:query "\n        SELECT TO_CHAR(fecha_venta, 'Mon') as mes,\n               SUM(total) as total\n        FROM \"Venta\"\n        WHERE empresa_id = $1\n          AND estado = 'procesada'\n          AND fecha_venta >= NOW() - INTERVAL '6 months'\n        GROUP BY DATE_TRUNC('month', fecha_venta), TO_CHAR(fecha_venta, 'Mon')\n        ORDER BY DATE_TRUNC('month', fecha_venta)\n      "
-[00:00:25.114] Server  LOG     prisma:query "SELECT \"public\".\"Material\".\"id\", \"public\".\"Material\".\"descripcion\", \"public\".\"Material\".\"imagen_url\" FROM \"public\".\"Material\" WHERE 1=0 OFFSET $1"
-[00:00:25.124] Server  LOG     [MIDDLEWARE] GET /api/dashboard
-[00:00:25.414] Server  LOG     prisma:query "SELECT SUM(\"total\"), COUNT(*) FROM (SELECT \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"id\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"estado\" = $2 AND \"public\".\"Venta\".\"fecha_venta\" >= $3) OFFSET $4) AS \"sub\""
-[00:00:25.415] Server  LOG     prisma:query "SELECT SUM(\"precio_costo\") FROM (SELECT \"public\".\"Material\".\"precio_costo\" FROM \"public\".\"Material\" WHERE (\"public\".\"Material\".\"empresa_id\" = $1 AND \"public\".\"Material\".\"activo\" = $2) OFFSET $3) AS \"sub\""
-[00:00:25.415] Server  LOG     prisma:query "SELECT SUM(\"total\"), COUNT(*) FROM (SELECT \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"id\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"estado\" = $2 AND \"public\".\"Venta\".\"fecha_venta\" >= $3) OFFSET $4) AS \"sub\""
-[00:00:25.416] Server  LOG     prisma:query "SELECT \"public\".\"Venta\".\"id\", \"public\".\"Venta\".\"empresa_id\", \"public\".\"Venta\".\"numero_pedido\", \"public\".\"Venta\".\"comprobante\", \"public\".\"Venta\".\"cliente_id\", \"public\".\"Venta\".\"caja_id\", \"public\".\"Venta\".\"estado\", \"public\".\"Venta\".\"subtotal\", \"public\".\"Venta\".\"impuesto\", \"public\".\"Venta\".\"descuento\", \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"metodo_pago\", \"public\".\"Venta\".\"fecha_venta\", \"public\".\"Venta\".\"observaciones\", \"public\".\"Venta\".\"created_at\", \"public\".\"Venta\".\"updated_at\", \"public\".\"Venta\".\"created_by\", \"public\".\"Venta\".\"updated_by\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"fecha_venta\" >= $2) ORDER BY \"public\".\"Venta\".\"fecha_venta\" DESC LIMIT $3 OFFSET $4"
-[00:00:25.430] Server  LOG     prisma:query "\n        SELECT TO_CHAR(fecha_venta, 'Mon') as mes,\n               SUM(total) as total\n        FROM \"Venta\"\n        WHERE empresa_id = $1\n          AND estado = 'procesada'\n          AND fecha_venta >= NOW() - INTERVAL '6 months'\n        GROUP BY DATE_TRUNC('month', fecha_venta), TO_CHAR(fecha_venta, 'Mon')\n        ORDER BY DATE_TRUNC('month', fecha_venta)\n      "
-[00:00:25.431] Server  LOG     prisma:query "SELECT SUM(\"public\".\"VentaDetalle\".\"subtotal\"), SUM(\"public\".\"VentaDetalle\".\"cantidad\"), \"public\".\"VentaDetalle\".\"material_id\" FROM \"public\".\"VentaDetalle\" LEFT JOIN \"public\".\"Venta\" AS \"j1\" ON (\"j1\".\"id\") = (\"public\".\"VentaDetalle\".\"venta_id\") WHERE (\"j1\".\"empresa_id\" = $1 AND \"j1\".\"estado\" = $2 AND (\"j1\".\"id\" IS NOT NULL)) GROUP BY \"public\".\"VentaDetalle\".\"material_id\" ORDER BY SUM(\"public\".\"VentaDetalle\".\"subtotal\") DESC LIMIT $3 OFFSET $4"
-[00:00:25.734] Server  LOG     prisma:query "SELECT \"public\".\"Material\".\"id\", \"public\".\"Material\".\"descripcion\", \"public\".\"Material\".\"imagen_url\" FROM \"public\".\"Material\" WHERE 1=0 OFFSET $1"
-[00:00:31.331] Server  LOG     [MIDDLEWARE] GET /maestros/clientes
-[00:00:31.851] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
-[00:00:31.944] Server  LOG     [MIDDLEWARE] GET /api/clientes
-[00:00:32.023] Browser ERROR   uncaughtError: Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+[00:00:02.466] Server  WARN    ⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+[00:00:02.853] Server  LOG     ✓ Ready in 2.1s
+[00:00:05.409] Server  LOG     [MIDDLEWARE] GET /
+[00:00:05.409] Server  LOG     [MIDDLEWARE] Checking token for /, found: no
+[00:00:05.413] Server  LOG     [MIDDLEWARE] No token, redirecting to /login
+[00:00:05.532] Server  LOG     [MIDDLEWARE] GET /login
+[00:00:11.642] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:23.572] Server  LOG     [MIDDLEWARE] POST /api/auth/login
+[00:00:25.406] Server  LOG     prisma:query "BEGIN"
+[00:00:25.518] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:25.830] Server  LOG     prisma:query "SELECT \"public\".\"Usuario\".\"id\", \"public\".\"Usuario\".\"empresa_id\", \"public\".\"Usuario\".\"rol_id\", \"public\".\"Usuario\".\"nombre\", \"public\".\"Usuario\".\"email\", \"public\".\"Usuario\".\"password_hash\", \"public\".\"Usuario\".\"avatar_url\", \"public\".\"Usuario\".\"activo\", \"public\".\"Usuario\".\"recordar\", \"public\".\"Usuario\".\"reset_token\", \"public\".\"Usuario\".\"reset_expiry\", \"public\".\"Usuario\".\"created_at\", \"public\".\"Usuario\".\"updated_at\", \"public\".\"Usuario\".\"created_by\", \"public\".\"Usuario\".\"updated_by\" FROM \"public\".\"Usuario\" WHERE (\"public\".\"Usuario\".\"email\" = $1 AND \"public\".\"Usuario\".\"activo\" = $2) LIMIT $3 OFFSET $4"
+[00:00:26.064] Server  LOG     prisma:query "SELECT \"public\".\"Empresa\".\"id\", \"public\".\"Empresa\".\"nombre\", \"public\".\"Empresa\".\"nif\", \"public\".\"Empresa\".\"industria\", \"public\".\"Empresa\".\"representante\", \"public\".\"Empresa\".\"logo_url\", \"public\".\"Empresa\".\"email\", \"public\".\"Empresa\".\"telefono\", \"public\".\"Empresa\".\"direccion_fiscal\", \"public\".\"Empresa\".\"sitio_web\", \"public\".\"Empresa\".\"moneda_default\", \"public\".\"Empresa\".\"zona_horaria\", \"public\".\"Empresa\".\"codigo_impuesto\", \"public\".\"Empresa\".\"activo\", \"public\".\"Empresa\".\"created_at\", \"public\".\"Empresa\".\"updated_at\", \"public\".\"Empresa\".\"created_by\", \"public\".\"Empresa\".\"updated_by\" FROM \"public\".\"Empresa\" WHERE \"public\".\"Empresa\".\"id\" IN ($1) OFFSET $2"
+[00:00:26.288] Server  LOG     prisma:query "SELECT \"public\".\"Rol\".\"id\", \"public\".\"Rol\".\"nombre\", \"public\".\"Rol\".\"descripcion\" FROM \"public\".\"Rol\" WHERE \"public\".\"Rol\".\"id\" IN ($1) OFFSET $2"
+[00:00:26.421] Server  LOG     prisma:query "COMMIT"
+[00:00:27.064] Server  LOG     [MIDDLEWARE] GET /dashboard
+[00:00:27.064] Server  LOG     [MIDDLEWARE] Checking token for /dashboard, found: yes
+[00:00:27.069] Server  LOG     [MIDDLEWARE] Token valid, allowing access
+[00:00:27.652] Server  LOG     [MIDDLEWARE] GET /api/dashboard
+[00:00:27.938] Server  LOG     prisma:query "BEGIN"
+[00:00:28.044] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:28.289] Server  LOG     prisma:query "\n        SELECT TO_CHAR(fecha_venta, 'Mon') as mes,\n               SUM(total) as total\n        FROM \"Venta\"\n        WHERE empresa_id = $1\n          AND estado = 'procesada'\n          AND fecha_venta >= NOW() - INTERVAL '6 months'\n        GROUP BY DATE_TRUNC('month', fecha_venta), TO_CHAR(fecha_venta, 'Mon')\n        ORDER BY DATE_TRUNC('month', fecha_venta)\n      "
+[00:00:28.424] Server  LOG     prisma:query "COMMIT"
+[00:00:28.742] Server  LOG     prisma:query "BEGIN"
+[00:00:28.756] Server  LOG     prisma:query "BEGIN"
+[00:00:28.778] Server  LOG     prisma:query "BEGIN"
+[00:00:28.779] Server  LOG     prisma:query "BEGIN"
+[00:00:28.780] Server  LOG     prisma:query "BEGIN"
+[00:00:28.853] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:28.872] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:28.885] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:28.886] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:28.886] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:29.105] Server  LOG     prisma:query "SELECT \"public\".\"Venta\".\"id\", \"public\".\"Venta\".\"empresa_id\", \"public\".\"Venta\".\"numero_pedido\", \"public\".\"Venta\".\"comprobante\", \"public\".\"Venta\".\"cliente_id\", \"public\".\"Venta\".\"caja_id\", \"public\".\"Venta\".\"estado\", \"public\".\"Venta\".\"subtotal\", \"public\".\"Venta\".\"impuesto\", \"public\".\"Venta\".\"descuento\", \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"metodo_pago\", \"public\".\"Venta\".\"fecha_venta\", \"public\".\"Venta\".\"observaciones\", \"public\".\"Venta\".\"created_at\", \"public\".\"Venta\".\"updated_at\", \"public\".\"Venta\".\"created_by\", \"public\".\"Venta\".\"updated_by\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"fecha_venta\" >= $2) ORDER BY \"public\".\"Venta\".\"fecha_venta\" DESC LIMIT $3 OFFSET $4"
+[00:00:29.154] Server  LOG     prisma:query "SELECT SUM(\"precio_costo\") FROM (SELECT \"public\".\"Material\".\"precio_costo\" FROM \"public\".\"Material\" WHERE (\"public\".\"Material\".\"empresa_id\" = $1 AND \"public\".\"Material\".\"activo\" = $2) OFFSET $3) AS \"sub\""
+[00:00:29.157] Server  LOG     prisma:query "SELECT SUM(\"total\"), COUNT(*) FROM (SELECT \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"id\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"estado\" = $2 AND \"public\".\"Venta\".\"fecha_venta\" >= $3) OFFSET $4) AS \"sub\""
+[00:00:29.160] Server  LOG     prisma:query "SELECT SUM(\"total\"), COUNT(*) FROM (SELECT \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"id\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"estado\" = $2 AND \"public\".\"Venta\".\"fecha_venta\" >= $3) OFFSET $4) AS \"sub\""
+[00:00:29.216] Server  LOG     prisma:query "COMMIT"
+[00:00:29.263] Server  LOG     prisma:query "COMMIT"
+[00:00:29.264] Server  LOG     prisma:query "COMMIT"
+[00:00:29.264] Server  LOG     prisma:query "COMMIT"
+[00:00:29.403] Server  LOG     prisma:query "SELECT SUM(\"public\".\"VentaDetalle\".\"subtotal\"), SUM(\"public\".\"VentaDetalle\".\"cantidad\"), \"public\".\"VentaDetalle\".\"material_id\" FROM \"public\".\"VentaDetalle\" LEFT JOIN \"public\".\"Venta\" AS \"j1\" ON (\"j1\".\"id\") = (\"public\".\"VentaDetalle\".\"venta_id\") WHERE (\"j1\".\"empresa_id\" = $1 AND \"j1\".\"estado\" = $2 AND (\"j1\".\"id\" IS NOT NULL)) GROUP BY \"public\".\"VentaDetalle\".\"material_id\" ORDER BY SUM(\"public\".\"VentaDetalle\".\"subtotal\") DESC LIMIT $3 OFFSET $4"
+[00:00:29.505] Server  LOG     prisma:query "COMMIT"
+[00:00:29.625] Server  LOG     prisma:query "BEGIN"
+[00:00:29.724] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:29.931] Server  LOG     prisma:query "SELECT \"public\".\"Material\".\"id\", \"public\".\"Material\".\"descripcion\", \"public\".\"Material\".\"imagen_url\" FROM \"public\".\"Material\" WHERE 1=0 OFFSET $1"
+[00:00:30.033] Server  LOG     prisma:query "COMMIT"
+[00:00:30.071] Server  LOG     [MIDDLEWARE] GET /api/dashboard
+[00:00:30.216] Server  LOG     prisma:query "BEGIN"
+[00:00:30.218] Server  LOG     prisma:query "BEGIN"
+[00:00:30.219] Server  LOG     prisma:query "BEGIN"
+[00:00:30.224] Server  LOG     prisma:query "BEGIN"
+[00:00:30.238] Server  LOG     prisma:query "BEGIN"
+[00:00:30.249] Server  LOG     prisma:query "BEGIN"
+[00:00:30.313] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:30.314] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:30.316] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:30.318] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:30.338] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:30.351] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:30.546] Server  LOG     prisma:query "SELECT SUM(\"precio_costo\") FROM (SELECT \"public\".\"Material\".\"precio_costo\" FROM \"public\".\"Material\" WHERE (\"public\".\"Material\".\"empresa_id\" = $1 AND \"public\".\"Material\".\"activo\" = $2) OFFSET $3) AS \"sub\""
+[00:00:30.547] Server  LOG     prisma:query "SELECT SUM(\"total\"), COUNT(*) FROM (SELECT \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"id\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"estado\" = $2 AND \"public\".\"Venta\".\"fecha_venta\" >= $3) OFFSET $4) AS \"sub\""
+[00:00:30.548] Server  LOG     prisma:query "SELECT SUM(\"total\"), COUNT(*) FROM (SELECT \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"id\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"estado\" = $2 AND \"public\".\"Venta\".\"fecha_venta\" >= $3) OFFSET $4) AS \"sub\""
+[00:00:30.548] Server  LOG     prisma:query "SELECT SUM(\"public\".\"VentaDetalle\".\"subtotal\"), SUM(\"public\".\"VentaDetalle\".\"cantidad\"), \"public\".\"VentaDetalle\".\"material_id\" FROM \"public\".\"VentaDetalle\" LEFT JOIN \"public\".\"Venta\" AS \"j1\" ON (\"j1\".\"id\") = (\"public\".\"VentaDetalle\".\"venta_id\") WHERE (\"j1\".\"empresa_id\" = $1 AND \"j1\".\"estado\" = $2 AND (\"j1\".\"id\" IS NOT NULL)) GROUP BY \"public\".\"VentaDetalle\".\"material_id\" ORDER BY SUM(\"public\".\"VentaDetalle\".\"subtotal\") DESC LIMIT $3 OFFSET $4"
+[00:00:30.549] Server  LOG     prisma:query "SELECT \"public\".\"Venta\".\"id\", \"public\".\"Venta\".\"empresa_id\", \"public\".\"Venta\".\"numero_pedido\", \"public\".\"Venta\".\"comprobante\", \"public\".\"Venta\".\"cliente_id\", \"public\".\"Venta\".\"caja_id\", \"public\".\"Venta\".\"estado\", \"public\".\"Venta\".\"subtotal\", \"public\".\"Venta\".\"impuesto\", \"public\".\"Venta\".\"descuento\", \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"metodo_pago\", \"public\".\"Venta\".\"fecha_venta\", \"public\".\"Venta\".\"observaciones\", \"public\".\"Venta\".\"created_at\", \"public\".\"Venta\".\"updated_at\", \"public\".\"Venta\".\"created_by\", \"public\".\"Venta\".\"updated_by\" FROM \"public\".\"Venta\" WHERE (\"public\".\"Venta\".\"empresa_id\" = $1 AND \"public\".\"Venta\".\"fecha_venta\" >= $2) ORDER BY \"public\".\"Venta\".\"fecha_venta\" DESC LIMIT $3 OFFSET $4"
+[00:00:30.560] Server  LOG     prisma:query "\n        SELECT TO_CHAR(fecha_venta, 'Mon') as mes,\n               SUM(total) as total\n        FROM \"Venta\"\n        WHERE empresa_id = $1\n          AND estado = 'procesada'\n          AND fecha_venta >= NOW() - INTERVAL '6 months'\n        GROUP BY DATE_TRUNC('month', fecha_venta), TO_CHAR(fecha_venta, 'Mon')\n        ORDER BY DATE_TRUNC('month', fecha_venta)\n      "
+[00:00:30.651] Server  LOG     prisma:query "COMMIT"
+[00:00:30.652] Server  LOG     prisma:query "COMMIT"
+[00:00:30.653] Server  LOG     prisma:query "COMMIT"
+[00:00:30.656] Server  LOG     prisma:query "COMMIT"
+[00:00:30.657] Server  LOG     prisma:query "COMMIT"
+[00:00:30.669] Server  LOG     prisma:query "COMMIT"
+[00:00:30.779] Server  LOG     prisma:query "BEGIN"
+[00:00:30.888] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:31.086] Server  LOG     prisma:query "SELECT \"public\".\"Material\".\"id\", \"public\".\"Material\".\"descripcion\", \"public\".\"Material\".\"imagen_url\" FROM \"public\".\"Material\" WHERE 1=0 OFFSET $1"
+[00:00:31.188] Server  LOG     prisma:query "COMMIT"
+[00:00:31.402] Server  LOG     [MIDDLEWARE] GET /ventas
+[00:00:32.077] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:32.295] Browser ERROR   uncaughtError: Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
 
 - A server/client branch `if (typeof window !== 'undefined')`.
 - Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
@@ -46,10 +90,10 @@ https://react.dev/link/hydration-mismatch
   ...
     <LoadingBoundary name="/" loading={null}>
       <HTTPAccessFallbackBoundary notFound={<SegmentViewNode>} forbidden={undefined} unauthorized={undefined}>
-        <HTTPAccessFallbackErrorBoundary pathname="/maestros/..." notFound={<SegmentViewNode>} forbidden={undefined} ...>
+        <HTTPAccessFallbackErrorBoundary pathname="/ventas" notFound={<SegmentViewNode>} forbidden={undefined} ...>
           <RedirectBoundary>
             <RedirectErrorBoundary router={{...}}>
-              <InnerLayoutRouter url="/maestros/..." tree={[...]} params={{}} cacheNode={{...}} segmentPath={[...]} ...>
+              <InnerLayoutRouter url="/ventas" tree={[...]} params={{}} cacheNode={{...}} segmentPath={[...]} ...>
                 <SegmentViewNode type="layout" pagePath="(dashboard...">
                   <SegmentTrieNode>
                   <script>
@@ -70,10 +114,177 @@ https://react.dev/link/hydration-mismatch
                       ...
               ...
 
-[00:00:32.350] Server  LOG     prisma:query "SELECT COUNT(*) FROM (SELECT \"public\".\"Cliente\".\"id\" FROM \"public\".\"Cliente\" WHERE \"public\".\"Cliente\".\"empresa_id\" = $1 OFFSET $2) AS \"sub\""
-[00:00:32.354] Server  LOG     prisma:query "SELECT \"public\".\"Cliente\".\"id\", \"public\".\"Cliente\".\"empresa_id\", \"public\".\"Cliente\".\"codigo\", \"public\".\"Cliente\".\"tipo\", \"public\".\"Cliente\".\"nombre\", \"public\".\"Cliente\".\"nif\", \"public\".\"Cliente\".\"email\", \"public\".\"Cliente\".\"telefono\", \"public\".\"Cliente\".\"direccion\", \"public\".\"Cliente\".\"contacto\", \"public\".\"Cliente\".\"activo\", \"public\".\"Cliente\".\"created_at\", \"public\".\"Cliente\".\"updated_at\", \"public\".\"Cliente\".\"created_by\", \"public\".\"Cliente\".\"updated_by\" FROM \"public\".\"Cliente\" WHERE \"public\".\"Cliente\".\"empresa_id\" = $1 ORDER BY \"public\".\"Cliente\".\"nombre\" ASC LIMIT $2 OFFSET $3"
-[00:00:32.437] Server  LOG     [MIDDLEWARE] GET /api/clientes
-[00:00:32.683] Server  LOG     prisma:query "SELECT COUNT(*) FROM (SELECT \"public\".\"Cliente\".\"id\" FROM \"public\".\"Cliente\" WHERE \"public\".\"Cliente\".\"empresa_id\" = $1 OFFSET $2) AS \"sub\""
-[00:00:32.683] Server  LOG     prisma:query "SELECT \"public\".\"Cliente\".\"id\", \"public\".\"Cliente\".\"empresa_id\", \"public\".\"Cliente\".\"codigo\", \"public\".\"Cliente\".\"tipo\", \"public\".\"Cliente\".\"nombre\", \"public\".\"Cliente\".\"nif\", \"public\".\"Cliente\".\"email\", \"public\".\"Cliente\".\"telefono\", \"public\".\"Cliente\".\"direccion\", \"public\".\"Cliente\".\"contacto\", \"public\".\"Cliente\".\"activo\", \"public\".\"Cliente\".\"created_at\", \"public\".\"Cliente\".\"updated_at\", \"public\".\"Cliente\".\"created_by\", \"public\".\"Cliente\".\"updated_by\" FROM \"public\".\"Cliente\" WHERE \"public\".\"Cliente\".\"empresa_id\" = $1 ORDER BY \"public\".\"Cliente\".\"nombre\" ASC LIMIT $2 OFFSET $3"
-[00:00:35.079] Server  LOG     [MIDDLEWARE] POST /api/auth/logout
-[00:00:35.186] Server  LOG     [MIDDLEWARE] GET /login
+[00:00:34.815] Server  LOG     [MIDDLEWARE] GET /caja/transacciones
+[00:00:35.676] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:35.814] Server  LOG     [MIDDLEWARE] GET /api/caja
+[00:00:35.875] Browser ERROR   uncaughtError: Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <LoadingBoundary name="/" loading={null}>
+      <HTTPAccessFallbackBoundary notFound={<SegmentViewNode>} forbidden={undefined} unauthorized={undefined}>
+        <HTTPAccessFallbackErrorBoundary pathname="/caja/tran..." notFound={<SegmentViewNode>} forbidden={undefined} ...>
+          <RedirectBoundary>
+            <RedirectErrorBoundary router={{...}}>
+              <InnerLayoutRouter url="/caja/tran..." tree={[...]} params={{}} cacheNode={{...}} segmentPath={[...]} ...>
+                <SegmentViewNode type="layout" pagePath="(dashboard...">
+                  <SegmentTrieNode>
+                  <script>
+                  <script>
+                  <script>
+                  <DashboardLayout>
+                    <div className="flex h-scr...">
+                      <Sidebar>
+                        <aside className="w-72 bg-sl...">
+                          <div className="p-6 flex i...">
+                            <div>
+                            <div>
+                              <h1>
+                              <p className="text-slate-500 text-xs font-medium mt-0.5">
++                               Empresa Demo SA
+-                               Administración General
+                          ...
+                      ...
+              ...
+
+[00:00:36.089] Server  LOG     prisma:query "BEGIN"
+[00:00:36.198] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:36.428] Server  LOG     prisma:query "SELECT \"public\".\"Caja\".\"id\", \"public\".\"Caja\".\"id_caja\", \"public\".\"Caja\".\"empresa_id\", \"public\".\"Caja\".\"usuario_id\", \"public\".\"Caja\".\"fecha_apertura\", \"public\".\"Caja\".\"fecha_cierre\", \"public\".\"Caja\".\"saldo_inicial\", \"public\".\"Caja\".\"saldo_cierre\", \"public\".\"Caja\".\"moneda\", \"public\".\"Caja\".\"estado\", \"public\".\"Caja\".\"obs_apertura\", \"public\".\"Caja\".\"obs_cierre\", \"public\".\"Caja\".\"created_at\", \"public\".\"Caja\".\"updated_at\", \"public\".\"Caja\".\"created_by\", \"public\".\"Caja\".\"updated_by\" FROM \"public\".\"Caja\" WHERE (\"public\".\"Caja\".\"empresa_id\" = $1 AND \"public\".\"Caja\".\"estado\" = $2) ORDER BY \"public\".\"Caja\".\"fecha_apertura\" DESC LIMIT $3 OFFSET $4"
+[00:00:36.537] Server  LOG     prisma:query "COMMIT"
+[00:00:36.556] Server  LOG     [MIDDLEWARE] GET /api/caja
+[00:00:36.678] Server  LOG     prisma:query "BEGIN"
+[00:00:36.801] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:37.026] Server  LOG     prisma:query "SELECT \"public\".\"Caja\".\"id\", \"public\".\"Caja\".\"id_caja\", \"public\".\"Caja\".\"empresa_id\", \"public\".\"Caja\".\"usuario_id\", \"public\".\"Caja\".\"fecha_apertura\", \"public\".\"Caja\".\"fecha_cierre\", \"public\".\"Caja\".\"saldo_inicial\", \"public\".\"Caja\".\"saldo_cierre\", \"public\".\"Caja\".\"moneda\", \"public\".\"Caja\".\"estado\", \"public\".\"Caja\".\"obs_apertura\", \"public\".\"Caja\".\"obs_cierre\", \"public\".\"Caja\".\"created_at\", \"public\".\"Caja\".\"updated_at\", \"public\".\"Caja\".\"created_by\", \"public\".\"Caja\".\"updated_by\" FROM \"public\".\"Caja\" WHERE (\"public\".\"Caja\".\"empresa_id\" = $1 AND \"public\".\"Caja\".\"estado\" = $2) ORDER BY \"public\".\"Caja\".\"fecha_apertura\" DESC LIMIT $3 OFFSET $4"
+[00:00:37.125] Server  LOG     prisma:query "COMMIT"
+[00:00:38.233] Server  LOG     [MIDDLEWARE] GET /ventas/pos
+[00:00:38.924] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:39.016] Server  LOG     [MIDDLEWARE] GET /api/materiales
+[00:00:39.172] Browser ERROR   uncaughtError: Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <LoadingBoundary name="/" loading={null}>
+      <HTTPAccessFallbackBoundary notFound={<SegmentViewNode>} forbidden={undefined} unauthorized={undefined}>
+        <HTTPAccessFallbackErrorBoundary pathname="/ventas/pos" notFound={<SegmentViewNode>} forbidden={undefined} ...>
+          <RedirectBoundary>
+            <RedirectErrorBoundary router={{...}}>
+              <InnerLayoutRouter url="/ventas/pos" tree={[...]} params={{}} cacheNode={{...}} segmentPath={[...]} ...>
+                <SegmentViewNode type="layout" pagePath="(dashboard...">
+                  <SegmentTrieNode>
+                  <script>
+                  <script>
+                  <script>
+                  <DashboardLayout>
+                    <div className="flex h-scr...">
+                      <Sidebar>
+                        <aside className="w-72 bg-sl...">
+                          <div className="p-6 flex i...">
+                            <div>
+                            <div>
+                              <h1>
+                              <p className="text-slate-500 text-xs font-medium mt-0.5">
++                               Empresa Demo SA
+-                               Administración General
+                          ...
+                      ...
+              ...
+
+[00:00:39.293] Server  LOG     prisma:query "BEGIN"
+[00:00:39.306] Server  LOG     prisma:query "BEGIN"
+[00:00:39.386] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:39.391] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:39.586] Server  LOG     prisma:query "SELECT COUNT(*) FROM (SELECT \"public\".\"Material\".\"id\" FROM \"public\".\"Material\" WHERE \"public\".\"Material\".\"empresa_id\" = $1 OFFSET $2) AS \"sub\""
+[00:00:39.587] Server  LOG     prisma:query "SELECT \"public\".\"Material\".\"id\", \"public\".\"Material\".\"empresa_id\", \"public\".\"Material\".\"codigo\", \"public\".\"Material\".\"descripcion\", \"public\".\"Material\".\"categoria\", \"public\".\"Material\".\"tipo\", \"public\".\"Material\".\"unidad_medida\", \"public\".\"Material\".\"precio_costo\", \"public\".\"Material\".\"precio_venta\", \"public\".\"Material\".\"stock_actual\", \"public\".\"Material\".\"stock_minimo\", \"public\".\"Material\".\"imagen_url\", \"public\".\"Material\".\"impuesto_id\", \"public\".\"Material\".\"activo\", \"public\".\"Material\".\"created_at\", \"public\".\"Material\".\"updated_at\", \"public\".\"Material\".\"created_by\", \"public\".\"Material\".\"updated_by\" FROM \"public\".\"Material\" WHERE \"public\".\"Material\".\"empresa_id\" = $1 ORDER BY \"public\".\"Material\".\"descripcion\" ASC LIMIT $2 OFFSET $3"
+[00:00:39.686] Server  LOG     prisma:query "COMMIT"
+[00:00:39.797] Server  LOG     prisma:query "SELECT \"public\".\"Impuesto\".\"id\", \"public\".\"Impuesto\".\"codigo\", \"public\".\"Impuesto\".\"porcentaje\" FROM \"public\".\"Impuesto\" WHERE \"public\".\"Impuesto\".\"id\" IN ($1) OFFSET $2"
+[00:00:39.897] Server  LOG     prisma:query "COMMIT"
+[00:00:39.908] Server  LOG     [MIDDLEWARE] GET /api/materiales
+[00:00:40.024] Server  LOG     prisma:query "BEGIN"
+[00:00:40.024] Server  LOG     prisma:query "BEGIN"
+[00:00:40.133] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:40.146] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:40.365] Server  LOG     prisma:query "SELECT COUNT(*) FROM (SELECT \"public\".\"Material\".\"id\" FROM \"public\".\"Material\" WHERE \"public\".\"Material\".\"empresa_id\" = $1 OFFSET $2) AS \"sub\""
+[00:00:40.375] Server  LOG     prisma:query "SELECT \"public\".\"Material\".\"id\", \"public\".\"Material\".\"empresa_id\", \"public\".\"Material\".\"codigo\", \"public\".\"Material\".\"descripcion\", \"public\".\"Material\".\"categoria\", \"public\".\"Material\".\"tipo\", \"public\".\"Material\".\"unidad_medida\", \"public\".\"Material\".\"precio_costo\", \"public\".\"Material\".\"precio_venta\", \"public\".\"Material\".\"stock_actual\", \"public\".\"Material\".\"stock_minimo\", \"public\".\"Material\".\"imagen_url\", \"public\".\"Material\".\"impuesto_id\", \"public\".\"Material\".\"activo\", \"public\".\"Material\".\"created_at\", \"public\".\"Material\".\"updated_at\", \"public\".\"Material\".\"created_by\", \"public\".\"Material\".\"updated_by\" FROM \"public\".\"Material\" WHERE \"public\".\"Material\".\"empresa_id\" = $1 ORDER BY \"public\".\"Material\".\"descripcion\" ASC LIMIT $2 OFFSET $3"
+[00:00:40.473] Server  LOG     prisma:query "COMMIT"
+[00:00:40.578] Server  LOG     prisma:query "SELECT \"public\".\"Impuesto\".\"id\", \"public\".\"Impuesto\".\"codigo\", \"public\".\"Impuesto\".\"porcentaje\" FROM \"public\".\"Impuesto\" WHERE \"public\".\"Impuesto\".\"id\" IN ($1) OFFSET $2"
+[00:00:40.695] Server  LOG     prisma:query "COMMIT"
+[00:00:51.372] Server  LOG     [MIDDLEWARE] GET /api/clientes
+[00:00:51.661] Server  LOG     prisma:query "SELECT 1"
+[00:00:51.663] Server  LOG     prisma:query "SELECT 1"
+[00:00:51.766] Server  LOG     prisma:query "BEGIN"
+[00:00:51.772] Server  LOG     prisma:query "BEGIN"
+[00:00:51.880] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:51.881] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:52.151] Server  LOG     prisma:query "SELECT COUNT(*) FROM (SELECT \"public\".\"Cliente\".\"id\" FROM \"public\".\"Cliente\" WHERE (\"public\".\"Cliente\".\"empresa_id\" = $1 AND (\"public\".\"Cliente\".\"nombre\" ILIKE $2 OR \"public\".\"Cliente\".\"codigo\" ILIKE $3 OR \"public\".\"Cliente\".\"nif\" ILIKE $4)) OFFSET $5) AS \"sub\""
+[00:00:52.152] Server  LOG     prisma:query "SELECT \"public\".\"Cliente\".\"id\", \"public\".\"Cliente\".\"empresa_id\", \"public\".\"Cliente\".\"codigo\", \"public\".\"Cliente\".\"tipo\", \"public\".\"Cliente\".\"nombre\", \"public\".\"Cliente\".\"nif\", \"public\".\"Cliente\".\"email\", \"public\".\"Cliente\".\"telefono\", \"public\".\"Cliente\".\"direccion\", \"public\".\"Cliente\".\"contacto\", \"public\".\"Cliente\".\"activo\", \"public\".\"Cliente\".\"created_at\", \"public\".\"Cliente\".\"updated_at\", \"public\".\"Cliente\".\"created_by\", \"public\".\"Cliente\".\"updated_by\" FROM \"public\".\"Cliente\" WHERE (\"public\".\"Cliente\".\"empresa_id\" = $1 AND (\"public\".\"Cliente\".\"nombre\" ILIKE $2 OR \"public\".\"Cliente\".\"codigo\" ILIKE $3 OR \"public\".\"Cliente\".\"nif\" ILIKE $4)) ORDER BY \"public\".\"Cliente\".\"nombre\" ASC LIMIT $5 OFFSET $6"
+[00:00:52.258] Server  LOG     prisma:query "COMMIT"
+[00:00:52.259] Server  LOG     prisma:query "COMMIT"
+[00:00:58.021] Server  LOG     [MIDDLEWARE] POST /api/ventas
+[00:00:58.677] Server  LOG     prisma:query "BEGIN"
+[00:00:58.786] Server  LOG     prisma:query "DEALLOCATE ALL"
+[00:00:59.042] Server  LOG     prisma:query "INSERT INTO \"public\".\"Venta\" (\"empresa_id\",\"numero_pedido\",\"cliente_id\",\"estado\",\"subtotal\",\"impuesto\",\"descuento\",\"total\",\"metodo_pago\",\"fecha_venta\",\"created_at\",\"updated_at\",\"created_by\") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING \"public\".\"Venta\".\"id\""
+[00:00:59.299] Server  LOG     prisma:query "INSERT INTO \"public\".\"VentaDetalle\" (\"venta_id\",\"material_id\",\"cantidad\",\"precio_unit\",\"descuento\",\"impuesto\",\"subtotal\",\"created_at\",\"updated_at\",\"created_by\") VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING \"public\".\"VentaDetalle\".\"id\""
+[00:00:59.534] Server  LOG     prisma:query "SELECT \"public\".\"Venta\".\"id\", \"public\".\"Venta\".\"empresa_id\", \"public\".\"Venta\".\"numero_pedido\", \"public\".\"Venta\".\"comprobante\", \"public\".\"Venta\".\"cliente_id\", \"public\".\"Venta\".\"caja_id\", \"public\".\"Venta\".\"estado\", \"public\".\"Venta\".\"subtotal\", \"public\".\"Venta\".\"impuesto\", \"public\".\"Venta\".\"descuento\", \"public\".\"Venta\".\"total\", \"public\".\"Venta\".\"metodo_pago\", \"public\".\"Venta\".\"fecha_venta\", \"public\".\"Venta\".\"observaciones\", \"public\".\"Venta\".\"created_at\", \"public\".\"Venta\".\"updated_at\", \"public\".\"Venta\".\"created_by\", \"public\".\"Venta\".\"updated_by\" FROM \"public\".\"Venta\" WHERE \"public\".\"Venta\".\"id\" = $1 LIMIT $2 OFFSET $3"
+[00:00:59.756] Server  LOG     prisma:query "UPDATE \"public\".\"Material\" SET \"stock_actual\" = (\"public\".\"Material\".\"stock_actual\" - $1), \"updated_at\" = $2 WHERE (\"public\".\"Material\".\"id\" = $3 AND 1=1) RETURNING \"public\".\"Material\".\"id\", \"public\".\"Material\".\"empresa_id\", \"public\".\"Material\".\"codigo\", \"public\".\"Material\".\"descripcion\", \"public\".\"Material\".\"categoria\", \"public\".\"Material\".\"tipo\", \"public\".\"Material\".\"unidad_medida\", \"public\".\"Material\".\"precio_costo\", \"public\".\"Material\".\"precio_venta\", \"public\".\"Material\".\"stock_actual\", \"public\".\"Material\".\"stock_minimo\", \"public\".\"Material\".\"imagen_url\", \"public\".\"Material\".\"impuesto_id\", \"public\".\"Material\".\"activo\", \"public\".\"Material\".\"created_at\", \"public\".\"Material\".\"updated_at\", \"public\".\"Material\".\"created_by\", \"public\".\"Material\".\"updated_by\""
+[00:00:59.863] Server  LOG     prisma:query "COMMIT"
+[00:01:03.529] Server  LOG     [MIDDLEWARE] GET /ventas
+[00:01:04.095] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:01:04.261] Browser ERROR   uncaughtError: Error: Hydration failed because the server rendered text didn't match the client. As a result this tree will be regenerated on the client. This can happen if a SSR-ed Client Component used:
+
+- A server/client branch `if (typeof window !== 'undefined')`.
+- Variable input such as `Date.now()` or `Math.random()` which changes each time it's called.
+- Date formatting in a user's locale which doesn't match the server.
+- External changing data without sending a snapshot of it along with the HTML.
+- Invalid HTML tag nesting.
+
+It can also happen if the client has a browser extension installed which messes with the HTML before React loaded.
+
+https://react.dev/link/hydration-mismatch
+
+  ...
+    <LoadingBoundary name="/" loading={null}>
+      <HTTPAccessFallbackBoundary notFound={<SegmentViewNode>} forbidden={undefined} unauthorized={undefined}>
+        <HTTPAccessFallbackErrorBoundary pathname="/ventas" notFound={<SegmentViewNode>} forbidden={undefined} ...>
+          <RedirectBoundary>
+            <RedirectErrorBoundary router={{...}}>
+              <InnerLayoutRouter url="/ventas" tree={[...]} params={{}} cacheNode={{...}} segmentPath={[...]} ...>
+                <SegmentViewNode type="layout" pagePath="(dashboard...">
+                  <SegmentTrieNode>
+                  <script>
+                  <script>
+                  <script>
+                  <DashboardLayout>
+                    <div className="flex h-scr...">
+                      <Sidebar>
+                        <aside className="w-72 bg-sl...">
+                          <div className="p-6 flex i...">
+                            <div>
+                            <div>
+                              <h1>
+                              <p className="text-slate-500 text-xs font-medium mt-0.5">
++                               Empresa Demo SA
+-                               Administración General
+                          ...
+                      ...
+              ...
+
+[00:15:29.932] Server  LOG     [MIDDLEWARE] POST /api/auth/logout
+[00:15:29.969] Server  LOG     [MIDDLEWARE] GET /login

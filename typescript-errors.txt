@@ -1,0 +1,10 @@
+﻿src/app/(dashboard)/precios/promociones/page.tsx(179,22): error TS2322: Type '({ key: string; header: string; render: (r: Promocion) => Element; } | { key: string; header: Element; render: (r: Promocion) => Element; })[]' is not assignable to type 'Column<Promocion>[]'.
+  Type '{ key: string; header: string; render: (r: Promocion) => Element; } | { key: string; header: Element; render: (r: Promocion) => Element; }' is not assignable to type 'Column<Promocion>'.
+    Type '{ key: string; header: JSX.Element; render: (r: Promocion) => JSX.Element; }' is not assignable to type 'Column<Promocion>'.
+      Types of property 'header' are incompatible.
+        Type 'Element' is not assignable to type 'string'.
+src/app/api/precios/promociones/route.ts(24,60): error TS2339: Property 'empresa_id' does not exist on type '{}'.
+src/app/api/precios/promociones/route.ts(74,60): error TS2339: Property 'empresa_id' does not exist on type '{}'.
+src/app/api/precios/promociones/route.ts(75,54): error TS2339: Property 'id' does not exist on type '{}'.
+src/app/api/precios/promociones/route.ts(111,60): error TS2339: Property 'empresa_id' does not exist on type '{}'.
+src/app/api/precios/promociones/route.ts(112,54): error TS2339: Property 'id' does not exist on type '{}'.
