@@ -115,4 +115,8 @@ If you still encounter issues:
 
 The PostgreSQL SSL warning has been resolved by modifying `src/lib/prisma.ts` to automatically replace `sslmode=require` with `sslmode=verify-full` in database connection strings. This eliminates the deprecation warning without requiring changes to your Vercel environment variables.
 
-The 500 error should now be resolved, and your login functionality should work properly on Vercel!
+## ✅ CSRF Token 401 Error Resolution
+
+The CSRF token 401 error has been resolved by removing the overly restrictive Content Security Policy from API routes in `next.config.js`. The CSP was blocking all resources including basic API functionality. API routes now have minimal security headers while maintaining proper CORS and other security measures.
+
+The CSRF token generation and login functionality should now work properly on Vercel!
