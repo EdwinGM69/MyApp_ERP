@@ -123,10 +123,19 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     if (err instanceof z.ZodError) {
       // Don't leak validation details in production
-      console.warn('Login validation error:', err.errors)
+      console.warn('[LOGIN] Validation error:', err.errors)
       return NextResponse.json({ error: 'Datos de entrada inválidos' }, { status: 400 })
     }
-    console.error('Login error:', err)
+
+    // Log detailed error information for debugging
+    console.error('[LOGIN] Unexpected error:', {
+      message: err instanceof Error ? err.message : 'Unknown error',
+      stack: err instanceof Error ? err.stack : undefined,
+      timestamp: new Date().toISOString(),
+      userAgent: req.headers.get('user-agent'),
+      ip: req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip')
+    })
+
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
 }
