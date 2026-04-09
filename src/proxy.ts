@@ -19,6 +19,17 @@ export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
   console.log(`[PROXY] ${req.method} ${pathname}`)
 
+  // 0. Enforce HTTPS in production for API routes
+  if (
+    process.env.NODE_ENV === 'production' &&
+    req.nextUrl.protocol === 'http:' &&
+    pathname.startsWith('/api/')
+  ) {
+    const httpsUrl = req.nextUrl.clone()
+    httpsUrl.protocol = 'https:'
+    return NextResponse.redirect(httpsUrl)
+  }
+
   // 1. Allow public paths and static assets
   const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p))
   const isStaticAsset = pathname.includes('.') || pathname.startsWith('/_next')

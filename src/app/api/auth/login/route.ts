@@ -4,14 +4,55 @@ import { prisma } from '@/lib/prisma'
 import { signAccessToken, signRefreshToken } from '@/lib/jwt'
 import { z } from 'zod'
 
+// Simple in-memory rate limiter
+const loginAttempts = new Map<string, { count: number; resetTime: number }>()
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const windowMs = 15 * 60 * 1000 // 15 minutes
+  const maxAttempts = 5
+
+  const attempts = loginAttempts.get(ip)
+
+  if (!attempts || now > attempts.resetTime) {
+    loginAttempts.set(ip, { count: 1, resetTime: now + windowMs })
+    return true
+  }
+
+  if (attempts.count >= maxAttempts) {
+    return false
+  }
+
+  attempts.count++
+  return true
+}
+
 const loginSchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(6),
-  remember: z.boolean().optional(),
+  email: z.string().email().max(254).toLowerCase().trim(),
+  password: z.string().min(8).max(128),
+  remember: z.boolean().optional().default(false),
 })
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiting
+    const clientIP = req.headers.get('x-forwarded-for') ||
+                     req.headers.get('x-real-ip') ||
+                     'unknown'
+    const ip = clientIP.split(',')[0].trim()
+
+    if (!checkRateLimit(ip)) {
+      return NextResponse.json({ error: 'Demasiados intentos de inicio de sesión. Intente nuevamente en 15 minutos.' }, { status: 429 })
+    }
+
+    // CSRF protection: check if CSRF token matches
+    const csrfToken = req.headers.get('x-csrf-token')
+    const csrfCookie = req.cookies.get('csrf_token')?.value
+
+    if (csrfToken && csrfCookie && csrfToken !== csrfCookie) {
+      return NextResponse.json({ error: 'CSRF token mismatch' }, { status: 403 })
+    }
+
     const body = await req.json()
     const { email, password, remember } = loginSchema.parse(body)
 
@@ -81,9 +122,11 @@ export async function POST(req: NextRequest) {
     return response
   } catch (err) {
     if (err instanceof z.ZodError) {
-      return NextResponse.json({ error: 'Datos inválidos', details: err.errors }, { status: 400 })
+      // Don't leak validation details in production
+      console.warn('Login validation error:', err.errors)
+      return NextResponse.json({ error: 'Datos de entrada inválidos' }, { status: 400 })
     }
-    console.error(err)
+    console.error('Login error:', err)
     return NextResponse.json({ error: 'Error interno del servidor' }, { status: 500 })
   }
 }

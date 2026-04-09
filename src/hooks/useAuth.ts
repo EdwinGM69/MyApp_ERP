@@ -31,8 +31,8 @@ interface AuthStore {
 let _store: AuthStore | null = null
 
 function createStore(): AuthStore {
-  // Try to get token from localStorage on init
-  let token: string | null = typeof window !== 'undefined' ? localStorage.getItem('access_token') : null
+  // Tokens are stored only in HttpOnly cookies, not in memory or localStorage
+  let token: string | null = null
   let user: AuthUser | null = null
   let initialized = false
 
@@ -66,12 +66,14 @@ function createStore(): AuthStore {
           newUser.empresa = (newUser.empresa as any).nombre || 'Empresa'
         }
       }
-      store.token = newToken
+      // Token is stored only in HttpOnly cookie, not in memory
+      store.token = null
       store.user = newUser
       store.initialized = true
       if (typeof window !== 'undefined') {
-        localStorage.setItem('access_token', newToken)
+        // Store only non-sensitive user data in localStorage
         localStorage.setItem('auth_user', JSON.stringify(newUser))
+        // DO NOT store tokens anywhere for security
       }
     },
     clearAuth() {
@@ -79,9 +81,8 @@ function createStore(): AuthStore {
       store.user = null
       store.initialized = true
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('access_token')
         localStorage.removeItem('auth_user')
-        // Force clear cookies
+        // Force clear HttpOnly cookies
         document.cookie = 'access_token=; Max-Age=0; path=/;';
         document.cookie = 'refresh_token=; Max-Age=0; path=/;';
       }
@@ -149,33 +150,24 @@ export function getToken(): string | null {
  * Enhanced fetch wrapper
  */
 export async function apiFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const store = getAuthStore()
-  
-  const headers = new Headers(options.headers)
-  if (store.token && !headers.has('Authorization')) {
-    headers.set('Authorization', `Bearer ${store.token}`)
-  }
-
+  // Authentication is handled via HttpOnly cookies, no need for Authorization header
   const res = await fetch(url, {
     ...options,
-    headers,
+    headers: options.headers,
   })
 
   if (res.status === 401) {
     console.log(`[apiFetch] 401 on ${url}, attempting refresh...`)
     const refreshRes = await fetch('/api/auth/refresh', { method: 'POST' })
-    
+
     if (refreshRes.ok) {
       console.log(`[apiFetch] Refresh successful, retrying ${url}`)
-      const { accessToken } = await refreshRes.json()
-      store.setAuth(accessToken, store.user!)
-      
-      const retryHeaders = new Headers(options.headers)
-      retryHeaders.set('Authorization', `Bearer ${accessToken}`)
-      return fetch(url, { ...options, headers: retryHeaders })
+      // Cookie has been updated by refresh endpoint, retry the request
+      return fetch(url, options)
     } else {
       console.warn(`[apiFetch] Refresh failed, forcing logout`)
-      await store.forceLogout()
+      const authStore = getAuthStore()
+      await authStore.forceLogout()
       return new Response(null, { status: 401, statusText: 'Unauthorized - Refresh Failed' });
     }
   }

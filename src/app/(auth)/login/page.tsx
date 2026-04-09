@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '@/hooks/useAuth'
@@ -11,15 +11,47 @@ export default function LoginPage() {
 
   const [form, setForm] = useState({ email: '', password: '', remember: false })
   const [loading, setLoading] = useState(false)
+  const [csrfToken, setCsrfToken] = useState<string>('')
+
+  useEffect(() => {
+    // Get CSRF token on mount
+    fetch('/api/auth/csrf')
+      .then(res => res.json())
+      .then(data => setCsrfToken(data.csrfToken))
+      .catch(err => console.error('Failed to get CSRF token:', err))
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+
+    // Client-side validation
+    if (!form.email.trim()) {
+      toast.error('El correo electrónico es requerido')
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      toast.error('Correo electrónico inválido')
+      return
+    }
+    if (form.password.length < 8) {
+      toast.error('La contraseña debe tener al menos 8 caracteres')
+      return
+    }
+
     setLoading(true)
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (csrfToken) {
+        headers['x-csrf-token'] = csrfToken
+      }
+
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        headers,
+        body: JSON.stringify({
+          ...form,
+          email: form.email.toLowerCase().trim(),
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Error al iniciar sesión')
