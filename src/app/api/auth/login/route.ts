@@ -116,6 +116,13 @@ export async function POST(req: NextRequest) {
       cookieOptions.maxAge = 60 * 60 * 24 * 7 // 7 days
     }
 
+    console.log('[LOGIN] Setting cookies:', {
+      accessTokenLength: accessToken.length,
+      refreshTokenLength: refreshToken.length,
+      cookieOptions,
+      environment: process.env.NODE_ENV
+    })
+
     response.cookies.set('access_token', accessToken, cookieOptions)
     response.cookies.set('refresh_token', refreshToken, cookieOptions)
 

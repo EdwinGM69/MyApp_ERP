@@ -5,23 +5,35 @@ export async function getAuthPayload(req: NextRequest): Promise<JWTPayload | nul
   try {
     let token = ''
     const authHeader = req.headers.get('authorization')
-    
+
     if (authHeader?.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1]
+      console.log('[AUTH] Using Bearer token')
     } else {
       token = req.cookies.get('access_token')?.value || ''
+      console.log('[AUTH] Using cookie token, length:', token.length)
     }
 
-    if (!token) return null
-    return await verifyAccessToken(token)
-  } catch {
+    if (!token) {
+      console.log('[AUTH] No token found')
+      return null
+    }
+
+    const payload = await verifyAccessToken(token)
+    console.log('[AUTH] Token verified successfully for user:', payload.userId)
+    return payload
+  } catch (error) {
+    console.log('[AUTH] Token verification failed:', error)
     return null
   }
 }
 
 export async function requireAuth(req: NextRequest): Promise<JWTPayload> {
   const payload = await getAuthPayload(req)
-  if (!payload) throw new Error('Unauthorized')
+  if (!payload) {
+    console.log('[AUTH] No valid token found in request')
+    throw new Error('Unauthorized')
+  }
   return payload
 }
 

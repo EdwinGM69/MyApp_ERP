@@ -106,23 +106,29 @@ function createStore(): AuthStore {
       }
     },
     async refreshSession() {
+      console.log('[AUTH_STORE] Refreshing session...')
       try {
         const res = await apiFetch('/api/auth/me')
+        console.log('[AUTH_STORE] /api/auth/me response status:', res.status)
         if (res.ok) {
           const { user: newUser } = await res.json()
+          console.log('[AUTH_STORE] Session refreshed successfully for user:', newUser?.id)
           store.user = newUser
           if (typeof window !== 'undefined') {
             localStorage.setItem('auth_user', JSON.stringify(newUser))
           }
         } else {
+          console.log('[AUTH_STORE] Session refresh failed with status:', res.status)
           if (res.status === 401) {
+            console.log('[AUTH_STORE] Clearing auth due to 401')
             store.clearAuth()
           }
         }
       } catch (error) {
-        console.error('Error refreshing session:', error)
+        console.error('[AUTH_STORE] Error refreshing session:', error)
       } finally {
         store.initialized = true
+        console.log('[AUTH_STORE] Session refresh completed, initialized:', store.initialized)
       }
     }
   }
