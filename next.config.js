@@ -36,12 +36,12 @@ const nextConfig = {
         ],
       },
       {
-        // API routes - stricter CSP
+        // API routes - minimal security headers
         source: '/api/(.*)',
         headers: [
           {
-            key: 'Content-Security-Policy',
-            value: "default-src 'none'; script-src 'none'; connect-src 'none'; img-src 'none'; style-src 'none'; font-src 'none'; object-src 'none'; media-src 'none'; frame-src 'none'; frame-ancestors 'none'; form-action 'none'; upgrade-insecure-requests",
+            key: 'X-Content-Type-Options',
+            value: 'nosniff',
           },
         ],
       },
