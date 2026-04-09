@@ -1,16 +1,18 @@
-{"timestamp":"00:00:09.090","source":"Server","level":"LOG","message":""}
-{"timestamp":"00:00:10.001","source":"Server","level":"LOG","message":"[PROXY] GET /"}
-{"timestamp":"00:00:10.026","source":"Server","level":"LOG","message":"[PROXY] PAGE Redirect: No token for /, redirecting to /login"}
-{"timestamp":"00:00:10.131","source":"Server","level":"LOG","message":"[PROXY] GET /login"}
-{"timestamp":"00:00:13.157","source":"Server","level":"LOG","message":"○ Compiling /login ..."}
-{"timestamp":"00:00:22.759","source":"Browser","level":"INFO","message":"%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"}
-{"timestamp":"00:00:22.987","source":"Server","level":"LOG","message":"[PROXY] GET /api/auth/me"}
-{"timestamp":"00:00:31.648","source":"Server","level":"LOG","message":"[PROXY] POST /api/auth/login"}
-{"timestamp":"00:00:34.543","source":"Server","level":"LOG","message":"[PROXY] GET /dashboard"}
-{"timestamp":"00:00:35.858","source":"Server","level":"LOG","message":"[PROXY] GET /api/dashboard"}
-{"timestamp":"00:00:37.366","source":"Server","level":"LOG","message":"[PROXY] GET /api/dashboard"}
-{"timestamp":"00:00:41.310","source":"Browser","level":"LOG","message":"[Auth] Forcing full logout..."}
-{"timestamp":"00:00:41.320","source":"Server","level":"LOG","message":"[PROXY] POST /api/auth/logout"}
-{"timestamp":"00:00:41.693","source":"Server","level":"LOG","message":"[PROXY] GET /login"}
-{"timestamp":"00:00:42.041","source":"Browser","level":"INFO","message":"%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"}
-{"timestamp":"00:00:42.100","source":"Server","level":"LOG","message":"[PROXY] GET /api/auth/me"}
+{"timestamp":"00:00:03.348","source":"Server","level":"LOG","message":""}
+{"timestamp":"00:00:03.739","source":"Server","level":"LOG","message":"[PROXY] GET /"}
+{"timestamp":"00:00:03.747","source":"Server","level":"LOG","message":"[PROXY] PAGE Redirect: No token for /, redirecting to /login"}
+{"timestamp":"00:00:03.788","source":"Server","level":"LOG","message":"[PROXY] GET /login"}
+{"timestamp":"00:00:06.763","source":"Browser","level":"INFO","message":"%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"}
+{"timestamp":"00:00:06.833","source":"Server","level":"LOG","message":"[PROXY] GET /api/auth/me"}
+{"timestamp":"00:00:22.675","source":"Server","level":"LOG","message":"[PROXY] POST /api/auth/login"}
+{"timestamp":"00:00:25.375","source":"Server","level":"LOG","message":"[PROXY] GET /dashboard"}
+{"timestamp":"00:00:27.537","source":"Server","level":"LOG","message":"[PROXY] GET /api/dashboard"}
+{"timestamp":"00:00:29.311","source":"Server","level":"LOG","message":"[PROXY] GET /ventas"}
+{"timestamp":"00:00:29.316","source":"Server","level":"LOG","message":"[PROXY] GET /api/dashboard"}
+{"timestamp":"00:00:30.930","source":"Server","level":"LOG","message":"[PROXY] GET /api/ventas"}
+{"timestamp":"00:00:31.593","source":"Server","level":"LOG","message":"[PROXY] GET /api/ventas"}
+{"timestamp":"00:00:34.918","source":"Browser","level":"LOG","message":"[Auth] Forcing full logout..."}
+{"timestamp":"00:00:34.924","source":"Server","level":"LOG","message":"[PROXY] POST /api/auth/logout"}
+{"timestamp":"00:00:35.141","source":"Server","level":"LOG","message":"[PROXY] GET /login"}
+{"timestamp":"00:00:35.414","source":"Browser","level":"INFO","message":"%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"}
+{"timestamp":"00:00:35.502","source":"Server","level":"LOG","message":"[PROXY] GET /api/auth/me"}
