@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(dashboard)/layout,_N_T_/(dashboard)/tesoreria/layout,_N_T_/(dashboard)/tesoreria/tipo-cambio/layout,_N_T_/(dashboard)/tesoreria/tipo-cambio/page,_N_T_/tesoreria/tipo-cambio"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGRhc2hib2FyZCk/tesoreria/tipo-cambio/__PAGE__",
+    "/!KGRhc2hib2FyZCk/tesoreria/tipo-cambio",
+    "/!KGRhc2hib2FyZCk/tesoreria",
+    "/!KGRhc2hib2FyZCk",
+    "/_index",
+    "/_head"
+  ]
+}

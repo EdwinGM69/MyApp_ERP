@@ -1,0 +1,3 @@
+{
+  "/(dashboard)/tesoreria/tipo-cambio/editar/[id]/page": "app/(dashboard)/tesoreria/tipo-cambio/editar/[id]/page.js"
+}

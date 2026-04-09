@@ -1,0 +1,3 @@
+{
+  "/(dashboard)/maestros/logistica/tipos-material/editar/[id]/page": "app/(dashboard)/maestros/logistica/tipos-material/editar/[id]/page.js"
+}

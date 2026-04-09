@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(dashboard)/layout,_N_T_/(dashboard)/precios/layout,_N_T_/(dashboard)/precios/promociones/layout,_N_T_/(dashboard)/precios/promociones/page,_N_T_/precios/promociones"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGRhc2hib2FyZCk/precios/promociones/__PAGE__",
+    "/!KGRhc2hib2FyZCk/precios/promociones",
+    "/!KGRhc2hib2FyZCk/precios",
+    "/!KGRhc2hib2FyZCk",
+    "/_index",
+    "/_head"
+  ]
+}

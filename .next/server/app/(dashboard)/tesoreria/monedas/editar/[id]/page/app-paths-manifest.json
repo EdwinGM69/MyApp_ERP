@@ -1,0 +1,3 @@
+{
+  "/(dashboard)/tesoreria/monedas/editar/[id]/page": "app/(dashboard)/tesoreria/monedas/editar/[id]/page.js"
+}

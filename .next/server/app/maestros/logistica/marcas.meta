@@ -1,0 +1,18 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(dashboard)/layout,_N_T_/(dashboard)/maestros/layout,_N_T_/(dashboard)/maestros/logistica/layout,_N_T_/(dashboard)/maestros/logistica/marcas/layout,_N_T_/(dashboard)/maestros/logistica/marcas/page,_N_T_/maestros/logistica/marcas"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGRhc2hib2FyZCk/maestros/logistica/marcas/__PAGE__",
+    "/!KGRhc2hib2FyZCk/maestros/logistica/marcas",
+    "/!KGRhc2hib2FyZCk/maestros/logistica",
+    "/!KGRhc2hib2FyZCk/maestros",
+    "/!KGRhc2hib2FyZCk",
+    "/_index",
+    "/_head"
+  ]
+}

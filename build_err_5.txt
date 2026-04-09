@@ -1,0 +1,99 @@
+﻿
+> erp-saas@0.1.0 build
+> prisma generate && next build
+
+node.exe : Loaded 
+Prisma config from 
+prisma.config.ts.
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs/node.exe" "
+C:\Users\Sistema\App
+Data\Roamin ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (Load   
+ ed Prisma c...i    
+sma.config.ts.:    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+
+Prisma schema 
+loaded from prisma\s
+chema.prisma.
+
+Ô£ö Generated Prisma Client (v7.5.0) to .\node_modules\@prisma\client in 1.03s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+
+Ôû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env
+
+ÔÜá The 
+"middleware" file 
+convention is 
+deprecated. Please 
+use "proxy" 
+instead. Learn 
+more: https://nextjs
+.org/docs/messages/m
+iddleware-to-proxy
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 15.5s
+  Running TypeScript ...
+Failed to type 
+check.
+
+./src/app/api/precio
+s/lista/[id]/route.t
+s:26:64
+Type error: Object 
+literal may only 
+specify known 
+properties, but 
+'categoria' does 
+not exist in type 'M
+aterialSelect<Defaul
+tArgs>'. Did you 
+mean to write 
+'categoria_id'?
+
+  [90m24 |[0m     
+  include: {
+  [90m25 |[0m     
+    material: {
+[31m[1m>[0m 
+[90m26 |[0m       
+    select: { id: 
+[36mtrue[0m, 
+codigo: 
+[36mtrue[0m, 
+descripcion: 
+[36mtrue[0m, 
+categoria: 
+[36mtrue[0m }
+  [90m   |[0m     
+                    
+                    
+                   
+[31m[1m^[0m
+  [90m27 |[0m     
+    }
+  [90m28 |[0m     
+  }
+  [90m29 |[0m     
+})
+Next.js build 
+worker exited with 
+code: 1 and signal: 
+null

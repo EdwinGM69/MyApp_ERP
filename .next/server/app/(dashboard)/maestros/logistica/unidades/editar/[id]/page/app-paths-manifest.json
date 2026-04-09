@@ -1,0 +1,3 @@
+{
+  "/(dashboard)/maestros/logistica/unidades/editar/[id]/page": "app/(dashboard)/maestros/logistica/unidades/editar/[id]/page.js"
+}

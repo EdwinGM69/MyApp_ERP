@@ -1,0 +1,29 @@
+﻿node.exe : Loaded 
+Prisma config from 
+prisma.config.ts.
+En línea: 1 Carácter: 1
++ & "C:\Program 
+Files\nodejs/node.exe" "
+C:\Users\Sistema\AppData
+\Roamin ...
++ ~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo      
+        : NotSpecified  
+  : (Loaded Prisma c.   
+ ..isma.config.ts.:S    
+tring) [], RemoteEx    
+ception
+    + FullyQualifiedErr 
+   orId : NativeComman  
+  dError
+ 
+
+Prisma schema loaded 
+from 
+prisma\schema.prisma.
+Datasource "db": PostgreSQL database "postgres", schema "public" at "aws-1-us-east-1.pooler.supabase.com:5432"
+
+The database is already in sync with the Prisma schema.
+

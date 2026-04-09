@@ -1,0 +1,3 @@
+{
+  "/(dashboard)/logistica/documentos-identificacion/editar/[id]/page": "app/(dashboard)/logistica/documentos-identificacion/editar/[id]/page.js"
+}

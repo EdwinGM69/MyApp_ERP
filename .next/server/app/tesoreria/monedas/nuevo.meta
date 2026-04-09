@@ -1,0 +1,18 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(dashboard)/layout,_N_T_/(dashboard)/tesoreria/layout,_N_T_/(dashboard)/tesoreria/monedas/layout,_N_T_/(dashboard)/tesoreria/monedas/nuevo/layout,_N_T_/(dashboard)/tesoreria/monedas/nuevo/page,_N_T_/tesoreria/monedas/nuevo"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGRhc2hib2FyZCk/tesoreria/monedas/nuevo/__PAGE__",
+    "/!KGRhc2hib2FyZCk/tesoreria/monedas/nuevo",
+    "/!KGRhc2hib2FyZCk/tesoreria/monedas",
+    "/!KGRhc2hib2FyZCk/tesoreria",
+    "/!KGRhc2hib2FyZCk",
+    "/_index",
+    "/_head"
+  ]
+}

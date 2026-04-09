@@ -1,0 +1,17 @@
+{
+  "headers": {
+    "x-nextjs-stale-time": "300",
+    "x-nextjs-prerender": "1",
+    "x-next-cache-tags": "_N_T_/layout,_N_T_/(dashboard)/layout,_N_T_/(dashboard)/tesoreria/layout,_N_T_/(dashboard)/tesoreria/conceptos-caja/layout,_N_T_/(dashboard)/tesoreria/conceptos-caja/page,_N_T_/tesoreria/conceptos-caja"
+  },
+  "segmentPaths": [
+    "/_tree",
+    "/_full",
+    "/!KGRhc2hib2FyZCk/tesoreria/conceptos-caja/__PAGE__",
+    "/!KGRhc2hib2FyZCk/tesoreria/conceptos-caja",
+    "/!KGRhc2hib2FyZCk/tesoreria",
+    "/!KGRhc2hib2FyZCk",
+    "/_index",
+    "/_head"
+  ]
+}

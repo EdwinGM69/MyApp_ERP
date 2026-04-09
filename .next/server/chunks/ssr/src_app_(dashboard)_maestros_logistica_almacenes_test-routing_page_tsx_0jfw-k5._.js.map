@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../../../src/app/%28dashboard%29/maestros/logistica/almacenes/test-routing/page.tsx"],"sourcesContent":["'use client'\nexport default function TestPage() {\n  return <div>Routing works!</div>\n}\n"],"names":["TestPage"],"mappings":"yEACe,SAASA,EACtB,MAAO,CAAA,EAAA,EAAA,GAAA,EAAC,MAAA,UAAI,kBACd"}

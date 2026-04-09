@@ -1,0 +1,3 @@
+module.exports=[80009,a=>{"use strict";var b=a.i(87924),c=a.i(82607),d=a.i(922);a.s(["default",0,function(){return(0,b.jsxs)("div",{className:"flex flex-col flex-1 overflow-hidden",children:[(0,b.jsx)(c.default,{title:"Gestión de Usuarios / Nuevo"}),(0,b.jsx)("main",{className:"flex-1 overflow-y-auto p-8 bg-slate-50 dark:bg-background-dark",children:(0,b.jsx)(d.default,{})})]})}])}];
+
+//# sourceMappingURL=src_app_%28dashboard%29_usuarios_nuevo_page_tsx_01d-g8o._.js.map

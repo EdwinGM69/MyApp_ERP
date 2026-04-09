@@ -1,0 +1,119 @@
+﻿node.exe : Loaded 
+Prisma config from 
+prisma.config.ts.
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs/node.exe" "
+C:\Users\Sistema\App
+Data\Roamin ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (Load   
+ ed Prisma c...i    
+sma.config.ts.:    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+
+Prisma schema 
+loaded from prisma\s
+chema.prisma.
+
+Error: Prisma 
+schema validation - 
+(validate wasm)
+Error code: P1012
+[1;91merror[0m: 
+[1mError 
+validating field 
+`sucursal` in model 
+`StockMaterial`: 
+The relation field 
+`sucursal` on model 
+`StockMaterial` is 
+missing an opposite 
+relation field on 
+the model 
+`Sucursal`. Either 
+run `prisma format` 
+or add it 
+manually.[0m
+  [1;94m-->[0m  [
+4mprisma\schema.pris
+ma:1131[0m
+[1;94m   | [0m
+[1;94m1130 | [0m  
+empresa          
+Empresa      
+@relation(fields: 
+[empresa_id], 
+references: [id])
+[1;94m1131 | [0m  
+[1;91msucursal     
+    Sucursal     
+@relation(fields: 
+[sucursal_id], 
+references: 
+[id])[0m
+[1;94m1132 | [0m  
+almacen          
+Almacen      
+@relation(fields: 
+[almacen_id], 
+references: [id])
+[1;94m   | [0m
+[1;91merror[0m: 
+[1mError 
+validating field 
+`sucursal` in model 
+`StockMaterialHistor
+ial`: The relation 
+field `sucursal` on 
+model `StockMaterial
+Historial` is 
+missing an opposite 
+relation field on 
+the model 
+`Sucursal`. Either 
+run `prisma format` 
+or add it 
+manually.[0m
+  [1;94m-->[0m  [
+4mprisma\schema.pris
+ma:1156[0m
+[1;94m   | [0m
+[1;94m1155 | [0m  
+empresa          
+Empresa      
+@relation(fields: 
+[empresa_id], 
+references: [id])
+[1;94m1156 | [0m  
+[1;91msucursal     
+    Sucursal     
+@relation(fields: 
+[sucursal_id], 
+references: 
+[id])[0m
+[1;94m1157 | [0m  
+almacen          
+Almacen      
+@relation(fields: 
+[almacen_id], 
+references: [id])
+[1;94m   | [0m
+
+Validation Error 
+Count: 2
+[Context: validate]
+
+Prisma CLI Version 
+: 7.5.0

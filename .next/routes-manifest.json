@@ -1,0 +1,962 @@
+{
+  "version": 3,
+  "pages404": true,
+  "appType": "app",
+  "caseSensitive": false,
+  "basePath": "",
+  "redirects": [
+    {
+      "source": "/:path+/",
+      "destination": "/:path+",
+      "internal": true,
+      "priority": true,
+      "statusCode": 308,
+      "regex": "^(?:/((?:[^/]+?)(?:/(?:[^/]+?))*))/$"
+    }
+  ],
+  "headers": [],
+  "onMatchHeaders": [],
+  "rewrites": {
+    "beforeFiles": [],
+    "afterFiles": [],
+    "fallback": []
+  },
+  "dynamicRoutes": [
+    {
+      "page": "/api/clientes/[id]",
+      "regex": "^/api/clientes/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/clientes/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/esquemas-valoracion/[id]/logs",
+      "regex": "^/api/logistica/esquemas\\-valoracion/([^/]+?)/logs(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/logistica/esquemas\\-valoracion/(?<nxtPid>[^/]+?)/logs(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/esquemas-valoracion/[id]/materiales",
+      "regex": "^/api/logistica/esquemas\\-valoracion/([^/]+?)/materiales(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/logistica/esquemas\\-valoracion/(?<nxtPid>[^/]+?)/materiales(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/esquemas-valoracion/[id]/reglas",
+      "regex": "^/api/logistica/esquemas\\-valoracion/([^/]+?)/reglas(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/logistica/esquemas\\-valoracion/(?<nxtPid>[^/]+?)/reglas(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/estados-stock/[id]",
+      "regex": "^/api/logistica/estados\\-stock/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/logistica/estados\\-stock/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/ubicaciones/[id]",
+      "regex": "^/api/logistica/ubicaciones/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/logistica/ubicaciones/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/materiales/[id]",
+      "regex": "^/api/materiales/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/materiales/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/proveedores/[id]",
+      "regex": "^/api/proveedores/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/proveedores/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/api/usuarios/[id]",
+      "regex": "^/api/usuarios/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/api/usuarios/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/logistica/documentos-identificacion/editar/[id]",
+      "regex": "^/logistica/documentos\\-identificacion/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/logistica/documentos\\-identificacion/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/logistica/industrias/editar/[id]",
+      "regex": "^/logistica/industrias/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/logistica/industrias/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/logistica/paises/editar/[id]",
+      "regex": "^/logistica/paises/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/logistica/paises/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/maestros/clientes/editar/[id]",
+      "regex": "^/maestros/clientes/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/maestros/clientes/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/maestros/comercial/esquemas-calculo/editar/[id]",
+      "regex": "^/maestros/comercial/esquemas\\-calculo/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/maestros/comercial/esquemas\\-calculo/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/maestros/estados-stock/editar/[id]",
+      "regex": "^/maestros/estados\\-stock/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/maestros/estados\\-stock/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/almacenes/editar/[id]",
+      "regex": "^/maestros/logistica/almacenes/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/maestros/logistica/almacenes/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/categorias/editar/[id]",
+      "regex": "^/maestros/logistica/categorias/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/maestros/logistica/categorias/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/marcas/editar/[id]",
+      "regex": "^/maestros/logistica/marcas/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/maestros/logistica/marcas/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/tipos-material/editar/[id]",
+      "regex": "^/maestros/logistica/tipos\\-material/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/maestros/logistica/tipos\\-material/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/unidades/editar/[id]",
+      "regex": "^/maestros/logistica/unidades/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/maestros/logistica/unidades/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/maestros/materiales/editar/[id]",
+      "regex": "^/maestros/materiales/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/maestros/materiales/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/maestros/proveedores/editar/[id]",
+      "regex": "^/maestros/proveedores/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/maestros/proveedores/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/maestros/ubicaciones/editar/[id]",
+      "regex": "^/maestros/ubicaciones/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/maestros/ubicaciones/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/precios/cupones/editar/[id]",
+      "regex": "^/precios/cupones/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/precios/cupones/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/precios/promociones/editar/[id]",
+      "regex": "^/precios/promociones/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/precios/promociones/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/bancos/editar/[id]",
+      "regex": "^/tesoreria/bancos/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/tesoreria/bancos/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/monedas/editar/[id]",
+      "regex": "^/tesoreria/monedas/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/tesoreria/monedas/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/tipo-cambio/editar/[id]",
+      "regex": "^/tesoreria/tipo\\-cambio/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/tesoreria/tipo\\-cambio/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    },
+    {
+      "page": "/usuarios/editar/[id]",
+      "regex": "^/usuarios/editar/([^/]+?)(?:/)?$",
+      "routeKeys": {
+        "nxtPid": "nxtPid"
+      },
+      "namedRegex": "^/usuarios/editar/(?<nxtPid>[^/]+?)(?:/)?$"
+    }
+  ],
+  "staticRoutes": [
+    {
+      "page": "/",
+      "regex": "^/(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/(?:/)?$"
+    },
+    {
+      "page": "/_global-error",
+      "regex": "^/_global\\-error(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_global\\-error(?:/)?$"
+    },
+    {
+      "page": "/_not-found",
+      "regex": "^/_not\\-found(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/_not\\-found(?:/)?$"
+    },
+    {
+      "page": "/almacen/movimientos",
+      "regex": "^/almacen/movimientos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/almacen/movimientos(?:/)?$"
+    },
+    {
+      "page": "/almacen/movimientos/nuevo",
+      "regex": "^/almacen/movimientos/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/almacen/movimientos/nuevo(?:/)?$"
+    },
+    {
+      "page": "/api/almacen",
+      "regex": "^/api/almacen(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/almacen(?:/)?$"
+    },
+    {
+      "page": "/api/auth/login",
+      "regex": "^/api/auth/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/login(?:/)?$"
+    },
+    {
+      "page": "/api/auth/logout",
+      "regex": "^/api/auth/logout(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/logout(?:/)?$"
+    },
+    {
+      "page": "/api/auth/me",
+      "regex": "^/api/auth/me(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/me(?:/)?$"
+    },
+    {
+      "page": "/api/auth/refresh",
+      "regex": "^/api/auth/refresh(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/auth/refresh(?:/)?$"
+    },
+    {
+      "page": "/api/clientes",
+      "regex": "^/api/clientes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/clientes(?:/)?$"
+    },
+    {
+      "page": "/api/comercial/clases-pedido",
+      "regex": "^/api/comercial/clases\\-pedido(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/comercial/clases\\-pedido(?:/)?$"
+    },
+    {
+      "page": "/api/comercial/condiciones",
+      "regex": "^/api/comercial/condiciones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/comercial/condiciones(?:/)?$"
+    },
+    {
+      "page": "/api/dashboard",
+      "regex": "^/api/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/dashboard(?:/)?$"
+    },
+    {
+      "page": "/api/debug",
+      "regex": "^/api/debug(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/debug(?:/)?$"
+    },
+    {
+      "page": "/api/empresa",
+      "regex": "^/api/empresa(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/empresa(?:/)?$"
+    },
+    {
+      "page": "/api/empresa/modulos",
+      "regex": "^/api/empresa/modulos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/empresa/modulos(?:/)?$"
+    },
+    {
+      "page": "/api/empresa/sucursales",
+      "regex": "^/api/empresa/sucursales(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/empresa/sucursales(?:/)?$"
+    },
+    {
+      "page": "/api/empresa/sucursales/almacenes",
+      "regex": "^/api/empresa/sucursales/almacenes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/empresa/sucursales/almacenes(?:/)?$"
+    },
+    {
+      "page": "/api/empresa/sucursales/cajas",
+      "regex": "^/api/empresa/sucursales/cajas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/empresa/sucursales/cajas(?:/)?$"
+    },
+    {
+      "page": "/api/esquemas-calculo",
+      "regex": "^/api/esquemas\\-calculo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/esquemas\\-calculo(?:/)?$"
+    },
+    {
+      "page": "/api/estados-stock",
+      "regex": "^/api/estados\\-stock(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/estados\\-stock(?:/)?$"
+    },
+    {
+      "page": "/api/flujo-documentos",
+      "regex": "^/api/flujo\\-documentos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/flujo\\-documentos(?:/)?$"
+    },
+    {
+      "page": "/api/gestion-caja/sesion/abrir",
+      "regex": "^/api/gestion\\-caja/sesion/abrir(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/gestion\\-caja/sesion/abrir(?:/)?$"
+    },
+    {
+      "page": "/api/gestion-caja/sesion/activa",
+      "regex": "^/api/gestion\\-caja/sesion/activa(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/gestion\\-caja/sesion/activa(?:/)?$"
+    },
+    {
+      "page": "/api/gestion-caja/sesion/cerrar",
+      "regex": "^/api/gestion\\-caja/sesion/cerrar(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/gestion\\-caja/sesion/cerrar(?:/)?$"
+    },
+    {
+      "page": "/api/gestion-caja/transacciones",
+      "regex": "^/api/gestion\\-caja/transacciones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/gestion\\-caja/transacciones(?:/)?$"
+    },
+    {
+      "page": "/api/impuestos",
+      "regex": "^/api/impuestos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/impuestos(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/almacenes",
+      "regex": "^/api/logistica/almacenes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/logistica/almacenes(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/documentos-identificacion",
+      "regex": "^/api/logistica/documentos\\-identificacion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/logistica/documentos\\-identificacion(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/esquemas-valoracion",
+      "regex": "^/api/logistica/esquemas\\-valoracion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/logistica/esquemas\\-valoracion(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/estados-stock",
+      "regex": "^/api/logistica/estados\\-stock(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/logistica/estados\\-stock(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/industrias",
+      "regex": "^/api/logistica/industrias(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/logistica/industrias(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/paises",
+      "regex": "^/api/logistica/paises(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/logistica/paises(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/tipos-operacion",
+      "regex": "^/api/logistica/tipos\\-operacion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/logistica/tipos\\-operacion(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/ubicaciones",
+      "regex": "^/api/logistica/ubicaciones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/logistica/ubicaciones(?:/)?$"
+    },
+    {
+      "page": "/api/logistica/unidades",
+      "regex": "^/api/logistica/unidades(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/logistica/unidades(?:/)?$"
+    },
+    {
+      "page": "/api/lotes",
+      "regex": "^/api/lotes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/lotes(?:/)?$"
+    },
+    {
+      "page": "/api/marcas",
+      "regex": "^/api/marcas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/marcas(?:/)?$"
+    },
+    {
+      "page": "/api/materiales",
+      "regex": "^/api/materiales(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/materiales(?:/)?$"
+    },
+    {
+      "page": "/api/materiales/categorias",
+      "regex": "^/api/materiales/categorias(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/materiales/categorias(?:/)?$"
+    },
+    {
+      "page": "/api/materiales/costo",
+      "regex": "^/api/materiales/costo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/materiales/costo(?:/)?$"
+    },
+    {
+      "page": "/api/materiales/tipos",
+      "regex": "^/api/materiales/tipos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/materiales/tipos(?:/)?$"
+    },
+    {
+      "page": "/api/monedas",
+      "regex": "^/api/monedas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/monedas(?:/)?$"
+    },
+    {
+      "page": "/api/proveedores",
+      "regex": "^/api/proveedores(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/proveedores(?:/)?$"
+    },
+    {
+      "page": "/api/roles",
+      "regex": "^/api/roles(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/roles(?:/)?$"
+    },
+    {
+      "page": "/api/stock",
+      "regex": "^/api/stock(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/stock(?:/)?$"
+    },
+    {
+      "page": "/api/stock/historial",
+      "regex": "^/api/stock/historial(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/stock/historial(?:/)?$"
+    },
+    {
+      "page": "/api/tesoreria/bancos",
+      "regex": "^/api/tesoreria/bancos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tesoreria/bancos(?:/)?$"
+    },
+    {
+      "page": "/api/tesoreria/cajas",
+      "regex": "^/api/tesoreria/cajas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tesoreria/cajas(?:/)?$"
+    },
+    {
+      "page": "/api/tesoreria/conceptos-caja",
+      "regex": "^/api/tesoreria/conceptos\\-caja(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tesoreria/conceptos\\-caja(?:/)?$"
+    },
+    {
+      "page": "/api/tesoreria/medios-pago",
+      "regex": "^/api/tesoreria/medios\\-pago(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tesoreria/medios\\-pago(?:/)?$"
+    },
+    {
+      "page": "/api/tesoreria/monedas/denominaciones",
+      "regex": "^/api/tesoreria/monedas/denominaciones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tesoreria/monedas/denominaciones(?:/)?$"
+    },
+    {
+      "page": "/api/test-pais",
+      "regex": "^/api/test\\-pais(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/test\\-pais(?:/)?$"
+    },
+    {
+      "page": "/api/tipo-cambio",
+      "regex": "^/api/tipo\\-cambio(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tipo\\-cambio(?:/)?$"
+    },
+    {
+      "page": "/api/tipo-cambio-fuente",
+      "regex": "^/api/tipo\\-cambio\\-fuente(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tipo\\-cambio\\-fuente(?:/)?$"
+    },
+    {
+      "page": "/api/tipos-condicion",
+      "regex": "^/api/tipos\\-condicion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/tipos\\-condicion(?:/)?$"
+    },
+    {
+      "page": "/api/usuarios",
+      "regex": "^/api/usuarios(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/usuarios(?:/)?$"
+    },
+    {
+      "page": "/api/ventas",
+      "regex": "^/api/ventas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/api/ventas(?:/)?$"
+    },
+    {
+      "page": "/dashboard",
+      "regex": "^/dashboard(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/dashboard(?:/)?$"
+    },
+    {
+      "page": "/empresa",
+      "regex": "^/empresa(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/empresa(?:/)?$"
+    },
+    {
+      "page": "/gestion-caja",
+      "regex": "^/gestion\\-caja(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/gestion\\-caja(?:/)?$"
+    },
+    {
+      "page": "/login",
+      "regex": "^/login(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/login(?:/)?$"
+    },
+    {
+      "page": "/logistica/documentos-identificacion",
+      "regex": "^/logistica/documentos\\-identificacion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/logistica/documentos\\-identificacion(?:/)?$"
+    },
+    {
+      "page": "/logistica/documentos-identificacion/nuevo",
+      "regex": "^/logistica/documentos\\-identificacion/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/logistica/documentos\\-identificacion/nuevo(?:/)?$"
+    },
+    {
+      "page": "/logistica/industrias",
+      "regex": "^/logistica/industrias(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/logistica/industrias(?:/)?$"
+    },
+    {
+      "page": "/logistica/industrias/nuevo",
+      "regex": "^/logistica/industrias/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/logistica/industrias/nuevo(?:/)?$"
+    },
+    {
+      "page": "/logistica/paises",
+      "regex": "^/logistica/paises(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/logistica/paises(?:/)?$"
+    },
+    {
+      "page": "/logistica/paises/nuevo",
+      "regex": "^/logistica/paises/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/logistica/paises/nuevo(?:/)?$"
+    },
+    {
+      "page": "/maestros/clientes",
+      "regex": "^/maestros/clientes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/clientes(?:/)?$"
+    },
+    {
+      "page": "/maestros/clientes/nuevo",
+      "regex": "^/maestros/clientes/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/clientes/nuevo(?:/)?$"
+    },
+    {
+      "page": "/maestros/comercial/clases-pedido",
+      "regex": "^/maestros/comercial/clases\\-pedido(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/comercial/clases\\-pedido(?:/)?$"
+    },
+    {
+      "page": "/maestros/comercial/condiciones",
+      "regex": "^/maestros/comercial/condiciones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/comercial/condiciones(?:/)?$"
+    },
+    {
+      "page": "/maestros/comercial/esquemas-calculo",
+      "regex": "^/maestros/comercial/esquemas\\-calculo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/comercial/esquemas\\-calculo(?:/)?$"
+    },
+    {
+      "page": "/maestros/comercial/esquemas-calculo/nuevo",
+      "regex": "^/maestros/comercial/esquemas\\-calculo/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/comercial/esquemas\\-calculo/nuevo(?:/)?$"
+    },
+    {
+      "page": "/maestros/estados-stock",
+      "regex": "^/maestros/estados\\-stock(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/estados\\-stock(?:/)?$"
+    },
+    {
+      "page": "/maestros/estados-stock/nuevo",
+      "regex": "^/maestros/estados\\-stock/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/estados\\-stock/nuevo(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/almacenes",
+      "regex": "^/maestros/logistica/almacenes(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/almacenes(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/almacenes/nuevo",
+      "regex": "^/maestros/logistica/almacenes/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/almacenes/nuevo(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/almacenes/test-routing",
+      "regex": "^/maestros/logistica/almacenes/test\\-routing(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/almacenes/test\\-routing(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/categorias",
+      "regex": "^/maestros/logistica/categorias(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/categorias(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/categorias/nuevo",
+      "regex": "^/maestros/logistica/categorias/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/categorias/nuevo(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/esquemas-valoracion",
+      "regex": "^/maestros/logistica/esquemas\\-valoracion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/esquemas\\-valoracion(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/marcas",
+      "regex": "^/maestros/logistica/marcas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/marcas(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/marcas/nuevo",
+      "regex": "^/maestros/logistica/marcas/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/marcas/nuevo(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/tipos-material",
+      "regex": "^/maestros/logistica/tipos\\-material(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/tipos\\-material(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/tipos-material/nuevo",
+      "regex": "^/maestros/logistica/tipos\\-material/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/tipos\\-material/nuevo(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/tipos-operacion",
+      "regex": "^/maestros/logistica/tipos\\-operacion(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/tipos\\-operacion(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/unidades",
+      "regex": "^/maestros/logistica/unidades(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/unidades(?:/)?$"
+    },
+    {
+      "page": "/maestros/logistica/unidades/nuevo",
+      "regex": "^/maestros/logistica/unidades/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/logistica/unidades/nuevo(?:/)?$"
+    },
+    {
+      "page": "/maestros/materiales",
+      "regex": "^/maestros/materiales(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/materiales(?:/)?$"
+    },
+    {
+      "page": "/maestros/materiales/nuevo",
+      "regex": "^/maestros/materiales/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/materiales/nuevo(?:/)?$"
+    },
+    {
+      "page": "/maestros/proveedores",
+      "regex": "^/maestros/proveedores(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/proveedores(?:/)?$"
+    },
+    {
+      "page": "/maestros/proveedores/nuevo",
+      "regex": "^/maestros/proveedores/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/proveedores/nuevo(?:/)?$"
+    },
+    {
+      "page": "/maestros/ubicaciones",
+      "regex": "^/maestros/ubicaciones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/ubicaciones(?:/)?$"
+    },
+    {
+      "page": "/maestros/ubicaciones/nuevo",
+      "regex": "^/maestros/ubicaciones/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/maestros/ubicaciones/nuevo(?:/)?$"
+    },
+    {
+      "page": "/precios/cupones",
+      "regex": "^/precios/cupones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/precios/cupones(?:/)?$"
+    },
+    {
+      "page": "/precios/cupones/nuevo",
+      "regex": "^/precios/cupones/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/precios/cupones/nuevo(?:/)?$"
+    },
+    {
+      "page": "/precios/promociones",
+      "regex": "^/precios/promociones(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/precios/promociones(?:/)?$"
+    },
+    {
+      "page": "/precios/promociones/nuevo",
+      "regex": "^/precios/promociones/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/precios/promociones/nuevo(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/bancos",
+      "regex": "^/tesoreria/bancos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tesoreria/bancos(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/bancos/nuevo",
+      "regex": "^/tesoreria/bancos/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tesoreria/bancos/nuevo(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/cajas",
+      "regex": "^/tesoreria/cajas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tesoreria/cajas(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/conceptos-caja",
+      "regex": "^/tesoreria/conceptos\\-caja(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tesoreria/conceptos\\-caja(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/medios-pago",
+      "regex": "^/tesoreria/medios\\-pago(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tesoreria/medios\\-pago(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/monedas",
+      "regex": "^/tesoreria/monedas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tesoreria/monedas(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/monedas/nuevo",
+      "regex": "^/tesoreria/monedas/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tesoreria/monedas/nuevo(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/tipo-cambio",
+      "regex": "^/tesoreria/tipo\\-cambio(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tesoreria/tipo\\-cambio(?:/)?$"
+    },
+    {
+      "page": "/tesoreria/tipo-cambio/nuevo",
+      "regex": "^/tesoreria/tipo\\-cambio/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/tesoreria/tipo\\-cambio/nuevo(?:/)?$"
+    },
+    {
+      "page": "/usuarios",
+      "regex": "^/usuarios(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/usuarios(?:/)?$"
+    },
+    {
+      "page": "/usuarios/nuevo",
+      "regex": "^/usuarios/nuevo(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/usuarios/nuevo(?:/)?$"
+    },
+    {
+      "page": "/ventas",
+      "regex": "^/ventas(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/ventas(?:/)?$"
+    },
+    {
+      "page": "/ventas/nueva",
+      "regex": "^/ventas/nueva(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/ventas/nueva(?:/)?$"
+    },
+    {
+      "page": "/ventas/pos",
+      "regex": "^/ventas/pos(?:/)?$",
+      "routeKeys": {},
+      "namedRegex": "^/ventas/pos(?:/)?$"
+    }
+  ],
+  "dataRoutes": [],
+  "rsc": {
+    "header": "rsc",
+    "varyHeader": "rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch",
+    "prefetchHeader": "next-router-prefetch",
+    "didPostponeHeader": "x-nextjs-postponed",
+    "contentTypeHeader": "text/x-component",
+    "suffix": ".rsc",
+    "prefetchSegmentHeader": "next-router-segment-prefetch",
+    "prefetchSegmentSuffix": ".segment.rsc",
+    "prefetchSegmentDirSuffix": ".segments",
+    "clientParamParsing": false,
+    "dynamicRSCPrerender": false
+  },
+  "rewriteHeaders": {
+    "pathHeader": "x-nextjs-rewritten-path",
+    "queryHeader": "x-nextjs-rewritten-query"
+  }
+}

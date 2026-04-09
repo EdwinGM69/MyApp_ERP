@@ -1,0 +1,1641 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Empresa {
+  id                       Int                             @id @default(autoincrement())
+  nombre                   String
+  nif                      String                          @unique
+  industria                String?
+  representante            String?
+  logo_url                 String?
+  email                    String?
+  telefono                 String?
+  direccion_fiscal         String?
+  sitio_web                String?
+  moneda_default           String                          @default("USD")
+  zona_horaria             String                          @default("UTC")
+  activo                   Boolean                         @default(true)
+  created_at               DateTime                        @default(now())
+  updated_at               DateTime                        @updatedAt
+  created_by               Int?
+  updated_by               Int?
+  almacenes                Almacen[]
+  bancos                   Banco[]
+  cajas                    Caja[]
+  clientes                 Cliente[]
+  cupones                  Cupon[]
+  documentosIdentificacion DocumentoIdentificacion[]
+  esquemaMateriales        EsquemaMaterial[]
+  EsquemaMaterialLog       EsquemaMaterialLog[]
+  esquemaReglas            EsquemaRegla[]
+  esquemaReglaLogs         EsquemaReglaLog[]
+  esquemasValoracion       EsquemaValoracion[]
+  esquemaValoracionLog     EsquemaValoracionLog[]
+  impuestos                Impuesto[]
+  industrias               Industria[]
+  marcas                   Marca[]
+  materiales               Material[]
+  materialCategorias       MaterialCategoria[]
+  materialCostos           MaterialCosto[]
+  materialTipos            MaterialTipo[]
+  monedas                  Moneda[]
+  movimientos              MovimientoAlmacen[]
+  paises                   Pais[]
+  promociones              Promocion[]
+  proveedores              Proveedor[]
+  sucursales               Sucursal[]
+  tiposOperacion           TipoOperacion[]
+  unidadesMedida           UnidadMedida[]
+  usuarios                 Usuario[]
+  ventas                   Venta[]
+  ubicaciones              Ubicacion[]
+  almacenUbicaciones       AlmacenUbicacion[]
+  lotes                    Lote[]
+  estados_stock            EstadoStock[]
+  stock_materiales         StockMaterial[]
+  stock_historial          StockMaterialHistorial[]
+  distribuciones           MovimientoDetalleDistribucion[]
+  tipos_cambio_fuente      TipoCambioFuente[]
+  tipos_cambio             TipoCambio[]
+  modulos                  EmpresaModulo[]
+  mediosPago               MedioPago[]
+  conceptos_caja           ConceptoCaja[]
+  tipos_condicion          TipoCondicion[]
+  condiciones              Condicion[]
+  esquemas_calculo         EsquemaCalculo[]
+  clases_pedido            ClasePedido[]
+  monedas_denominacion     MonedaDenominacion[]
+  transacciones_caja       TransaccionCaja[]
+  flujos_documentos        FlujoDocumentos[]
+}
+
+model Rol {
+  id                   Int          @id @default(autoincrement())
+  nombre               String       @unique
+  descripcion          String?
+  usuarios             Usuario[]
+  usuarios_adicionales UsuarioRol[]
+}
+
+model Usuario {
+  id                             Int                       @id @default(autoincrement())
+  empresa_id                     Int
+  rol_id                         Int
+  nombre                         String
+  email                          String
+  password_hash                  String
+  avatar_url                     String?
+  telefono                       String?
+  posicion                       String?
+  is_superadmin                  Boolean                   @default(false)
+  two_factor_enabled             Boolean                   @default(false)
+  preferencias                   Json?
+  activo                         Boolean                   @default(true)
+  recordar                       Boolean                   @default(false)
+  reset_token                    String?
+  reset_expiry                   DateTime?
+  created_at                     DateTime                  @default(now())
+  updated_at                     DateTime                  @updatedAt
+  created_by                     Int?
+  updated_by                     Int?
+  almacenes_creados              Almacen[]                 @relation("AlmacenCreador")
+  almacenes_modificados          Almacen[]                 @relation("AlmacenModificador")
+  bancos_creados                 Banco[]                   @relation("BancoCreador")
+  bancos_modificados             Banco[]                   @relation("BancoModificador")
+  documentos_creados             DocumentoIdentificacion[] @relation("DocumentoCreador")
+  documentos_modificados         DocumentoIdentificacion[] @relation("DocumentoModificador")
+  esquema_materiales_creados     EsquemaMaterial[]         @relation("EsquemaMaterialCreador")
+  EsquemaMaterialLog             EsquemaMaterialLog[]
+  reglas_creadas                 EsquemaRegla[]            @relation("ReglaCreador")
+  reglas_modificadas             EsquemaRegla[]            @relation("ReglaModificador")
+  regla_logs_creados             EsquemaReglaLog[]         @relation("ReglaLogCreador")
+  esquemas_creados               EsquemaValoracion[]       @relation("EsquemaCreador")
+  esquemas_modificados           EsquemaValoracion[]       @relation("EsquemaModificador")
+  esquema_logs_creados           EsquemaValoracionLog[]    @relation("EsquemaLogCreador")
+  industrias_creadas             Industria[]               @relation("IndustriaCreador")
+  industrias_modificadas         Industria[]               @relation("IndustriaModificador")
+  marcas_creadas                 Marca[]                   @relation("MarcaCreador")
+  marcas_modificadas             Marca[]                   @relation("MarcaModificador")
+  categorias_creadas             MaterialCategoria[]       @relation("CategoriaCreador")
+  categorias_modificadas         MaterialCategoria[]       @relation("CategoriaModificador")
+  componentes_creados            MaterialComponente[]      @relation("ComponenteCreador")
+  componentes_modificados        MaterialComponente[]      @relation("ComponenteModificador")
+  material_costos_aprobados      MaterialCosto[]           @relation("MaterialCostoAprobador")
+  material_costos_creados        MaterialCosto[]           @relation("MaterialCostoCreador")
+  presentaciones_creadas         MaterialPresentacion[]    @relation("PresentacionCreador")
+  presentaciones_modificadas     MaterialPresentacion[]    @relation("PresentacionModificador")
+  sustitutos_creados             MaterialSustituto[]       @relation("SustitutoCreador")
+  sustitutos_modificados         MaterialSustituto[]       @relation("SustitutoModificador")
+  tipos_creados                  MaterialTipo[]            @relation("TipoCreador")
+  tipos_modificados              MaterialTipo[]            @relation("TipoModificador")
+  monedas_creadas                Moneda[]                  @relation("MonedaCreador")
+  monedas_modificadas            Moneda[]                  @relation("MonedaModificador")
+  paises_creados                 Pais[]                    @relation("PaisCreador")
+  paises_modificados             Pais[]                    @relation("PaisModificador")
+  proveedores_creados            Proveedor[]               @relation("ProveedorCreador")
+  proveedores_modificados        Proveedor[]               @relation("ProveedorModificador")
+  sucursales_creadas             Sucursal[]                @relation("SucursalCreador")
+  sucursales_modificadas         Sucursal[]                @relation("SucursalModificador")
+  sucursal_almacen_creados       SucursalAlmacen[]         @relation("SucursalAlmacenCreador")
+  sucursal_almacen_modificados   SucursalAlmacen[]         @relation("SucursalAlmacenModificador")
+  sucursal_caja_creados          SucursalCaja[]            @relation("SucursalCajaCreador")
+  sucursal_caja_modificados      SucursalCaja[]            @relation("SucursalCajaModificador")
+  tipos_cuenta_banco_creados     TipoCuentaBanco[]         @relation("TipoCuentaBancoCreador")
+  tipos_cuenta_banco_modificados TipoCuentaBanco[]         @relation("TipoCuentaBancoModificador")
+  tipos_operacion_creados        TipoOperacion[]           @relation("TipoOperacionCreador")
+  tipos_operacion_modificados    TipoOperacion[]           @relation("TipoOperacionModificador")
+  medios_pago_creados            MedioPago[]               @relation("MedioPagoCreador")
+  medios_pago_modificados        MedioPago[]               @relation("MedioPagoModificador")
+  conceptos_caja_creados         ConceptoCaja[]            @relation("ConceptoCajaCreador")
+  conceptos_caja_modificados     ConceptoCaja[]            @relation("ConceptoCajaModificador")
+  unidades_creadas               UnidadMedida[]            @relation("UnidadCreador")
+  unidades_modificadas           UnidadMedida[]            @relation("UnidadModificador")
+  ubicaciones_creadas            Ubicacion[]               @relation("UbicacionCreador")
+  ubicaciones_modificadas        Ubicacion[]               @relation("UbicacionModificador")
+  almacen_ubicacion_creado       AlmacenUbicacion[]        @relation("AlmacenUbicacionCreador")
+  almacen_ubicacion_modificado   AlmacenUbicacion[]        @relation("AlmacenUbicacionModificador")
+  tipo_cambio_fuente_creados     TipoCambioFuente[]        @relation("TipoCambioFuenteCreador")
+  tipo_cambio_fuente_modificados TipoCambioFuente[]        @relation("TipoCambioFuenteModificador")
+  tipo_cambio_creados            TipoCambio[]              @relation("TipoCambioCreador")
+  tipo_cambio_modificados        TipoCambio[]              @relation("TipoCambioModificador")
+  empresa_modulos_creados        EmpresaModulo[]           @relation("EmpresaModuloCreador")
+  empresa                        Empresa                   @relation(fields: [empresa_id], references: [id])
+  rol                            Rol                       @relation(fields: [rol_id], references: [id])
+  roles_adicionales              UsuarioRol[]
+  tipos_condicion_creados        TipoCondicion[]           @relation("TipoCondicionCreador")
+  tipos_condicion_modificados    TipoCondicion[]           @relation("TipoCondicionModificador")
+  condiciones_creadas            Condicion[]               @relation("CondicionCreador")
+  condiciones_modificadas        Condicion[]               @relation("CondicionModificador")
+  esquemas_calculo_creados       EsquemaCalculo[]          @relation("EsquemaCalculoCreador")
+  esquemas_calculo_modificados   EsquemaCalculo[]          @relation("EsquemaCalculoModificador")
+  Variables_creadas              EsquemaCalculoVariables[] @relation("EsquemaCalculoVarCreador")
+  Variables_modificadas          EsquemaCalculoVariables[] @relation("EsquemaCalculoVarModificador")
+  pasos_creados                  EsquemaCalculoPasos[]     @relation("EsquemaCalculoPasoCreador")
+  pasos_modificados              EsquemaCalculoPasos[]     @relation("EsquemaCalculoPasoModificador")
+  clases_pedido_creados          ClasePedido[]             @relation("ClasePedidoCreador")
+  clases_pedido_modificados      ClasePedido[]             @relation("ClasePedidoModificador")
+  caja_gestion                   CajaGestion[]             @relation("CajaApertura")
+  caja_arqueos                   CajaArqueo[]              @relation("UsuarioArqueo")
+  transacciones_creadas          TransaccionCaja[]         @relation("TransaccionCreador")
+  transacciones_modificadas      TransaccionCaja[]         @relation("TransaccionModificador")
+  flujos_documentos_creados      FlujoDocumentos[]         @relation("FlujoDocumentosCreador")
+
+  @@unique([empresa_id, email])
+}
+
+model UsuarioRol {
+  id         Int      @id @default(autoincrement())
+  usuario_id Int
+  rol_id     Int
+  created_at DateTime @default(now())
+  rol        Rol      @relation(fields: [rol_id], references: [id], onDelete: Cascade)
+  usuario    Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+
+  @@unique([usuario_id, rol_id])
+}
+
+model Impuesto {
+  id          Int        @id @default(autoincrement())
+  empresa_id  Int
+  codigo      String
+  descripcion String
+  porcentaje  Decimal    @db.Decimal(5, 2)
+  tipo        String
+  activo      Boolean    @default(true)
+  created_at  DateTime   @default(now())
+  updated_at  DateTime   @updatedAt
+  created_by  Int?
+  updated_by  Int?
+  empresa     Empresa    @relation(fields: [empresa_id], references: [id])
+  materiales  Material[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model Material {
+  id                        Int                        @id @default(autoincrement())
+  empresa_id                Int
+  codigo                    String
+  descripcion               String
+  unidad_medida             String?
+  precio_costo              Decimal                    @default(0) @db.Decimal(12, 2)
+  precio_venta              Decimal                    @default(0) @db.Decimal(12, 2)
+  stock_actual              Decimal                    @default(0) @db.Decimal(12, 3)
+  stock_minimo              Decimal                    @default(0) @db.Decimal(12, 3)
+  imagen_url                String?
+  impuesto_id               Int?
+  activo                    Boolean                    @default(true)
+  created_at                DateTime                   @default(now())
+  updated_at                DateTime                   @updatedAt
+  created_by                Int?
+  updated_by                Int?
+  codigo_mascara            String?
+  codigo_barras             String?
+  nivel_rotacion            String?
+  stock_maximo              Decimal?                   @db.Decimal(12, 3)
+  perecible                 Boolean                    @default(false)
+  compuesto                 Boolean                    @default(false)
+  fecha_vencimiento         DateTime?
+  marca_id                  Int?
+  moneda_precio_compra      String                     @default("USD")
+  moneda_costo_promedio     String                     @default("USD")
+  costo_promedio            Decimal?                   @db.Decimal(12, 2)
+  proveedor_id              Int?
+  categoria_id              Int?
+  tipo_id                   Int?
+  unidad_medida_id          Int?
+  moneda_costo_promedio_id  Int?
+  moneda_precio_compra_id   Int?
+  esquema_id                Int?
+  stock_lote                Boolean?                   @default(false)
+  ubicacion_default_id      Int?
+  cupon_detalles            CuponDetalle[]
+  esquemas                  EsquemaMaterial[]
+  EsquemaMaterialLog        EsquemaMaterialLog[]
+  categoria_rel             MaterialCategoria?         @relation(fields: [categoria_id], references: [id])
+  empresa                   Empresa                    @relation(fields: [empresa_id], references: [id])
+  EsquemaValoracion         EsquemaValoracion?         @relation(fields: [esquema_id], references: [id])
+  impuesto                  Impuesto?                  @relation(fields: [impuesto_id], references: [id])
+  marca                     Marca?                     @relation(fields: [marca_id], references: [id])
+  moneda_costo_promedio_rel Moneda?                    @relation("MonedaCostoPromedio", fields: [moneda_costo_promedio_id], references: [id])
+  moneda_precio_compra_rel  Moneda?                    @relation("MonedaPrecioCompra", fields: [moneda_precio_compra_id], references: [id])
+  proveedor                 Proveedor?                 @relation(fields: [proveedor_id], references: [id])
+  tipo_rel                  MaterialTipo?              @relation(fields: [tipo_id], references: [id])
+  unidad_medida_rel         UnidadMedida?              @relation(fields: [unidad_medida_id], references: [id])
+  usado_en                  MaterialComponente[]       @relation("MaterialHijo")
+  componentes               MaterialComponente[]       @relation("MaterialPadre")
+  costos                    MaterialCosto[]
+  presentaciones            MaterialPresentacion[]
+  sustitutos                MaterialSustituto[]        @relation("MaterialPrincipal")
+  es_sustituto_de           MaterialSustituto[]        @relation("MaterialSustituto")
+  mov_detalles              MovimientoAlmacenDetalle[]
+  promo_detalles            PromocionDetalle[]
+  venta_detalles            VentaDetalle[]
+  lotes                     Lote[]
+  stock_materiales          StockMaterial[]
+  stock_historial           StockMaterialHistorial[]
+  ubicacion_default         Ubicacion?                 @relation(fields: [ubicacion_default_id], references: [id])
+  condiciones               Condicion[]
+
+  @@unique([empresa_id, codigo])
+  @@index([esquema_id])
+}
+
+model MaterialSustituto {
+  id                  Int      @id @default(autoincrement())
+  material_id         Int
+  sustituto_id        Int
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  usuario_creador     Usuario? @relation("SustitutoCreador", fields: [created_by], references: [id])
+  material            Material @relation("MaterialPrincipal", fields: [material_id], references: [id])
+  sustituto           Material @relation("MaterialSustituto", fields: [sustituto_id], references: [id])
+  usuario_modificador Usuario? @relation("SustitutoModificador", fields: [updated_by], references: [id])
+
+  @@unique([material_id, sustituto_id])
+}
+
+model MaterialPresentacion {
+  id                  Int      @id @default(autoincrement())
+  material_id         Int
+  codigo              String
+  descripcion         String
+  unidad              String
+  activo              Boolean  @default(true)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  usuario_creador     Usuario? @relation("PresentacionCreador", fields: [created_by], references: [id])
+  material            Material @relation(fields: [material_id], references: [id], onDelete: Cascade)
+  usuario_modificador Usuario? @relation("PresentacionModificador", fields: [updated_by], references: [id])
+
+  @@unique([material_id, codigo])
+}
+
+model MaterialComponente {
+  id                  Int      @id @default(autoincrement())
+  material_id         Int
+  componente_id       Int
+  cantidad            Decimal  @db.Decimal(12, 4)
+  unidad_medida_id    Int
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  componente          Material @relation("MaterialHijo", fields: [componente_id], references: [id])
+  usuario_creador     Usuario? @relation("ComponenteCreador", fields: [created_by], references: [id])
+  material            Material @relation("MaterialPadre", fields: [material_id], references: [id], onDelete: Cascade)
+  usuario_modificador Usuario? @relation("ComponenteModificador", fields: [updated_by], references: [id])
+  unidad_medida       UnidadMedida @relation(fields: [unidad_medida_id], references: [id])
+
+  @@unique([material_id, componente_id])
+}
+
+model MaterialCosto {
+  id                Int               @id @default(autoincrement())
+  empresa_id        Int
+  material_id       Int
+  moneda_id         Int
+  costo             Decimal           @db.Decimal(12, 2)
+  fecha_desde       DateTime
+  fecha_hasta       DateTime?
+  created_at        DateTime          @default(now())
+  created_by        Int?
+  aproved_at        DateTime?
+  aproved_by        Int?
+  esquema_id        Int
+  usuario_aprobador Usuario?          @relation("MaterialCostoAprobador", fields: [aproved_by], references: [id])
+  usuario_creador   Usuario?          @relation("MaterialCostoCreador", fields: [created_by], references: [id])
+  empresa           Empresa           @relation(fields: [empresa_id], references: [id])
+  esquema           EsquemaValoracion @relation(fields: [esquema_id], references: [id])
+  material          Material          @relation(fields: [material_id], references: [id], onDelete: Cascade)
+  moneda            Moneda            @relation(fields: [moneda_id], references: [id])
+
+  @@index([empresa_id, material_id])
+  @@index([fecha_desde, fecha_hasta])
+}
+
+model EsquemaValoracion {
+  id                                                                           Int                        @id @default(autoincrement())
+  empresa_id                                                                   Int
+  codigo                                                                       String
+  nombre                                                                       String
+  descripcion                                                                  String?
+  metodo_costo                                                                 String?
+  decimal_precision                                                            Int                        @default(2)
+  requiere_aprobacion                                                          Boolean                    @default(false)
+  activo                                                                       Boolean                    @default(true)
+  created_at                                                                   DateTime                   @default(now())
+  updated_at                                                                   DateTime                   @updatedAt
+  created_by                                                                   Int?
+  updated_by                                                                   Int?
+  materiales                                                                   EsquemaMaterial[]
+  EsquemaMaterialLog_EsquemaMaterialLog_esquema_anterior_idToEsquemaValoracion EsquemaMaterialLog[]       @relation("EsquemaMaterialLog_esquema_anterior_idToEsquemaValoracion")
+  EsquemaMaterialLog_EsquemaMaterialLog_esquema_nuevo_idToEsquemaValoracion    EsquemaMaterialLog[]       @relation("EsquemaMaterialLog_esquema_nuevo_idToEsquemaValoracion")
+  reglas                                                                       EsquemaRegla[]
+  usuario_creador                                                              Usuario?                   @relation("EsquemaCreador", fields: [created_by], references: [id])
+  empresa                                                                      Empresa                    @relation(fields: [empresa_id], references: [id])
+  usuario_modificador                                                          Usuario?                   @relation("EsquemaModificador", fields: [updated_by], references: [id])
+  logs                                                                         EsquemaValoracionLog[]
+  Material                                                                     Material[]
+  material_costos                                                              MaterialCosto[]
+  movimiento_detalles                                                          MovimientoAlmacenDetalle[] @relation("EsquemaMovimientos")
+
+  @@unique([empresa_id, codigo])
+}
+
+model EsquemaRegla {
+  id                  Int               @id @default(autoincrement())
+  empresa_id          Int
+  esquema_id          Int
+  tipo_regla          String
+  umbral_valor        String?
+  accion              String?
+  orden               Int               @default(0)
+  activo              Boolean           @default(true)
+  created_at          DateTime          @default(now())
+  updated_at          DateTime          @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  usuario_creador     Usuario?          @relation("ReglaCreador", fields: [created_by], references: [id])
+  empresa             Empresa           @relation(fields: [empresa_id], references: [id])
+  esquema             EsquemaValoracion @relation(fields: [esquema_id], references: [id], onDelete: Cascade)
+  usuario_modificador Usuario?          @relation("ReglaModificador", fields: [updated_by], references: [id])
+  logs                EsquemaReglaLog[]
+}
+
+model EsquemaValoracionLog {
+  id               Int               @id @default(autoincrement())
+  empresa_id       Int
+  esquema_id       Int
+  campo_modificado String?
+  valor_anterior   String?
+  valor_nuevo      String?
+  motivo           String?
+  created_at       DateTime          @default(now())
+  created_by       Int?
+  usuario_creador  Usuario?          @relation("EsquemaLogCreador", fields: [created_by], references: [id])
+  empresa          Empresa           @relation(fields: [empresa_id], references: [id])
+  esquema          EsquemaValoracion @relation(fields: [esquema_id], references: [id], onDelete: Cascade)
+}
+
+model EsquemaReglaLog {
+  id              Int          @id @default(autoincrement())
+  empresa_id      Int
+  regla_id        Int
+  accion          String
+  snapshot_log    Json
+  created_at      DateTime     @default(now())
+  created_by      Int?
+  usuario_creador Usuario?     @relation("ReglaLogCreador", fields: [created_by], references: [id])
+  empresa         Empresa      @relation(fields: [empresa_id], references: [id])
+  regla           EsquemaRegla @relation(fields: [regla_id], references: [id], onDelete: Cascade)
+}
+
+model EsquemaMaterial {
+  id              Int               @id @default(autoincrement())
+  empresa_id      Int
+  esquema_id      Int
+  material_id     Int
+  activo          Int               @default(1)
+  created_at      DateTime          @default(now())
+  created_by      Int?
+  usuario_creador Usuario?          @relation("EsquemaMaterialCreador", fields: [created_by], references: [id])
+  empresa         Empresa           @relation(fields: [empresa_id], references: [id])
+  esquema         EsquemaValoracion @relation(fields: [esquema_id], references: [id], onDelete: Cascade)
+  material        Material          @relation(fields: [material_id], references: [id], onDelete: Cascade)
+
+  @@unique([esquema_id, material_id])
+}
+
+model Cliente {
+  id          Int                 @id @default(autoincrement())
+  empresa_id  Int
+  codigo      String
+  tipo        String              @default("natural")
+  nombre      String
+  nombres_completos String?
+  apellidos_completos String?
+  nif         String?
+  email       String?
+  telefono    String?
+  direccion   String?
+  contacto    String?
+  activo      Boolean             @default(true)
+  created_at  DateTime            @default(now())
+  updated_at  DateTime            @updatedAt
+  created_by  Int?
+  updated_by  Int?
+  empresa     Empresa             @relation(fields: [empresa_id], references: [id])
+  movimientos MovimientoAlmacen[]
+  ventas      Venta[]
+  transacciones TransaccionCaja[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model Proveedor {
+  id                  Int                      @id @default(autoincrement())
+  empresa_id          Int
+  codigo              String
+  tipo                String                   @default("empresa")
+  tipo_proveedor      String                   @default("Nacional")
+  nombre              String
+  categoria           String?
+  tipo_nif            String?
+  nif                 String?
+  email               String?
+  telefono            String?
+  direccion           String?
+  banco               String?
+  tipo_cuenta         String?
+  banco_cuenta        String?
+  banco_swift         String?
+  banco_titular       String?
+  activo              Boolean                  @default(true)
+  created_at          DateTime                 @default(now())
+  updated_at          DateTime                 @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  industria_id        Int?
+  tipo_nif_id         Int?
+  banco_id            Int?
+  tipo_cuenta_id      Int?
+  materiales          Material[]
+  movimientos         MovimientoAlmacen[]
+  banco_entidad       Banco?                   @relation(fields: [banco_id], references: [id])
+  usuario_creador     Usuario?                 @relation("ProveedorCreador", fields: [created_by], references: [id])
+  empresa             Empresa                  @relation(fields: [empresa_id], references: [id])
+  industria           Industria?               @relation(fields: [industria_id], references: [id])
+  tipo_cuenta_rel     TipoCuentaBanco?         @relation(fields: [tipo_cuenta_id], references: [id])
+  documento_nif       DocumentoIdentificacion? @relation(fields: [tipo_nif_id], references: [id])
+  usuario_modificador Usuario?                 @relation("ProveedorModificador", fields: [updated_by], references: [id])
+  lotes               Lote[]
+  transacciones       TransaccionCaja[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model Lote {
+  id                Int       @id @default(autoincrement())
+  empresa_id        Int
+  material_id       Int
+  numero_lote       String
+  fecha_fabricacion DateTime?
+  fecha_expiracion  DateTime?
+  proveedor_id      Int?
+  activo            Boolean   @default(true)
+  created_at        DateTime  @default(now())
+  created_by        Int
+
+  empresa          Empresa                         @relation(fields: [empresa_id], references: [id])
+  material         Material                        @relation(fields: [material_id], references: [id])
+  proveedor        Proveedor?                      @relation(fields: [proveedor_id], references: [id])
+  movimientos      MovimientoAlmacenDetalle[]
+
+  @@unique([empresa_id, material_id, numero_lote])
+}
+
+model EstadoStock {
+  id          Int       @id @default(autoincrement())
+  empresa_id  Int
+  codigo      String
+  descripcion String
+  activo      Boolean   @default(true)
+  created_at  DateTime  @default(now())
+  updated_at  DateTime? @updatedAt
+  created_by  Int
+  updated_by  Int?
+
+  empresa          Empresa                    @relation(fields: [empresa_id], references: [id])
+  movimientos      MovimientoAlmacenDetalle[]
+  stock_materiales StockMaterial[]
+  stock_historial  StockMaterialHistorial[]
+  tipos_operacion  TipoOperacion[]
+  clases_pedido    ClasePedido[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model Cupon {
+  id            Int            @id @default(autoincrement())
+  empresa_id    Int
+  codigo_cupon  String
+  codigo        String
+  tipo          String
+  valor         Decimal        @db.Decimal(10, 2)
+  moneda        String         @default("USD")
+  limite_uso    Int?
+  usos_actuales Int            @default(0)
+  fecha_inicio  DateTime
+  fecha_fin     DateTime?
+  activo        Boolean        @default(true)
+  created_at    DateTime       @default(now())
+  updated_at    DateTime       @updatedAt
+  created_by    Int?
+  updated_by    Int?
+  empresa       Empresa        @relation(fields: [empresa_id], references: [id])
+  detalles      CuponDetalle[]
+
+  @@unique([empresa_id, codigo_cupon])
+  @@unique([empresa_id, codigo])
+}
+
+model CuponDetalle {
+  id          Int      @id @default(autoincrement())
+  cupon_id    Int
+  material_id Int
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  created_by  Int?
+  updated_by  Int?
+  cupon       Cupon    @relation(fields: [cupon_id], references: [id])
+  material    Material @relation(fields: [material_id], references: [id])
+}
+
+model Promocion {
+  id               Int                @id @default(autoincrement())
+  empresa_id       Int
+  codigo_promocion String
+  nombre           String
+  descripcion      String?
+  tipo             String
+  fecha_inicio     DateTime
+  fecha_fin        DateTime?
+  activo           Boolean            @default(true)
+  created_at       DateTime           @default(now())
+  updated_at       DateTime           @updatedAt
+  created_by       Int?
+  updated_by       Int?
+  empresa          Empresa            @relation(fields: [empresa_id], references: [id])
+  detalles         PromocionDetalle[]
+
+  @@unique([empresa_id, codigo_promocion])
+}
+
+model PromocionDetalle {
+  id             Int       @id @default(autoincrement())
+  promocion_id   Int
+  material_id    Int
+  cantidad       Decimal   @default(1) @db.Decimal(10, 3)
+  precio_combo   Decimal?  @db.Decimal(12, 2)
+  tipo_promocion String?
+  tipo_descuento String?
+  valor          Decimal?  @db.Decimal(12, 2)
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  created_by     Int?
+  updated_by     Int?
+  material       Material  @relation(fields: [material_id], references: [id])
+  promocion      Promocion @relation(fields: [promocion_id], references: [id])
+}
+
+model Venta {
+  id              Int            @id @default(autoincrement())
+  empresa_id      Int
+  sucursal_id     Int
+  clase_pedido_id Int
+  numero_pedido   String
+  comprobante     String?
+  cliente_id      Int?
+  caja_id         Int?
+  estado          String         @default("procesada")
+  moneda_id       Int
+  subtotal        Decimal        @default(0) @db.Decimal(12, 2)
+  impuesto        Decimal        @default(0) @db.Decimal(12, 2)
+  descuento       Decimal        @default(0) @db.Decimal(12, 2)
+  total           Decimal        @default(0) @db.Decimal(12, 2)
+  metodo_pago     String?
+  fecha_venta     DateTime       @default(now())
+  observaciones   String?
+  created_at      DateTime       @default(now())
+  updated_at      DateTime       @updatedAt
+  created_by      Int?
+  updated_by      Int?
+  cliente         Cliente?       @relation(fields: [cliente_id], references: [id])
+  empresa         Empresa        @relation(fields: [empresa_id], references: [id])
+  sucursal        Sucursal       @relation(fields: [sucursal_id], references: [id])
+  moneda          Moneda         @relation(fields: [moneda_id], references: [id])
+  clase_pedido    ClasePedido    @relation(fields: [clase_pedido_id], references: [id])
+  detalles        VentaDetalle[]
+
+  @@unique([empresa_id, numero_pedido])
+}
+
+model VentaDetalle {
+  id                Int      @id @default(autoincrement())
+  venta_id          Int
+  material_id       Int
+  cantidad          Decimal  @db.Decimal(10, 3)
+  unidad_medida_id  Int
+  precio_unit       Decimal  @db.Decimal(12, 2)
+  descuento         Decimal  @default(0) @db.Decimal(12, 2)
+  impuesto          Decimal  @default(0) @db.Decimal(12, 2)
+  subtotal          Decimal  @default(0) @db.Decimal(12, 2)
+  almacen_id        Int
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  created_by        Int?
+  updated_by        Int?
+  material          Material @relation(fields: [material_id], references: [id])
+  venta             Venta    @relation(fields: [venta_id], references: [id])
+  unidad_medida     UnidadMedida @relation(fields: [unidad_medida_id], references: [id])
+  almacen           Almacen  @relation(fields: [almacen_id], references: [id])
+  condiciones       VentaDetalleCondicion[]
+}
+
+model VentaDetalleCondicion {
+  id                Int      @id @default(autoincrement())
+  detalle_id        Int
+  esquema_id        Int
+  condicion_id      Int
+  valor_condicion   Decimal  @default(0) @db.Decimal(12, 2)
+  descripcion_corta String
+  simbolo           String
+  tipo              String
+  importe           Decimal  @default(0) @db.Decimal(12, 2)
+  created_at        DateTime @default(now())
+  created_by        Int
+  venta_detalle     VentaDetalle @relation(fields: [detalle_id], references: [id])
+  esquema_calculo   EsquemaCalculo @relation(fields: [esquema_id], references: [id])
+  tipo_condicion    TipoCondicion @relation(fields: [condicion_id], references: [id])
+}
+
+model Caja {
+  id                    Int               @id @default(autoincrement())
+  codigo                String
+  descripcion           String
+  detalle_denominacion  Boolean           @default(false)
+  activo                Boolean           @default(true)
+  empresa_id            Int
+  created_at            DateTime          @default(now())
+  updated_at            DateTime          @updatedAt
+  created_by            Int?
+  updated_by            Int?
+  empresa               Empresa           @relation(fields: [empresa_id], references: [id])
+  transacciones         TransaccionCaja[]
+  sucursales_vinculadas SucursalCaja[]
+  caja_gestion          CajaGestion[]
+}
+
+model CajaGestion {
+  id                  Int      @id @default(autoincrement())
+  sucursal_id         Int
+  caja_id             Int
+  moneda_id           Int
+  estado              String   @default("Cerrada") // Aperturada / Cerrada
+  fecha_apertura      DateTime
+  usuario_apertura_id Int
+  monto_apertura      Decimal  @db.Decimal(12, 2)
+  fecha_cierre        DateTime?
+  usuario_cierre_id   Int?
+  monto_cierre        Decimal? @db.Decimal(12, 2)
+
+  sucursal         Sucursal                  @relation(fields: [sucursal_id], references: [id])
+  caja             Caja                      @relation(fields: [caja_id], references: [id])
+  moneda           Moneda                    @relation(fields: [moneda_id], references: [id])
+  usuario_apertura Usuario                   @relation("CajaApertura", fields: [usuario_apertura_id], references: [id])
+  arqueos          CajaArqueo[]
+  denominaciones   CajaGestionDenominacion[]
+  transacciones    TransaccionCaja[]         @relation("SesionTransaccion")
+}
+
+model CajaGestionDenominacion {
+  id              Int     @id @default(autoincrement())
+  gestion_id      Int
+  denominacion_id Int
+  cantidad        Int
+  subtotal        Decimal @db.Decimal(12, 2)
+
+  gestion       CajaGestion         @relation(fields: [gestion_id], references: [id], onDelete: Cascade)
+  denominacion  MonedaDenominacion  @relation(fields: [denominacion_id], references: [id])
+
+  @@unique([gestion_id, denominacion_id])
+}
+
+model CajaArqueo {
+  id              Int      @id @default(autoincrement())
+  gestion_id      Int
+  usuario_id      Int
+  fecha           DateTime
+  saldo_esperado  Decimal  @db.Decimal(12, 2)
+  saldo_contado   Decimal  @db.Decimal(12, 2)
+  diferencia      Decimal  @db.Decimal(12, 2)
+  observaciones   String?
+  estado          String   @default("P") // P - Pendiente / A - Aprobado
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+  created_by      Int?
+  updated_by      Int?
+
+  gestion             CajaGestion @relation(fields: [gestion_id], references: [id], onDelete: Cascade)
+  usuario             Usuario     @relation("UsuarioArqueo", fields: [usuario_id], references: [id])
+}
+
+model TransaccionCaja {
+  id                   Int               @id @default(autoincrement())
+  empresa_id           Int
+  sucursal_id          Int
+  caja_id              Int
+  concepto_id          Int
+  numero_documento     String?
+  fecha_documento      DateTime
+  cliente_id           Int?
+  proveedor_id         Int?
+  persona              String?
+  motivo               String?
+  importe              Decimal           @db.Decimal(12, 2)
+  moneda_id            Int
+  estado               String            @default("P") // P - Procesado / A - Anulado
+  sesion_caja_id       Int
+  transaccion_anula_id Int?
+  motivo_anulacion     String?
+  created_at           DateTime          @default(now())
+  updated_at           DateTime          @updatedAt
+  created_by           Int?
+  updated_by           Int?
+
+  empresa            Empresa           @relation(fields: [empresa_id], references: [id])
+  sucursal           Sucursal          @relation(fields: [sucursal_id], references: [id])
+  caja               Caja              @relation(fields: [caja_id], references: [id])
+  concepto           ConceptoCaja      @relation(fields: [concepto_id], references: [id])
+  moneda             Moneda            @relation(fields: [moneda_id], references: [id])
+  sesion             CajaGestion      @relation("SesionTransaccion", fields: [sesion_caja_id], references: [id])
+  transaccion_anula  TransaccionCaja?  @relation("Anulacion", fields: [transaccion_anula_id], references: [id])
+  anulaciones        TransaccionCaja[] @relation("Anulacion")
+  pagos              TransaccionCajaPago[]
+  cliente            Cliente?           @relation(fields: [cliente_id], references: [id])
+  proveedor          Proveedor?         @relation(fields: [proveedor_id], references: [id])
+  usuario_creador    Usuario?           @relation("TransaccionCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?          @relation("TransaccionModificador", fields: [updated_by], references: [id])
+}
+
+model TransaccionCajaPago {
+  id               Int      @id @default(autoincrement())
+  transaccion_id   Int
+  medio_pago_id    Int
+  importe          Decimal  @db.Decimal(12, 2)
+  referencia_banco String?
+
+  transaccion    TransaccionCaja            @relation(fields: [transaccion_id], references: [id], onDelete: Cascade)
+  medio_pago     MedioPago                  @relation(fields: [medio_pago_id], references: [id])
+  denominaciones TransaccionPagoDenominacion[]
+}
+
+model TransaccionPagoDenominacion {
+  id              Int     @id @default(autoincrement())
+  pago_id         Int
+  denominacion_id Int
+  cantidad        Int
+  subtotal        Decimal @db.Decimal(12, 2)
+
+  pago         TransaccionCajaPago @relation(fields: [pago_id], references: [id], onDelete: Cascade)
+  denominacion MonedaDenominacion  @relation(fields: [denominacion_id], references: [id])
+}
+
+model MovimientoAlmacen {
+  id                Int                        @id @default(autoincrement())
+  empresa_id        Int
+  numero_mov        String
+  documento         String?
+  proveedor_id      Int?
+  referencia        String?
+  fecha             DateTime                   @default(now())
+  observaciones     String?
+  created_at        DateTime                   @default(now())
+  updated_at        DateTime                   @updatedAt
+  created_by        Int?
+  updated_by        Int?
+  cliente_id        Int?
+  sucursal_id       Int                        @default(1)
+  tipo_operacion_id Int                        @default(1)
+  numero_pedido     String?
+  cliente           Cliente?                   @relation(fields: [cliente_id], references: [id])
+  empresa           Empresa                    @relation(fields: [empresa_id], references: [id])
+  proveedor         Proveedor?                 @relation(fields: [proveedor_id], references: [id])
+  sucursal          Sucursal                   @relation(fields: [sucursal_id], references: [id])
+  tipo_operacion    TipoOperacion              @relation(fields: [tipo_operacion_id], references: [id])
+  detalles          MovimientoAlmacenDetalle[]
+
+  @@unique([empresa_id, numero_mov])
+}
+
+model MovimientoAlmacenDetalle {
+  id              Int                             @id @default(autoincrement())
+  movimiento_id   Int
+  material_id     Int
+  cantidad        Decimal                         @db.Decimal(12, 3)
+  costo_unit      Decimal?                        @db.Decimal(12, 2)
+  created_at      DateTime                        @default(now())
+  updated_at      DateTime                        @updatedAt
+  created_by      Int?
+  updated_by      Int?
+  almacen_dst_id  Int?
+  almacen_id      Int                             @default(1)
+  linea           String
+  numero_lote     String?
+  sucursal_dst_id Int?
+  sucursal_id     Int                             @default(1)
+  esquema_id      Int?
+  estado_stock_id Int?
+  lote_id         Int?
+  lote            Lote?                           @relation(fields: [lote_id], references: [id])
+  estado_stock    EstadoStock?                    @relation(fields: [estado_stock_id], references: [id])
+  esquema         EsquemaValoracion?              @relation("EsquemaMovimientos", fields: [esquema_id], references: [id])
+  material        Material                        @relation(fields: [material_id], references: [id])
+  movimiento      MovimientoAlmacen               @relation(fields: [movimiento_id], references: [id])
+  distribuciones  MovimientoDetalleDistribucion[]
+
+  @@index([esquema_id])
+}
+
+model MovimientoDetalleDistribucion {
+  id               Int       @id @default(autoincrement())
+  empresa_id       Int
+  linea_detalle_id Int
+  fecha_expiracion DateTime?
+  ubicacion_id     Int
+  numero_lote      String?
+  cantidad         Decimal   @db.Decimal(12, 3)
+  activo           Boolean   @default(true)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  created_by       Int?
+  updated_by       Int?
+
+  empresa       Empresa                  @relation(fields: [empresa_id], references: [id])
+  linea_detalle MovimientoAlmacenDetalle @relation(fields: [linea_detalle_id], references: [id])
+  ubicacion     Ubicacion                @relation(fields: [ubicacion_id], references: [id])
+
+  @@index([linea_detalle_id])
+  @@index([empresa_id])
+}
+
+model Marca {
+  id                  Int        @id @default(autoincrement())
+  empresa_id          Int
+  codigo              String
+  descripcion         String
+  abreviatura         String?
+  activo              Boolean    @default(true)
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  usuario_creador     Usuario?   @relation("MarcaCreador", fields: [created_by], references: [id])
+  empresa             Empresa    @relation(fields: [empresa_id], references: [id])
+  usuario_modificador Usuario?   @relation("MarcaModificador", fields: [updated_by], references: [id])
+  materiales          Material[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model MaterialCategoria {
+  id                  Int        @id @default(autoincrement())
+  empresa_id          Int
+  codigo              String
+  descripcion         String
+  activo              Boolean    @default(true)
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  materiales          Material[]
+  usuario_creador     Usuario?   @relation("CategoriaCreador", fields: [created_by], references: [id])
+  empresa             Empresa    @relation(fields: [empresa_id], references: [id])
+  usuario_modificador Usuario?   @relation("CategoriaModificador", fields: [updated_by], references: [id])
+
+  @@unique([empresa_id, codigo])
+}
+
+model MaterialTipo {
+  id                  Int        @id @default(autoincrement())
+  empresa_id          Int
+  codigo              String
+  descripcion         String
+  activo              Boolean    @default(true)
+  created_at          DateTime   @default(now())
+  updated_at          DateTime   @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  materiales          Material[]
+  usuario_creador     Usuario?   @relation("TipoCreador", fields: [created_by], references: [id])
+  empresa             Empresa    @relation(fields: [empresa_id], references: [id])
+  usuario_modificador Usuario?   @relation("TipoModificador", fields: [updated_by], references: [id])
+
+  @@unique([empresa_id, codigo])
+}
+
+model UnidadMedida {
+  id                  Int             @id @default(autoincrement())
+  empresa_id          Int
+  descripcion         String
+  abreviatura         String
+  unidad_multiplo     Int             @default(1)
+  activo              Boolean         @default(true)
+  created_at          DateTime        @default(now())
+  updated_at          DateTime        @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  materiales          Material[]
+  stock_materiales    StockMaterial[]
+  stock_historial     StockMaterialHistorial[]
+  componentes         MaterialComponente[]
+  usuario_creador     Usuario?        @relation("UnidadCreador", fields: [created_by], references: [id])
+  empresa             Empresa         @relation(fields: [empresa_id], references: [id])
+  usuario_modificador Usuario?        @relation("UnidadModificador", fields: [updated_by], references: [id])
+  venta_detalles      VentaDetalle[]
+
+  @@unique([empresa_id, abreviatura])
+}
+
+model Moneda {
+  id                        Int             @id @default(autoincrement())
+  empresa_id                Int
+  descripcion               String
+  abreviatura               String
+  simbolo                   String
+  activo                    Boolean         @default(true)
+  created_at                DateTime        @default(now())
+  updated_at                DateTime        @updatedAt
+  created_by                Int?
+  updated_by                Int?
+  decimal_redondeo          Int             @default(0)
+  materiales_costo_promedio Material[]      @relation("MonedaCostoPromedio")
+  materiales_precio_compra  Material[]      @relation("MonedaPrecioCompra")
+  material_costos           MaterialCosto[]
+  usuario_creador           Usuario?        @relation("MonedaCreador", fields: [created_by], references: [id])
+  empresa                   Empresa         @relation(fields: [empresa_id], references: [id])
+  usuario_modificador       Usuario?        @relation("MonedaModificador", fields: [updated_by], references: [id])
+  tipos_cambio_base         TipoCambio[]    @relation("TipoCambioMonedaBase")
+  tipos_cambio_cotizada     TipoCambio[]    @relation("TipoCambioMonedaCotizada")
+  condiciones               Condicion[]
+  gestiones                 CajaGestion[]
+  transacciones             TransaccionCaja[]
+  monedas_denominaciones    MonedaDenominacion[]
+  ventas                    Venta[]
+
+  @@unique([empresa_id, abreviatura])
+}
+
+model Industria {
+  id                  Int         @id @default(autoincrement())
+  empresa_id          Int
+  descripcion         String
+  activo              Boolean     @default(true)
+  created_at          DateTime    @default(now())
+  updated_at          DateTime    @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  usuario_creador     Usuario?    @relation("IndustriaCreador", fields: [created_by], references: [id])
+  empresa             Empresa     @relation(fields: [empresa_id], references: [id])
+  usuario_modificador Usuario?    @relation("IndustriaModificador", fields: [updated_by], references: [id])
+  proveedores         Proveedor[]
+
+  @@unique([empresa_id, descripcion])
+}
+
+model DocumentoIdentificacion {
+  id                  Int         @id @default(autoincrement())
+  empresa_id          Int
+  descripcion         String
+  abreviatura         String
+  activo              Boolean     @default(true)
+  created_at          DateTime    @default(now())
+  updated_at          DateTime    @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  usuario_creador     Usuario?    @relation("DocumentoCreador", fields: [created_by], references: [id])
+  empresa             Empresa     @relation(fields: [empresa_id], references: [id])
+  usuario_modificador Usuario?    @relation("DocumentoModificador", fields: [updated_by], references: [id])
+  proveedores         Proveedor[]
+
+  @@unique([empresa_id, descripcion])
+  @@unique([empresa_id, abreviatura])
+}
+
+model Pais {
+  id                  Int      @id @default(autoincrement())
+  empresa_id          Int
+  descripcion         String
+  abreviatura         String
+  prefijo_telefonico  String?
+  activo              Boolean  @default(true)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  bancos              Banco[]
+  usuario_creador     Usuario? @relation("PaisCreador", fields: [created_by], references: [id])
+  empresa             Empresa  @relation(fields: [empresa_id], references: [id])
+  usuario_modificador Usuario? @relation("PaisModificador", fields: [updated_by], references: [id])
+
+  @@unique([empresa_id, descripcion])
+}
+
+model Banco {
+  id                  Int               @id @default(autoincrement())
+  empresa_id          Int
+  codigo              String
+  descripcion         String
+  pais_id             Int?
+  codigo_swift        String?
+  activo              Boolean           @default(true)
+  created_at          DateTime          @default(now())
+  updated_at          DateTime          @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  usuario_creador     Usuario?          @relation("BancoCreador", fields: [created_by], references: [id])
+  empresa             Empresa           @relation(fields: [empresa_id], references: [id])
+  pais                Pais?             @relation(fields: [pais_id], references: [id])
+  usuario_modificador Usuario?          @relation("BancoModificador", fields: [updated_by], references: [id])
+  proveedores         Proveedor[]
+  tipos_cuenta        TipoCuentaBanco[]
+
+  @@unique([empresa_id, codigo, descripcion])
+}
+
+model TipoCuentaBanco {
+  id                  Int         @id @default(autoincrement())
+  banco_id            Int
+  descripcion         String
+  activo              Boolean     @default(true)
+  created_at          DateTime    @default(now())
+  updated_at          DateTime    @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  proveedores         Proveedor[]
+  banco               Banco       @relation(fields: [banco_id], references: [id])
+  usuario_creador     Usuario?    @relation("TipoCuentaBancoCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?    @relation("TipoCuentaBancoModificador", fields: [updated_by], references: [id])
+}
+
+model Almacen {
+  id                    Int                      @id @default(autoincrement())
+  empresa_id            Int
+  descripcion           String
+  activo                Boolean                  @default(true)
+  created_at            DateTime                 @default(now())
+  updated_at            DateTime                 @updatedAt
+  created_by            Int?
+  updated_by            Int?
+  usuario_creador       Usuario?                 @relation("AlmacenCreador", fields: [created_by], references: [id])
+  empresa               Empresa                  @relation(fields: [empresa_id], references: [id])
+  usuario_modificador   Usuario?                 @relation("AlmacenModificador", fields: [updated_by], references: [id])
+  sucursales_vinculadas SucursalAlmacen[]
+  almacenUbicaciones    AlmacenUbicacion[]
+  stock_materiales      StockMaterial[]
+  stock_historial       StockMaterialHistorial[]
+  venta_detalles      VentaDetalle[]
+
+  @@unique([empresa_id, descripcion])
+}
+
+model Sucursal {
+  id                   Int                      @id @default(autoincrement())
+  empresa_id           Int
+  descripcion          String
+  direccion            String?
+  departamento         String?
+  provincia            String?
+  distrito             String?
+  activo               Boolean                  @default(true)
+  created_at           DateTime                 @default(now())
+  updated_at           DateTime                 @updatedAt
+  created_by           Int?
+  updated_by           Int?
+  movimientos          MovimientoAlmacen[]
+  stock_materiales     StockMaterial[]
+  stock_historial      StockMaterialHistorial[]
+  usuario_creador      Usuario?                 @relation("SucursalCreador", fields: [created_by], references: [id])
+  empresa              Empresa                  @relation(fields: [empresa_id], references: [id])
+  usuario_modificador  Usuario?                 @relation("SucursalModificador", fields: [updated_by], references: [id])
+  almacenes_vinculados SucursalAlmacen[]
+  cajas_vinculadas     SucursalCaja[]
+  sesiones_caja        CajaGestion[]
+  transacciones_caja   TransaccionCaja[]
+  ventas               Venta[]
+
+  @@unique([empresa_id, descripcion])
+}
+
+model SucursalAlmacen {
+  id                       Int      @id @default(autoincrement())
+  sucursal_id              Int
+  almacen_id               Int
+  verificar_disponibilidad Boolean  @default(false)
+  rol                      String   @default("secundario")
+  activo                   Boolean  @default(true)
+  created_at               DateTime @default(now())
+  updated_at               DateTime @updatedAt
+  created_by               Int?
+  updated_by               Int?
+  almacen                  Almacen  @relation(fields: [almacen_id], references: [id], onDelete: Cascade)
+  usuario_creador          Usuario? @relation("SucursalAlmacenCreador", fields: [created_by], references: [id])
+  sucursal                 Sucursal @relation(fields: [sucursal_id], references: [id], onDelete: Cascade)
+  usuario_modificador      Usuario? @relation("SucursalAlmacenModificador", fields: [updated_by], references: [id])
+
+  @@unique([sucursal_id, almacen_id])
+}
+
+model SucursalCaja {
+  id                  Int      @id @default(autoincrement())
+  sucursal_id         Int
+  caja_id             Int
+  activo              Boolean  @default(true)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  caja                Caja     @relation(fields: [caja_id], references: [id], onDelete: Cascade)
+  usuario_creador     Usuario? @relation("SucursalCajaCreador", fields: [created_by], references: [id])
+  sucursal            Sucursal @relation(fields: [sucursal_id], references: [id], onDelete: Cascade)
+  usuario_modificador Usuario? @relation("SucursalCajaModificador", fields: [updated_by], references: [id])
+
+  @@unique([sucursal_id, caja_id])
+}
+
+model TipoOperacion {
+  id                   Int                 @id @default(autoincrement())
+  empresa_id           Int
+  codigo               String
+  descripcion          String
+  categoria            String
+  afecta_stock         Boolean
+  signo_origen         String
+  signo_destino        String?
+  requiere_proveedor   Boolean
+  requiere_cliente     Boolean
+  requiere_suc_destino Boolean
+  permite_precio_costo Boolean
+  actualiza_costo      Boolean
+  requiere_aprobacion  Boolean
+  activo               Boolean             @default(true)
+  created_at           DateTime            @default(now())
+  updated_at           DateTime            @updatedAt
+  created_by           Int?
+  updated_by           Int?
+  requiere_pedido      Boolean?            @default(false)
+  estado_stock_id      Int?
+  estado_stock         EstadoStock?        @relation(fields: [estado_stock_id], references: [id])
+  movimientos          MovimientoAlmacen[]
+  usuario_creador      Usuario?            @relation("TipoOperacionCreador", fields: [created_by], references: [id])
+  empresa              Empresa             @relation(fields: [empresa_id], references: [id])
+  usuario_modificador  Usuario?            @relation("TipoOperacionModificador", fields: [updated_by], references: [id])
+  clases_pedido        ClasePedido[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model EsquemaMaterialLog {
+  id                                                                          Int                @id @default(autoincrement())
+  empresa_id                                                                  Int
+  material_id                                                                 Int
+  esquema_anterior_id                                                         Int?
+  esquema_nuevo_id                                                            Int
+  motivo                                                                      String?
+  created_at                                                                  DateTime           @default(now())
+  created_by                                                                  Int?
+  Usuario                                                                     Usuario?           @relation(fields: [created_by], references: [id])
+  Empresa                                                                     Empresa            @relation(fields: [empresa_id], references: [id])
+  EsquemaValoracion_EsquemaMaterialLog_esquema_anterior_idToEsquemaValoracion EsquemaValoracion? @relation("EsquemaMaterialLog_esquema_anterior_idToEsquemaValoracion", fields: [esquema_anterior_id], references: [id])
+  EsquemaValoracion_EsquemaMaterialLog_esquema_nuevo_idToEsquemaValoracion    EsquemaValoracion  @relation("EsquemaMaterialLog_esquema_nuevo_idToEsquemaValoracion", fields: [esquema_nuevo_id], references: [id])
+  Material                                                                    Material           @relation(fields: [material_id], references: [id], onDelete: Cascade)
+}
+
+model Ubicacion {
+  id          Int      @id @default(autoincrement())
+  empresa_id  Int
+  codigo      String
+  descripcion String
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  created_by  Int?
+  updated_by  Int?
+
+  Empresa             Empresa                         @relation(fields: [empresa_id], references: [id])
+  usuario_creador     Usuario?                        @relation("UbicacionCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?                        @relation("UbicacionModificador", fields: [updated_by], references: [id])
+  almacenUbicaciones  AlmacenUbicacion[]
+  stock_materiales    StockMaterial[]
+  stock_historial     StockMaterialHistorial[]
+  distribuciones      MovimientoDetalleDistribucion[]
+  materiales          Material[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model AlmacenUbicacion {
+  id           Int      @id @default(autoincrement())
+  empresa_id   Int
+  almacen_id   Int
+  ubicacion_id Int
+  activo       Boolean  @default(true)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  created_by   Int?
+  updated_by   Int?
+
+  Empresa             Empresa   @relation(fields: [empresa_id], references: [id])
+  Almacen             Almacen   @relation(fields: [almacen_id], references: [id])
+  Ubicacion           Ubicacion @relation(fields: [ubicacion_id], references: [id])
+  usuario_creador     Usuario?  @relation("AlmacenUbicacionCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?  @relation("AlmacenUbicacionModificador", fields: [updated_by], references: [id])
+}
+
+model StockMaterial {
+  id               Int     @id @default(autoincrement())
+  empresa_id       Int
+  sucursal_id      Int
+  almacen_id       Int
+  ubicacion_id     Int
+  estado_stock_id  Int
+  material_id      Int
+  numero_lote      String?
+  cantidad         Decimal @db.Decimal(12, 3)
+  unidad_medida_id Int
+
+  empresa       Empresa      @relation(fields: [empresa_id], references: [id])
+  sucursal      Sucursal     @relation(fields: [sucursal_id], references: [id])
+  almacen       Almacen      @relation(fields: [almacen_id], references: [id])
+  ubicacion     Ubicacion    @relation(fields: [ubicacion_id], references: [id])
+  estado_stock  EstadoStock  @relation(fields: [estado_stock_id], references: [id])
+  material      Material     @relation(fields: [material_id], references: [id])
+  unidad_medida UnidadMedida @relation(fields: [unidad_medida_id], references: [id])
+
+  @@unique([empresa_id, sucursal_id, almacen_id, ubicacion_id, estado_stock_id, material_id, numero_lote, unidad_medida_id])
+}
+
+model StockMaterialHistorial {
+  id                Int      @id @default(autoincrement())
+  empresa_id        Int
+  sucursal_id       Int
+  almacen_id        Int
+  ubicacion_id      Int
+  estado_stock_id   Int
+  material_id       Int
+  unidad_medida_id  Int
+  numero_lote       String?
+  cantidad          Decimal  @db.Decimal(12, 3)
+  updated_at        DateTime @updatedAt
+
+  empresa      Empresa     @relation(fields: [empresa_id], references: [id])
+  sucursal     Sucursal    @relation(fields: [sucursal_id], references: [id])
+  almacen      Almacen     @relation(fields: [almacen_id], references: [id])
+  ubicacion    Ubicacion   @relation(fields: [ubicacion_id], references: [id])
+  estado_stock EstadoStock @relation(fields: [estado_stock_id], references: [id])
+  material     Material    @relation(fields: [material_id], references: [id])
+  unidad_medida UnidadMedida @relation(fields: [unidad_medida_id], references: [id])
+
+  @@index([empresa_id, material_id])
+  @@index([updated_at])
+}
+
+model TipoCambioFuente {
+  id                  Int          @id @default(autoincrement())
+  empresa_id          Int
+  nombre              String
+  api_url             String?
+  proveedor           String?
+  prioridad           Int          @default(0)
+  activo              Boolean      @default(true)
+  created_at          DateTime     @default(now())
+  updated_at          DateTime     @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  empresa             Empresa      @relation(fields: [empresa_id], references: [id])
+  usuario_creador     Usuario?     @relation("TipoCambioFuenteCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?     @relation("TipoCambioFuenteModificador", fields: [updated_by], references: [id])
+  tipos_cambio        TipoCambio[]
+
+  @@index([empresa_id])
+}
+
+model TipoCambio {
+  id                   Int                   @id @default(autoincrement())
+  empresa_id           Int
+  moneda_base          Int
+  moneda_cotizada      Int
+  precio_compra        Decimal               @db.Decimal(20, 5)
+  precio_venta         Decimal               @db.Decimal(20, 5)
+  fuente_id            Int?
+  fecha_publicacion    DateTime?
+  inicio_vigencia      DateTime?
+  fin_vigencia         DateTime?
+  reemplazado_por      Int?
+  created_at           DateTime              @default(now())
+  updated_at           DateTime              @updatedAt
+  created_by           Int?
+  updated_by           Int?
+  empresa              Empresa               @relation(fields: [empresa_id], references: [id])
+  moneda_base_rel      Moneda                @relation("TipoCambioMonedaBase", fields: [moneda_base], references: [id])
+  moneda_cotizada_rel  Moneda                @relation("TipoCambioMonedaCotizada", fields: [moneda_cotizada], references: [id])
+  fuente               TipoCambioFuente?     @relation(fields: [fuente_id], references: [id])
+  usuario_creador      Usuario?              @relation("TipoCambioCreador", fields: [created_by], references: [id])
+  usuario_modificador  Usuario?              @relation("TipoCambioModificador", fields: [updated_by], references: [id])
+  tipo_cambio_anterior TipoCambio?           @relation("TipoCambioReemplazado", fields: [reemplazado_por], references: [id])
+  tipo_cambio_nuevo    TipoCambio[]          @relation("TipoCambioReemplazado")
+  auditorias           TipoCambioAuditoria[]
+
+  @@index([empresa_id])
+  @@index([moneda_base, moneda_cotizada])
+}
+
+model TipoCambioAuditoria {
+  id             Int        @id @default(autoincrement())
+  tipo_cambio_id Int
+  action         String
+  valor_anterior Json?
+  valor_nuevo    Json?
+  updated_at     DateTime   @default(now())
+  updated_by     Int
+  tipo_cambio    TipoCambio @relation(fields: [tipo_cambio_id], references: [id], onDelete: Cascade)
+
+  @@index([tipo_cambio_id])
+  @@index([updated_at])
+}
+
+model Modulo {
+  id              Int             @id @default(autoincrement())
+  codigo          String          @unique
+  descripcion     String
+  activo          Boolean         @default(true)
+  empresa_modulos EmpresaModulo[]
+}
+
+model EmpresaModulo {
+  id              Int      @id @default(autoincrement())
+  empresa_id      Int
+  modulo_id       Int
+  activo          Boolean  @default(true)
+  created_at      DateTime @default(now())
+  created_by      Int?
+  empresa         Empresa  @relation(fields: [empresa_id], references: [id])
+  modulo          Modulo   @relation(fields: [modulo_id], references: [id])
+  usuario_creador Usuario? @relation("EmpresaModuloCreador", fields: [created_by], references: [id])
+
+  @@unique([empresa_id, modulo_id])
+}
+
+model MedioPago {
+  id                  Int      @id @default(autoincrement())
+  empresa_id          Int
+  descripcion         String
+  aplica_denominacion Boolean  @default(false)
+  activo              Boolean  @default(true)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  empresa             Empresa  @relation(fields: [empresa_id], references: [id])
+  usuario_creador     Usuario? @relation("MedioPagoCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario? @relation("MedioPagoModificador", fields: [updated_by], references: [id])
+  transaccion_pagos TransaccionCajaPago[]
+
+  @@unique([empresa_id, descripcion])
+}
+
+model ConceptoCaja {
+  id                  Int           @id @default(autoincrement())
+  empresa_id          Int
+  codigo              String
+  descripcion         String
+  tipo_operacion      String
+  requiere_cliente    Boolean       @default(false)
+  requiere_proveedor  Boolean       @default(false)
+  requiere_persona    Boolean       @default(false)
+  activo              Boolean       @default(true)
+  created_at          DateTime      @default(now())
+  updated_at          DateTime      @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  empresa             Empresa       @relation(fields: [empresa_id], references: [id])
+  usuario_creador     Usuario?      @relation("ConceptoCajaCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?      @relation("ConceptoCajaModificador", fields: [updated_by], references: [id])
+  clases_pedido       ClasePedido[]
+  transacciones       TransaccionCaja[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model TipoCondicion {
+  id          Int      @id @default(autoincrement())
+  empresa_id  Int
+  codigo      String
+  descripcion String
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  created_by  Int?
+  updated_by  Int?
+
+  empresa                   Empresa     @relation(fields: [empresa_id], references: [id])
+  usuario_creador           Usuario?    @relation("TipoCondicionCreador", fields: [created_by], references: [id])
+  usuario_modificador       Usuario?    @relation("TipoCondicionModificador", fields: [updated_by], references: [id])
+  condiciones               Condicion[]
+  esquemas_pasos            EsquemaCalculoPasos[]
+  venta_detalles_condicion  VentaDetalleCondicion[]
+
+  @@unique([empresa_id, codigo])
+}
+
+model Condicion {
+  id                Int       @id @default(autoincrement())
+  empresa_id        Int
+  tipo_condicion_id Int
+  material_id       Int?
+  moneda_id         Int
+  porcentaje        Boolean
+  valor             Decimal   @db.Decimal(12, 2)
+  fecha_desde       DateTime
+  fecha_hasta       DateTime?
+  activo            Boolean   @default(true)
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  created_by        Int?
+  updated_by        Int?
+
+  empresa             Empresa               @relation(fields: [empresa_id], references: [id])
+  tipo_condicion      TipoCondicion         @relation(fields: [tipo_condicion_id], references: [id])
+  material            Material?             @relation(fields: [material_id], references: [id])
+  moneda              Moneda?               @relation(fields: [moneda_id], references: [id])
+  usuario_creador     Usuario?              @relation("CondicionCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?              @relation("CondicionModificador", fields: [updated_by], references: [id])
+}
+
+model EsquemaCalculo {
+  id          Int      @id @default(autoincrement())
+  empresa_id  Int
+  codigo      String
+  descripcion String
+  activo      Boolean  @default(true)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  created_by  Int?
+  updated_by  Int?
+
+  empresa                     Empresa                   @relation(fields: [empresa_id], references: [id])
+  usuario_creador             Usuario?                  @relation("EsquemaCalculoCreador", fields: [created_by], references: [id])
+  usuario_modificador         Usuario?                  @relation("EsquemaCalculoModificador", fields: [updated_by], references: [id])
+  variables                   EsquemaCalculoVariables[]
+  pasos                       EsquemaCalculoPasos[]
+  clases_pedido               ClasePedido[]
+  venta_detalles_condicion    VentaDetalleCondicion[]
+
+
+  @@unique([empresa_id, codigo])
+}
+
+model EsquemaCalculoVariables {
+  id             Int      @id @default(autoincrement())
+  esquema_id     Int
+  variable_id    String
+  descripcion    String
+  tipo           String
+  valor          Decimal? @db.Decimal(12, 4)
+  ingreso_manual Boolean  @default(false)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+  created_by     Int?
+  updated_by     Int?
+
+  esquema             EsquemaCalculo @relation(fields: [esquema_id], references: [id], onDelete: Cascade)
+  usuario_creador     Usuario?       @relation("EsquemaCalculoVarCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?       @relation("EsquemaCalculoVarModificador", fields: [updated_by], references: [id])
+}
+
+model EsquemaCalculoPasos {
+  id                Int      @id @default(autoincrement())
+  esquema_id        Int
+  secuencia_paso    Int
+  descripcion_corta String
+  descripcion_larga String?
+  tipo              String
+  condicion_id      Int?
+  formula           String
+  activo            Boolean  @default(true)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  created_by        Int?
+  updated_by        Int?
+
+  esquema             EsquemaCalculo @relation(fields: [esquema_id], references: [id], onDelete: Cascade)
+  tipo_condicion      TipoCondicion? @relation(fields: [condicion_id], references: [id])
+  usuario_creador     Usuario?       @relation("EsquemaCalculoPasoCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?       @relation("EsquemaCalculoPasoModificador", fields: [updated_by], references: [id])
+}
+
+model ClasePedido {
+  id                Int      @id @default(autoincrement())
+  empresa_id        Int
+  codigo            String
+  descripcion       String
+  esquema_id        Int
+  estado_stock_id   Int?
+  registro_almacen  Boolean
+  tipo_operacion_id Int?
+  registro_caja     Boolean
+  concepto_caja_id  Int?
+  activo            Boolean  @default(true)
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+  created_by        Int?
+  updated_by        Int?
+
+  ventas              Venta[]
+  empresa             Empresa        @relation(fields: [empresa_id], references: [id])
+  esquema             EsquemaCalculo @relation(fields: [esquema_id], references: [id])
+  estado_stock        EstadoStock?   @relation(fields: [estado_stock_id], references: [id])
+  tipo_operacion      TipoOperacion? @relation(fields: [tipo_operacion_id], references: [id])
+  concepto_caja       ConceptoCaja?  @relation(fields: [concepto_caja_id], references: [id])
+  usuario_creador     Usuario?       @relation("ClasePedidoCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?       @relation("ClasePedidoModificador", fields: [updated_by], references: [id])
+
+  @@unique([empresa_id, codigo])
+}
+
+model MonedaDenominacion {
+  id          Int     @id @default(autoincrement())
+  empresa_id  Int
+  moneda_id   Int
+  valor       Decimal @db.Decimal(10, 2)
+  tipo        String  // 'Billete' or 'Moneda'
+  estado      Boolean @default(true)
+  secuencia   Int     @default(0)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  created_by  Int?
+  updated_by  Int?
+
+  empresa          Empresa                      @relation(fields: [empresa_id], references: [id])
+  moneda           Moneda                       @relation(fields: [moneda_id], references: [id])
+  caja_gestion     CajaGestionDenominacion[]
+  transaccion_pagos TransaccionPagoDenominacion[]
+
+  @@unique([empresa_id, moneda_id, valor])
+  @@index([empresa_id, moneda_id])
+}
+
+model FlujoDocumentos {
+  id                        Int         @id @default(autoincrement())
+  empresa_id                Int
+  referencia_id             Int
+  tipo_referencia           String
+  referencia_anterior_id    Int
+  activo                    Boolean     @default(true)
+  created_at                DateTime    @default(now())
+  created_by                Int
+  usuario_creador           Usuario     @relation("FlujoDocumentosCreador", fields: [created_by], references: [id])
+  empresa                   Empresa     @relation(fields: [empresa_id], references: [id])
+
+  @@unique([empresa_id])
+}
