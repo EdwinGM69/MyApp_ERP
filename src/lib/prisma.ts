@@ -1,14 +1,17 @@
 import { PrismaClient } from '@prisma/client'
+import { Pool } from 'pg'
+import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
-// Use eval('require') to bypass Next.js bundling which is corrupting the 'pg' library
-const { Pool } = eval('require')('pg')
-const { PrismaPg } = eval('require')('@prisma/adapter-pg')
+const connectionString = 
+  process.env.POSTGRES_URL_NON_POOLING || 
+  process.env.POSTGRES_PRISMA_URL || 
+  process.env.POSTGRES_URL || 
+  process.env.DATABASE_URL
 
-// Use the pooled DATABASE_URL from .env
 const pool = new Pool({ 
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
   ssl: {
     rejectUnauthorized: false
   }
