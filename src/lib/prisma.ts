@@ -12,9 +12,7 @@ const connectionString =
 
 const pool = new Pool({ 
   connectionString,
-  ssl: {
-    rejectUnauthorized: false
-  }
+  ssl: process.env.NODE_ENV === 'production' ? true : { rejectUnauthorized: false }
 })
 const adapter = new PrismaPg(pool)
 
