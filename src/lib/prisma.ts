@@ -38,11 +38,17 @@ const connectionString = dbUrl.replace('sslmode=require', 'sslmode=verify-full')
 console.log('[PRISMA] Environment:', process.env.NODE_ENV)
 console.log('[PRISMA] Using connection string:', connectionString.replace(/:[^:@]+@/, ':****@'))
 
-const pool = new Pool({
-  connectionString,
-  ssl: process.env.NODE_ENV === 'production'
+// SSL configuration - allow self-signed certificates for Supabase pooler
+const isSupabase = connectionString.includes('supabase.co') || connectionString.includes('pooler')
+const sslConfig = isSupabase
+  ? { rejectUnauthorized: false }
+  : process.env.NODE_ENV === 'production'
     ? { rejectUnauthorized: true }
     : { rejectUnauthorized: false }
+
+const pool = new Pool({
+  connectionString,
+  ssl: sslConfig
 })
 const adapter = new PrismaPg(pool)
 
