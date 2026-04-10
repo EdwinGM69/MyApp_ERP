@@ -47,12 +47,12 @@ const nextConfig = {
       },
     ]
 
-    // Add CORS headers for production
-    if (process.env.NODE_ENV === 'production') {
+    // Add CORS headers for production and development
+    if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development') {
       headers.push({
         source: '/api/:path*',
         headers: [
-          { key: 'Access-Control-Allow-Origin', value: process.env.NEXT_PUBLIC_APP_URL || 'https://your-production-domain.com' },
+          { key: 'Access-Control-Allow-Origin', value: '*' },
           { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization, x-csrf-token' },
           { key: 'Access-Control-Allow-Credentials', value: 'true' },

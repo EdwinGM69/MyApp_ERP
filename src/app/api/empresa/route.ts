@@ -30,16 +30,19 @@ export async function GET(req: NextRequest) {
     }
 
     // Lookup moneda_id for moneda_default abbreviation
-    const moneda = await prisma.moneda.findFirst({
-      where: { 
-        empresa_id: empresaId,
-        abreviatura: empresa.moneda_default
-      }
-    })
+    let moneda = null
+    if (empresaId && empresa.moneda_default) {
+      moneda = await prisma.moneda.findFirst({
+        where: { 
+          empresa_id: empresaId,
+          abreviatura: empresa.moneda_default
+        }
+      })
+    }
 
     return NextResponse.json({
       ...empresa,
-      moneda_id: moneda?.id,
+      moneda_id: moneda?.id || null,
       moneda_simbolo: moneda?.simbolo || '$'
     })
   } catch (err: any) {

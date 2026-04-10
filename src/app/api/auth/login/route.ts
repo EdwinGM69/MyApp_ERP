@@ -56,13 +56,29 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { email, password, remember } = loginSchema.parse(body)
 
-    const usuario = await prisma.usuario.findFirst({
-      where: { email, activo: true },
-      include: { empresa: true, rol: true },
-    })
+    console.log('[LOGIN] Attempting login for email:', email)
+
+    let usuario
+    try {
+      usuario = await prisma.usuario.findFirst({
+        where: { email, activo: true },
+        include: { empresa: true, rol: true },
+      })
+    } catch (dbError: any) {
+      console.error('[LOGIN] Database error:', dbError.message)
+      return NextResponse.json({ error: 'Error de base de datos. Contacte al administrador.' }, { status: 500 })
+    }
+
+    console.log('[LOGIN] Usuario found:', usuario ? 'yes' : 'no', usuario?.id)
 
     if (!usuario) {
       return NextResponse.json({ error: 'Credenciales inválidas' }, { status: 401 })
+    }
+
+    // Check if empresa exists
+    if (!usuario.empresa) {
+      console.error('[LOGIN] Usuario has no empresa associated')
+      return NextResponse.json({ error: 'Error de configuración. Contacte al administrador.' }, { status: 500 })
     }
 
     const validPassword = await bcrypt.compare(password, usuario.password_hash)
@@ -80,13 +96,27 @@ export async function POST(req: NextRequest) {
     const accessToken = await signAccessToken(payload)
     const refreshToken = await signRefreshToken(payload)
 
+    console.log('[LOGIN] Tokens generated, looking up moneda')
+
     // Lookup moneda_id for moneda_default abbreviation
-    const moneda = await prisma.moneda.findFirst({
-      where: { 
-        empresa_id: usuario.empresa_id,
-        abreviatura: usuario.empresa.moneda_default
+    let moneda = null
+    try {
+      if (usuario.empresa_id && usuario.empresa.moneda_default) {
+        console.log('[LOGIN] Querying moneda for empresa_id:', usuario.empresa_id, 'moneda_default:', usuario.empresa.moneda_default)
+        moneda = await prisma.moneda.findFirst({
+          where: { 
+            empresa_id: usuario.empresa_id,
+            abreviatura: usuario.empresa.moneda_default
+          }
+        })
+        console.log('[LOGIN] Moneda found:', moneda ? 'yes' : 'no')
+      } else {
+        console.log('[LOGIN] Skipping moneda query - empresa_id or moneda_default is null')
       }
-    })
+    } catch (monedaError: any) {
+      console.error('[LOGIN] Error fetching moneda:', monedaError.message)
+      moneda = null
+    }
 
     const response = NextResponse.json({
       accessToken,
@@ -98,8 +128,8 @@ export async function POST(req: NextRequest) {
         rol: usuario.rol.nombre,
         empresa: usuario.empresa.nombre,
         empresaId: usuario.empresa_id,
-        monedaDefault: usuario.empresa.moneda_default,
-        monedaId: moneda?.id,
+        monedaDefault: usuario.empresa.moneda_default || null,
+        monedaId: moneda?.id || null,
         monedaSimbolo: moneda?.simbolo || '$',
       },
     })

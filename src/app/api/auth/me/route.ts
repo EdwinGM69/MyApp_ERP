@@ -31,12 +31,15 @@ export async function GET(req: NextRequest) {
     }
 
     // Lookup moneda_id for moneda_default abbreviation
-    const moneda = await prisma.moneda.findFirst({
-      where: { 
-        empresa_id: user.empresa.id,
-        abreviatura: user.empresa.moneda_default
-      }
-    })
+    let moneda = null
+    if (user.empresa.id && user.empresa.moneda_default) {
+      moneda = await prisma.moneda.findFirst({
+        where: { 
+          empresa_id: user.empresa.id,
+          abreviatura: user.empresa.moneda_default
+        }
+      })
+    }
 
     const authUser = {
       id: user.id,
@@ -46,8 +49,8 @@ export async function GET(req: NextRequest) {
       rol: user.rol.nombre,
       empresa: user.empresa.nombre,
       empresaId: user.empresa.id,
-      monedaDefault: user.empresa.moneda_default,
-      monedaId: moneda?.id,
+      monedaDefault: user.empresa.moneda_default || null,
+      monedaId: moneda?.id || null,
       monedaSimbolo: moneda?.simbolo || '$'
     }
 

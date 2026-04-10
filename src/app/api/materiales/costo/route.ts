@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
-    if (!empresa || !material?.esquema_id) {
+    if (!empresa || !empresa.moneda_default || !material?.esquema_id) {
       return NextResponse.json({ costo: 0 })
     }
 

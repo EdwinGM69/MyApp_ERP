@@ -3,6 +3,7 @@ import { verifyAccessToken } from './lib/jwt'
 
 const PUBLIC_PATHS = [
   '/api/auth/login',
+  '/api/auth/csrf',
   '/api/auth/refresh',
   '/api/auth/forgot-password',
   '/api/auth/me', // Allow session check to reach the handler
@@ -33,7 +34,7 @@ export async function proxy(req: NextRequest) {
   // 1. Allow public paths and static assets
   const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p))
   const isStaticAsset = pathname.includes('.') || pathname.startsWith('/_next')
-  
+
   if (isPublicPath || isStaticAsset) {
     return NextResponse.next()
   }
@@ -42,7 +43,7 @@ export async function proxy(req: NextRequest) {
   if (pathname.startsWith('/api/')) {
     let token = ''
     const authHeader = req.headers.get('authorization')
-    
+
     if (authHeader?.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1]
     } else {
@@ -65,7 +66,7 @@ export async function proxy(req: NextRequest) {
 
   // 3. Protect Page routes
   const token = req.cookies.get('access_token')?.value
-  
+
   if (!token) {
     console.log(`[PROXY] PAGE Redirect: No token for ${pathname}, redirecting to /login`)
     return NextResponse.redirect(new URL('/login', req.url))

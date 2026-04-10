@@ -4,17 +4,21 @@ import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
-const connectionString =
+const connectionString = process.env.DB_DIRECT_URL || 
   (process.env.POSTGRES_URL_NON_POOLING ||
   process.env.POSTGRES_PRISMA_URL ||
   process.env.POSTGRES_URL ||
   process.env.DATABASE_URL || '')
   .replace('sslmode=require', 'sslmode=verify-full')
+  .replace('YOUR_PROJECT_REF', 'postgres.jileukbohzeapbwbxmae')
+  .replace('YOUR_PASSWORD', 'jdC0lXzFQFvuZ4Vd')
+
+console.log('[PRISMA] Using connection string:', connectionString.replace(/:[^:@]+@/, ':****@'))
 
 const pool = new Pool({
   connectionString,
   ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: true } // Full SSL verification for production
+    ? { rejectUnauthorized: true }
     : { rejectUnauthorized: false }
 })
 const adapter = new PrismaPg(pool)
