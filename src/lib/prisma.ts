@@ -4,15 +4,39 @@ import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
 
-const connectionString = process.env.DB_DIRECT_URL || 
-  process.env.DIRECT_URL ||
-  (process.env.POSTGRES_URL_NON_POOLING ||
-  process.env.POSTGRES_PRISMA_URL ||
-  process.env.POSTGRES_URL ||
-  process.env.DATABASE_URL || '')
-  .replace('sslmode=require', 'sslmode=verify-full')
+function getDbUrl(): string {
+  const urls = [
+    process.env.DB_DIRECT_URL,
+    process.env.DIRECT_URL,
+    process.env.POSTGRES_URL_NON_POOLING,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.POSTGRES_URL,
+    process.env.DATABASE_URL,
+  ]
+  
+  for (const url of urls) {
+    if (url && !url.includes('YOUR_PROJECT_REF') && !url.includes('YOUR_PASSWORD')) {
+      return url
+    }
+  }
+  
+  // Fallback: usar DB_DIRECT_URL con reemplazo de marcadores
+  const fallbackUrl = process.env.DB_DIRECT_URL || process.env.DIRECT_URL || ''
+  return fallbackUrl
+    .replace('YOUR_PROJECT_REF', 'postgres.jileukbohzeapbwbxmae')
+    .replace('YOUR_PASSWORD', 'jdC0lXzFQFvuZ4Vd')
+}
 
-console.log('[PRISMA] Using connection string:', connectionString ? connectionString.replace(/:[^:@]+@/, ':****@') : 'NOT FOUND')
+const dbUrl = getDbUrl()
+
+if (!dbUrl) {
+  throw new Error('No database URL found. Please set DB_DIRECT_URL, DIRECT_URL, or DATABASE_URL environment variable.')
+}
+
+const connectionString = dbUrl.replace('sslmode=require', 'sslmode=verify-full')
+
+console.log('[PRISMA] Environment:', process.env.NODE_ENV)
+console.log('[PRISMA] Using connection string:', connectionString.replace(/:[^:@]+@/, ':****@'))
 
 const pool = new Pool({
   connectionString,
