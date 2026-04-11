@@ -8,10 +8,11 @@ const medioPagoSchema = z.object({
   importe: z.coerce.number().optional(),
 })
 
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAuth(req)
-    const id = parseInt(params.id)
+    const { id: idParam } = await params
+    const id = parseInt(idParam)
     if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     const body = await req.json()
@@ -38,10 +39,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   }
 }
 
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requireAuth(req)
-    const id = parseInt(params.id)
+    const { id: idParam } = await params
+    const id = parseInt(idParam)
     if (isNaN(id)) return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
 
     const medioPago = await prisma.ventaMedioPago.findUnique({
