@@ -10,10 +10,14 @@ const clienteSchema = z.object({
   nombres_completos: z.string().nullable().optional(),
   apellidos_completos: z.string().nullable().optional(),
   nif: z.string().optional(),
-  email: z.string().email().optional().or(z.literal('')),
-  telefono: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')).nullable(),
+  telefono: z.string().optional().nullable(),
   direccion: z.string().optional(),
-  contacto: z.string().optional(),
+  ubigeo: z.string().optional().nullable(),
+  departamento: z.string().optional().nullable(),
+  provincia: z.string().optional().nullable(),
+  distrito: z.string().optional().nullable(),
+  contacto: z.string().optional().nullable(),
   activo: z.boolean().optional(),
 })
 
@@ -97,7 +101,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(cliente, { status: 201 })
   } catch (err) {
-    if (err instanceof z.ZodError) return NextResponse.json({ error: err.errors }, { status: 400 })
+    if (err instanceof z.ZodError) {
+      const messages = err.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+      return NextResponse.json({ error: messages }, { status: 400 })
+    }
     console.log("POST Error:", err)
     return NextResponse.json({ error: 'Error al crear cliente: ' + (err as any).message }, { status: 500 })
   }
@@ -137,15 +144,7 @@ export async function PUT(req: NextRequest) {
         }
       }
     }
-    /*
-        const clienteExistente = await prisma.cliente.findFirst({
-          where: { id, empresa_id: empresaId },
-        })
-    
-        if (!clienteExistente) {
-          return NextResponse.json({ error: 'Cliente no encontrado' }, { status: 404 })
-        }
-    */
+
     const cliente = await prisma.cliente.update({
       where: { id, empresa_id: empresaId },
       data: { ...data, updated_by: userId },
@@ -153,7 +152,10 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json(cliente)
   } catch (err) {
-    if (err instanceof z.ZodError) return NextResponse.json({ error: err.errors }, { status: 400 })
+    if (err instanceof z.ZodError) {
+      const messages = err.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+      return NextResponse.json({ error: messages }, { status: 400 })
+    }
     console.log("PUT Error:", err)
     return NextResponse.json({ error: 'Error al actualizar cliente: ' + (err as any).message }, { status: 500 })
   }

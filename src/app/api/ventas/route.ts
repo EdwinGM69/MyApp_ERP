@@ -7,7 +7,7 @@ import { generateMovNumber } from '@/lib/utils'
 const ventaSchema = z.object({
   numero_pedido: z.string(),
   comprobante: z.string().optional(),
-  cliente_id: z.number().optional().nullable(),
+  cliente_id: z.number(),
   sucursal_id: z.number(),
   clase_pedido_id: z.number(),
   moneda_id: z.number().optional().nullable(),
@@ -17,8 +17,23 @@ const ventaSchema = z.object({
   descuento: z.number(),
   impuesto: z.number(),
   total: z.number(),
-  metodo_pago: z.string().optional(),
   observaciones: z.string().optional(),
+  caja_id: z.number().optional().nullable(),
+  doc_identificacion_id: z.number(),
+  numero_identificacion: z.string(),
+  nombre: z.string(),
+  nombres_completos: z.string(),
+  apellidos_completos: z.string(),
+  direccion: z.string(),
+  ubigeo: z.string().optional(),
+  departamento: z.string().optional(),
+  provincia: z.string().optional(),
+  distrito: z.string().optional(),
+  medios_pago: z.array(z.object({
+    medio_pago_id: z.number(),
+    importe: z.number(),
+  })).optional(),
+
   detalles: z.array(z.object({
     material_id: z.number(),
     almacen_id: z.number(),
@@ -77,6 +92,10 @@ export async function GET(req: NextRequest) {
           },
           moneda: {
             select: { id: true, descripcion: true, simbolo: true }
+          },
+          dcto_identificacion: true,
+          medios_pago: {
+            include: { medio_pago: true }
           }
         }
       }),
@@ -97,12 +116,22 @@ export async function POST(req: NextRequest) {
   try {
     const { empresaId, userId } = await requireAuth(req)
     const body = await req.json()
-    const { detalles, ...ventaData } = body
+    const {
+      detalles,
+      medios_pago,
+      cliente_id,
+      empresa_id: _empresa_id,
+      sucursal_id,
+      moneda_id,
+      clase_pedido_id,
+      documento_identificacion_id,
+      ...ventaData
+    } = body
 
     const venta = await prisma.$transaction(async (tx: any) => {
       // 1. Fetch ClasePedido configuration
       const clasePedido = await tx.clasePedido.findUnique({
-        where: { id: ventaData.clase_pedido_id },
+        where: { id: clase_pedido_id },
         include: { tipo_operacion: true }
       })
 
@@ -111,11 +140,46 @@ export async function POST(req: NextRequest) {
       const signoOrigen = clasePedido.tipo_operacion?.signo_origen
       if (!signoOrigen) throw new Error('Tipo de operación no tiene signo_origen definido')
 
-      // 2. Create the Sale record
+      // 2. Manage Cliente
+      let finalClienteId = cliente_id
+      if (!finalClienteId && ventaData.numero_identificacion) {
+        let existingCliente = await tx.cliente.findFirst({
+          where: { nif: ventaData.numero_identificacion, empresa_id: empresaId }
+        })
+
+        if (!existingCliente) {
+          const nombreFinal = ventaData.nombre ? ventaData.nombre : `${ventaData.nombres_completos || ''} ${ventaData.apellidos_completos || ''}`.trim()
+          existingCliente = await tx.cliente.create({
+            data: {
+              empresa_id: empresaId,
+              codigo: `C-${Date.now().toString().slice(-6)}`,
+              tipo: 'natural',
+              nombre: nombreFinal,
+              nombres_completos: ventaData.nombres_completos,
+              apellidos_completos: ventaData.apellidos_completos,
+              nif: ventaData.numero_identificacion,
+              direccion: ventaData.direccion,
+              ubigeo: ventaData.ubigeo,
+              departamento: ventaData.departamento,
+              provincia: ventaData.provincia,
+              distrito: ventaData.distrito,
+              created_by: userId
+            }
+          })
+        }
+        finalClienteId = existingCliente.id
+      }
+
+      // 3. Create the Sale record
       const v = await tx.venta.create({
         data: {
           ...ventaData,
-          empresa_id: empresaId,
+          empresa: { connect: { id: empresaId } },
+          sucursal: { connect: { id: sucursal_id } },
+          moneda: { connect: { id: moneda_id } },
+          clase_pedido: { connect: { id: clase_pedido_id } },
+          dcto_identificacion: { connect: { id: documento_identificacion_id } },
+          cliente: { connect: { id: finalClienteId } },
           created_by: userId,
           detalles: {
             create: detalles.map((d: any) => ({
@@ -142,6 +206,12 @@ export async function POST(req: NextRequest) {
               } : undefined
             }))
           },
+          medios_pago: medios_pago && medios_pago.length > 0 ? {
+            create: medios_pago.map((mp: any) => ({
+              medio_pago_id: mp.medio_pago_id,
+              importe: mp.importe
+            }))
+          } : undefined
         },
         include: {
           detalles: {
@@ -149,7 +219,23 @@ export async function POST(req: NextRequest) {
               condiciones: true,
               material: true
             }
+          },
+          medios_pago: {
+            include: { medio_pago: true }
           }
+        }
+      })
+
+      // 1. FlujoDocumentos - Registro de Venta
+      await tx.flujoDocumentos.create({
+        data: {
+          empresa_id: empresaId,
+          referencia_id: v.id,
+          tipo_referencia: 'V',
+          referencia_anterior_id: null,
+          activo: true,
+          created_at: new Date(),
+          created_by: userId
         }
       })
 
@@ -159,13 +245,26 @@ export async function POST(req: NextRequest) {
           data: {
             empresa_id: empresaId,
             numero_mov: generateMovNumber(),
-            sucursal_id: ventaData.sucursal_id,
+            sucursal_id: sucursal_id,
             tipo_operacion_id: clasePedido.tipo_operacion_id,
-            cliente_id: ventaData.cliente_id,
+            cliente_id: finalClienteId ?? undefined,
             numero_pedido: ventaData.numero_pedido,
             fecha: new Date(ventaData.fecha_venta || new Date()),
             created_by: userId,
             observaciones: `Movimiento generado desde venta ${ventaData.numero_pedido}`
+          }
+        })
+
+        // 2. FlujoDocumentos - Registro de Inventario
+        await tx.flujoDocumentos.create({
+          data: {
+            empresa_id: empresaId,
+            referencia_id: movimiento.id,
+            tipo_referencia: 'I',
+            referencia_anterior_id: v.id,
+            activo: true,
+            created_at: new Date(),
+            created_by: userId
           }
         })
 
@@ -184,7 +283,7 @@ export async function POST(req: NextRequest) {
                 empresa_id: empresaId,
                 material_id: d.material_id,
                 esquema_id: material.esquema_id,
-                ...(ventaData.moneda_id ? { moneda_id: ventaData.moneda_id } : {}),
+                ...(moneda_id ? { moneda_id: moneda_id } : {}),
                 fecha_desde: { lte: new Date() },
                 OR: [
                   { fecha_hasta: null },
@@ -204,7 +303,7 @@ export async function POST(req: NextRequest) {
               cantidad: d.cantidad,
               costo_unit: costoUnit,
               almacen_id: d.almacen_id,
-              sucursal_id: ventaData.sucursal_id,
+              sucursal_id: sucursal_id,
               linea: lineaDetalle.toString(),
               esquema_id: material?.esquema_id,
               estado_stock_id: clasePedido.estado_stock_id,
@@ -221,7 +320,7 @@ export async function POST(req: NextRequest) {
           const stocks = await tx.stockMaterial.findMany({
             where: {
               empresa_id: empresaId,
-              sucursal_id: ventaData.sucursal_id,
+              sucursal_id: sucursal_id,
               almacen_id: d.almacen_id,
               estado_stock_id: estadoStockId,
               material_id: d.material_id,
@@ -327,7 +426,7 @@ export async function POST(req: NextRequest) {
           const stocksToUpdate = await tx.stockMaterial.findMany({
             where: {
               empresa_id: empresaId,
-              sucursal_id: ventaData.sucursal_id,
+              sucursal_id: sucursal_id,
               almacen_id: d.almacen_id,
               material_id: d.material_id,
               unidad_medida_id: d.unidad_medida_id,
@@ -346,24 +445,25 @@ export async function POST(req: NextRequest) {
 
       // 4. Register Cash Transaction if required
       if (v.estado === 'procesada' && clasePedido.registro_caja) {
-        if (!ventaData.moneda_id) throw new Error('Se requiere moneda_id para el registro en caja')
+        if (!moneda_id) throw new Error('Se requiere moneda_id para el registro en caja')
 
         const sesionCaja = await tx.cajaGestion.findFirst({
           where: {
-            sucursal_id: ventaData.sucursal_id,
-            moneda_id: ventaData.moneda_id,
+            sucursal_id: sucursal_id,
+            moneda_id: moneda_id,
             usuario_apertura_id: userId,
-            estado: 'Aperturada'
+            estado: 'Aperturada',
+            ...(ventaData.caja_id ? { caja_id: ventaData.caja_id } : {})
           }
         })
 
         if (!sesionCaja) throw new Error('No se encontró una sesión de caja abierta para esta sucursal, moneda y usuario.')
         if (!clasePedido.concepto_caja_id) throw new Error('La clase de pedido no tiene un concepto de caja configurado.')
 
-        await tx.transaccionCaja.create({
+        const transaccionCaja = await tx.transaccionCaja.create({
           data: {
             empresa_id: empresaId,
-            sucursal_id: ventaData.sucursal_id,
+            sucursal_id: sucursal_id,
             sesion_caja_id: sesionCaja.id,
             caja_id: sesionCaja.caja_id,
             concepto_id: clasePedido.concepto_caja_id,
@@ -374,6 +474,25 @@ export async function POST(req: NextRequest) {
             importe: v.total,
             moneda_id: v.moneda_id,
             estado: 'P',
+            created_at: new Date(),
+            created_by: userId,
+            pagos: medios_pago && medios_pago.length > 0 ? {
+              create: medios_pago.map((mp: any) => ({
+                medio_pago_id: mp.medio_pago_id,
+                importe: mp.importe
+              }))
+            } : undefined
+          }
+        })
+
+        // 3. FlujoDocumentos - Registro de Caja
+        await tx.flujoDocumentos.create({
+          data: {
+            empresa_id: empresaId,
+            referencia_id: transaccionCaja.id,
+            tipo_referencia: 'C',
+            referencia_anterior_id: v.id,
+            activo: true,
             created_at: new Date(),
             created_by: userId
           }

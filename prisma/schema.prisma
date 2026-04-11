@@ -457,27 +457,31 @@ model EsquemaMaterial {
 }
 
 model Cliente {
-  id          Int                 @id @default(autoincrement())
-  empresa_id  Int
-  codigo      String
-  tipo        String              @default("natural")
-  nombre      String
-  nombres_completos String?
+  id                  Int                 @id @default(autoincrement())
+  empresa_id          Int
+  codigo              String
+  tipo                String              @default("natural")
+  nombre              String
+  nombres_completos   String?
   apellidos_completos String?
-  nif         String?
-  email       String?
-  telefono    String?
-  direccion   String?
-  contacto    String?
-  activo      Boolean             @default(true)
-  created_at  DateTime            @default(now())
-  updated_at  DateTime            @updatedAt
-  created_by  Int?
-  updated_by  Int?
-  empresa     Empresa             @relation(fields: [empresa_id], references: [id])
-  movimientos MovimientoAlmacen[]
-  ventas      Venta[]
-  transacciones TransaccionCaja[]
+  nif                 String?
+  email               String?
+  telefono            String?
+  direccion           String?
+  ubigeo              String?
+  departamento        String?
+  provincia           String?
+  distrito            String?
+  contacto            String?
+  activo              Boolean             @default(true)
+  created_at          DateTime            @default(now())
+  updated_at          DateTime            @updatedAt
+  created_by          Int?
+  updated_by          Int?
+  empresa             Empresa             @relation(fields: [empresa_id], references: [id])
+  movimientos         MovimientoAlmacen[]
+  ventas              Venta[]
+  transacciones       TransaccionCaja[]
 
   @@unique([empresa_id, codigo])
 }
@@ -639,35 +643,55 @@ model PromocionDetalle {
 }
 
 model Venta {
-  id              Int            @id @default(autoincrement())
-  empresa_id      Int
-  sucursal_id     Int
-  clase_pedido_id Int
-  numero_pedido   String
-  comprobante     String?
-  cliente_id      Int?
-  caja_id         Int?
-  estado          String         @default("procesada")
-  moneda_id       Int
-  subtotal        Decimal        @default(0) @db.Decimal(12, 2)
-  impuesto        Decimal        @default(0) @db.Decimal(12, 2)
-  descuento       Decimal        @default(0) @db.Decimal(12, 2)
-  total           Decimal        @default(0) @db.Decimal(12, 2)
-  metodo_pago     String?
-  fecha_venta     DateTime       @default(now())
-  observaciones   String?
-  created_at      DateTime       @default(now())
-  updated_at      DateTime       @updatedAt
-  created_by      Int?
-  updated_by      Int?
-  cliente         Cliente?       @relation(fields: [cliente_id], references: [id])
-  empresa         Empresa        @relation(fields: [empresa_id], references: [id])
-  sucursal        Sucursal       @relation(fields: [sucursal_id], references: [id])
-  moneda          Moneda         @relation(fields: [moneda_id], references: [id])
-  clase_pedido    ClasePedido    @relation(fields: [clase_pedido_id], references: [id])
-  detalles        VentaDetalle[]
+  id                    Int            @id @default(autoincrement())
+  empresa_id            Int
+  sucursal_id           Int
+  caja_id               Int?
+  clase_pedido_id       Int
+  numero_pedido         String
+  comprobante           String?
+  doc_identificacion_id Int
+  numero_identificacion String
+  cliente_id            Int
+  nombre                String
+  nombres_completos     String
+  apellidos_completos   String
+  direccion             String
+  ubigeo                String?
+  departamento          String?
+  provincia             String?
+  distrito              String?
+  estado                String         @default("procesada")
+  moneda_id             Int
+  subtotal              Decimal        @default(0) @db.Decimal(12, 2)
+  impuesto              Decimal        @default(0) @db.Decimal(12, 2)
+  descuento             Decimal        @default(0) @db.Decimal(12, 2)
+  total                 Decimal        @default(0) @db.Decimal(12, 2)
+  fecha_venta           DateTime       @default(now())
+  observaciones         String?
+  created_at            DateTime       @default(now())
+  updated_at            DateTime       @updatedAt
+  created_by            Int?
+  updated_by            Int?
+  cliente               Cliente        @relation(fields: [cliente_id], references: [id])
+  empresa               Empresa        @relation(fields: [empresa_id], references: [id])
+  sucursal              Sucursal       @relation(fields: [sucursal_id], references: [id])
+  moneda                Moneda         @relation(fields: [moneda_id], references: [id])
+  clase_pedido          ClasePedido    @relation(fields: [clase_pedido_id], references: [id])
+  dcto_identificacion   DocumentoIdentificacion @relation(fields: [doc_identificacion_id], references: [id])
+  detalles              VentaDetalle[]
+  medios_pago           VentaMedioPago[]
 
   @@unique([empresa_id, numero_pedido])
+}
+
+model VentaMedioPago {
+  id                Int      @id @default(autoincrement())
+  venta_id          Int
+  medio_pago_id     Int
+  importe           Decimal  @default(0) @db.Decimal(12, 2)
+  venta             Venta    @relation(fields: [venta_id], references: [id])
+  medio_pago        MedioPago @relation(fields: [medio_pago_id], references: [id])
 }
 
 model VentaDetalle {
@@ -1057,6 +1081,7 @@ model DocumentoIdentificacion {
   empresa             Empresa     @relation(fields: [empresa_id], references: [id])
   usuario_modificador Usuario?    @relation("DocumentoModificador", fields: [updated_by], references: [id])
   proveedores         Proveedor[]
+  ventas              Venta[]
 
   @@unique([empresa_id, descripcion])
   @@unique([empresa_id, abreviatura])
@@ -1440,6 +1465,7 @@ model MedioPago {
   usuario_creador     Usuario? @relation("MedioPagoCreador", fields: [created_by], references: [id])
   usuario_modificador Usuario? @relation("MedioPagoModificador", fields: [updated_by], references: [id])
   transaccion_pagos TransaccionCajaPago[]
+  ventas              VentaMedioPago[]
 
   @@unique([empresa_id, descripcion])
 }
@@ -1630,12 +1656,10 @@ model FlujoDocumentos {
   empresa_id                Int
   referencia_id             Int
   tipo_referencia           String
-  referencia_anterior_id    Int
+  referencia_anterior_id    Int?
   activo                    Boolean     @default(true)
   created_at                DateTime    @default(now())
   created_by                Int
   usuario_creador           Usuario     @relation("FlujoDocumentosCreador", fields: [created_by], references: [id])
   empresa                   Empresa     @relation(fields: [empresa_id], references: [id])
-
-  @@unique([empresa_id])
 }

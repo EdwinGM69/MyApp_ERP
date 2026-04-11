@@ -7,7 +7,7 @@ import { cn, formatCurrency } from '@/lib/utils'
 import { apiFetch, useAuthStore } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import MaterialSelect from '@/components/ui/MaterialSelect'
-import ClienteSelect from '@/components/ui/ClienteSelect'
+import DocumentoIdentificacionSelect from '@/components/ui/DocumentoIdentificacionSelect'
 import SucursalSelect from '@/components/ui/SucursalSelect'
 import ClasePedidoSelect from '@/components/ui/ClasePedidoSelect'
 import AlmacenSelect from '@/components/ui/AlmacenSelect'
@@ -81,6 +81,41 @@ export default function VentaForm() {
   }, [])
 
   const [cliente, setCliente] = useState<{ id: number; nombre: string } | null>(null)
+  const [docIdentificacion, setDocIdentificacion] = useState<{ id: number; abreviatura: string } | null>(null)
+  const [numeroIdentificacion, setNumeroIdentificacion] = useState('')
+  const [nombre, setNombre] = useState('')
+  const [nombresCompletos, setNombresCompletos] = useState('')
+  const [apellidosCompletos, setApellidosCompletos] = useState('')
+  const [direccion, setDireccion] = useState('')
+  const [departamento, setDepartamento] = useState('')
+  const [provincia, setProvincia] = useState('')
+  const [distrito, setDistrito] = useState('')
+
+  const [mediosPagoOptions, setMediosPagoOptions] = useState<any[]>([])
+  const [mediosPagoSeleccionados, setMediosPagoSeleccionados] = useState<Record<number, { selected: boolean, importe: string }>>({})
+
+  const [expandedCards, setExpandedCards] = useState({
+    generales: true,
+    cliente: true,
+    pagos: true,
+    otros: false
+  })
+
+  useEffect(() => {
+    const fetchMediosPago = async () => {
+      try {
+        const res = await apiFetch('/api/tesoreria/medios-pago?pageSize=100')
+        if (res.ok) {
+          const json = await res.json()
+          if (json.data) setMediosPagoOptions(json.data)
+        }
+      } catch (err) {
+        console.error('Error fetching medios pago:', err)
+      }
+    }
+    fetchMediosPago()
+  }, [])
+
   const [sucursal, setSucursal] = useState<{ id: number; descripcion: string } | null>(null)
   const [clasePedido, setClasePedido] = useState<{
     id: number;
@@ -242,6 +277,7 @@ export default function VentaForm() {
         (!c.fecha_hasta || new Date(c.fecha_hasta) >= dateForFiltering)
       )
       console.log('DEBUG: Active conditions after filtering:', todasCondiciones.length)
+      console.log('DEBUG: Active conditions details:', todasCondiciones.map(c => ({ id: c.id, tipo_condicion_id: c.tipo_condicion_id, valor: c.valor, porcentaje: c.porcentaje, material_id: c.material_id })))
       if (todasCondiciones.length === 0) {
         console.warn('DEBUG: No active conditions found for material', materialId, 'and date', dateForFiltering)
       }
@@ -269,6 +305,8 @@ export default function VentaForm() {
         // 1. Get value from model "Condiciones" if step has a condicion_id
         console.log(`DEBUG: Processing step "${paso.descripcion_corta}" (Type: ${paso.tipo}, CondID: ${paso.condicion_id}, Formula: ${paso.formula})`)
 
+        let condicionEncontrada = false
+
         if (paso.condicion_id) {
           console.log(`DEBUG: Step "${paso.descripcion_corta}" searching for Condicion ID: ${paso.condicion_id}`)
 
@@ -283,6 +321,7 @@ export default function VentaForm() {
 
           const condicion = condicionEspecifica || condicionGeneral
           if (condicion) {
+            condicionEncontrada = true
             valorBase = parseFloat(condicion.valor) || 0
             esporcentaje = condicion.porcentaje === true
             console.log(`DEBUG: Step "${paso.descripcion_corta}" found match. ID: ${condicion.id}, Value: ${valorBase}, %: ${esporcentaje}`)
@@ -291,17 +330,19 @@ export default function VentaForm() {
             console.log('DEBUG: Active Cond IDs available:', todasCondiciones.map(c => c.tipo_condicion_id))
 
             // FALLBACK: Si es un paso de tipo Impuesto y no se encontró condición, usar 18% por defecto
-            if (paso.tipo === 'Impuesto') {
+            /*if (paso.tipo === 'Impuesto') {
               console.log('DEBUG: Applying IGV fallback (18%)')
               valorBase = 18
               esporcentaje = true
-            }
+            }*/
+            valorBase = 0
+            esporcentaje = true
           }
         } else {
           // Si no tiene condicion_id pero es de tipo Impuesto, aplicar IGV por defecto
           if (paso.tipo === 'Impuesto') {
             console.log('DEBUG: Step "Impuesto" without condicion_id - applying default 18%')
-            valorBase = 18
+            valorBase = 0
             esporcentaje = true
           }
         }
@@ -317,15 +358,34 @@ export default function VentaForm() {
           // 2.1 Combine variable context with dynamic line data
           // This ensures that line-specific values (like real quantity) take precedence
           const stepSlug = paso.descripcion_corta.toLowerCase().trim().replace(/\s+/g, '_')
+          const stepName = paso.descripcion_corta.toLowerCase().trim()
+          
+          // Create context WITHOUT spreading varContext directly, filter out stepSlug and step name from varContext
+          const filteredVarContext: Record<string, number> = {}
+          Object.keys(varContext).forEach(k => {
+            const stepSlugLower = stepSlug.toLowerCase()
+            const stepNameLower = stepName.toLowerCase()
+            const stepNameUnderscore = stepNameLower.replace(/\s+/g, '_')
+            // Also filter if varContext key is contained in step name (e.g., "descuento" in "valor_descuento")
+            const keyContained = stepSlugLower.includes(k) || stepNameLower.includes(k)
+            if (!keyContained) {
+              filteredVarContext[k] = varContext[k]
+            }
+          })
+          
           const evalContext: Record<string, number> = {
-            ...varContext,
+            ...filteredVarContext,
             cantidad: cantidad,
             precio_unit: precioUnitBase,
             subtotal: baseCalculo,
             valor_condicion: valorBase,
-            precio: valorBase, // Alias for condition value useful in initial steps
-            [stepSlug]: valorBase // Dynamically map step name to its condition value (e.g. 'descuento': 0 if not found)
+            precio: valorBase,
+            [stepSlug]: valorBase,
+            // Also add alias without prefix (e.g., "valor_descuento" -> also add "descuento")
+            ...(stepSlug.includes('_') ? { [stepSlug.split('_').pop()!]: valorBase } : {})
           }
+          
+          console.log(`DEBUG: Step "${paso.descripcion_corta}" - stepSlug: ${stepSlug}, valorBase: ${valorBase}, filter keys: ${Object.keys(filteredVarContext).join(', ')}`)
 
           // 2.2 Replace step references (s1, s2, etc.)
           formula = formula.replace(/\bs([0-9]+)\b/g, (match, num) => {
@@ -337,11 +397,17 @@ export default function VentaForm() {
           Object.keys(evalContext)
             .sort((a, b) => b.length - a.length)
             .forEach(vName => {
-              const regex = new RegExp(`\\b${vName}\\b`, 'g')
+              const regex = new RegExp(`\\b${vName}\\b`, 'gi')
               formula = formula.replace(regex, evalContext[vName].toString())
             })
+          
+          console.log(`DEBUG: Step "${paso.descripcion_corta}" - Formula after replace: "${formula}", valorBase: ${valorBase}`)
 
-          if (formula === '1' || formula === '') {
+          // If required condition not found, set valorFinal to 0 and skip formula evaluation
+          if (paso.condicion_id && !condicionEncontrada) {
+            console.log(`DEBUG: Step "${paso.descripcion_corta}" - Required condition not found, using 0`)
+            valorFinal = 0
+          } else if (formula === '1' || formula === '') {
             if (esporcentaje) {
               valorFinal = baseCalculo * (valorBase / 100)
             } else {
@@ -506,15 +572,60 @@ export default function VentaForm() {
     }
   }
 
+  const handleNumeroDocBlur = async () => {
+    if (!numeroIdentificacion) return
+    try {
+      const res = await apiFetch(`/api/clientes?search=${numeroIdentificacion}`)
+      if (res.ok) {
+        const body = await res.json()
+        const match = body.data?.find((c: any) => c.nif === numeroIdentificacion)
+        if (match) {
+          setCliente(match)
+          setNombre(match.nombre || '')
+          setNombresCompletos(match.nombres_completos || '')
+          setApellidosCompletos(match.apellidos_completos || '')
+          setDireccion(match.direccion || '')
+          toast.success('Cliente encontrado y cargado')
+        }
+      }
+    } catch (error) {
+      console.error('Error buscando cliente:', error)
+    }
+  }
+
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
-    if (!cliente) return toast.error('Debe seleccionar un cliente')
+    if (!docIdentificacion) return toast.error('Debe seleccionar un Documento de Identidad')
+    if (!numeroIdentificacion) return toast.error('Debe ingresar el número de documento')
+
+    if (docIdentificacion.abreviatura === 'RUC' && !nombre) {
+      return toast.error('Debe ingresar la Razón Social')
+    }
+    if (docIdentificacion.abreviatura !== 'RUC' && (!nombresCompletos || !apellidosCompletos)) {
+      return toast.error('Debe ingresar Nombres y Apellidos completos')
+    }
+
     if (!sucursal) return toast.error('Debe seleccionar una sucursal')
     if (!clasePedido) return toast.error('Debe seleccionar una clase de pedido')
     if (lineas.length === 0) return toast.error('Debe agregar al menos un producto')
 
     const invalidLine = lineas.find(l => !l.material_id || !l.almacen_id || !l.unidad_medida_id)
     if (invalidLine) return toast.error('Debe completar material, almacén y unidad para todos los productos')
+
+    const selectedMediosPagoIds = Object.keys(mediosPagoSeleccionados).filter(id => mediosPagoSeleccionados[Number(id)].selected)
+    
+    if (selectedMediosPagoIds.length === 0) {
+      return toast.error('Debe seleccionar al menos un medio de pago')
+    }
+
+    const sum = selectedMediosPagoIds.reduce((acc, id) => {
+      const mp = mediosPagoSeleccionados[Number(id)]
+      return acc + (parseFloat(mp.importe) || 0)
+    }, 0)
+
+    if (Math.abs(sum - totals.total) > 0.01) {
+      return toast.error(`La suma de medios de pago (${formatCurrency(sum, { symbol: monedaSimbolo })}) no cuadra con el total. Corrija los importes.`)
+    }
 
     if (clasePedido.registro_caja) {
       if (!monedaId) return toast.error('Debe seleccionar una moneda para validar la caja')
@@ -526,11 +637,25 @@ export default function VentaForm() {
 
     setLoading(true)
     try {
+      // Concatenar nombres y apellidos si ambos tienen valores
+      const nombreCompleto = (nombresCompletos && apellidosCompletos)
+        ? `${nombresCompletos} ${apellidosCompletos}`.trim()
+        : nombre
+
       const payload = {
         numero_pedido: `PED-${Date.now().toString().slice(-6)}`,
         comprobante,
         fecha_venta: new Date(fechaVenta).toISOString(),
-        cliente_id: cliente.id,
+        cliente_id: cliente?.id || null,
+        documento_identificacion_id: docIdentificacion.id,
+        numero_identificacion: numeroIdentificacion,
+        nombre: nombreCompleto,
+        nombres_completos: nombresCompletos,
+        apellidos_completos: apellidosCompletos,
+        direccion: direccion,
+        departamento: departamento,
+        provincia: provincia,
+        distrito: distrito,
         sucursal_id: sucursal.id,
         clase_pedido_id: clasePedido.id,
         moneda_id: monedaId,
@@ -540,6 +665,10 @@ export default function VentaForm() {
         impuesto: totals.impuesto,
         total: totals.total,
         observaciones,
+        medios_pago: selectedMediosPagoIds.map(id => ({
+          medio_pago_id: Number(id),
+          importe: parseFloat(mediosPagoSeleccionados[Number(id)].importe) || 0
+        })),
         detalles: lineas.map(l => ({
           material_id: l.material_id,
           almacen_id: l.almacen_id,
@@ -621,99 +750,288 @@ export default function VentaForm() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar Info */}
-        <aside className="w-[320px] h-full bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-6 flex flex-col gap-6 overflow-y-auto">
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">SUCURSAL</label>
-              <SucursalSelect
-                selectedLabel={sucursal?.descripcion}
-                onSelect={(s) => setSucursal({ id: s.id, descripcion: s.descripcion })}
-              />
-            </div>
+        <aside className="w-[320px] h-full bg-slate-50 dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 p-4 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
 
-            <div className="space-y-1">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">CLASE PEDIDO</label>
-              <ClasePedidoSelect
-                selectedLabel={clasePedido?.descripcion}
-                onSelect={async (c) => {
-                  setClasePedido({
-                    id: c.id,
-                    descripcion: c.descripcion,
-                    estado_stock_id: c.estado_stock_id,
-                    registro_caja: c.registro_caja,
-                    concepto_caja_id: c.concepto_caja_id
-                  })
-
-                  if (c.registro_caja) {
-                    if (sucursal?.id && monedaId) {
-                      const session = await checkActiveCashSession(sucursal.id, monedaId)
-                      if (!session) {
-                        toast.error('Atención: Esta clase de pedido requiere registro de caja, pero no se encontró una sesión aperturada.')
+          {/* Card: Transacción */}
+          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm shrink-0">
+            <button
+              onClick={() => setExpandedCards(p => ({ ...p, generales: !p.generales }))}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+            >
+              <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Datos Generales</span>
+              {expandedCards.generales ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            </button>
+            {expandedCards.generales && (
+              <div className="p-4 pt-0 space-y-4 border-t border-slate-100 dark:border-slate-800 mt-2">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">SUCURSAL</label>
+                  <SucursalSelect
+                    selectedLabel={sucursal?.descripcion}
+                    onSelect={(s) => setSucursal({ id: s.id, descripcion: s.descripcion })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">CLASE PEDIDO</label>
+                  <ClasePedidoSelect
+                    selectedLabel={clasePedido?.descripcion}
+                    onSelect={async (c) => {
+                      setClasePedido({
+                        id: c.id,
+                        descripcion: c.descripcion,
+                        estado_stock_id: c.estado_stock_id,
+                        registro_caja: c.registro_caja,
+                        concepto_caja_id: c.concepto_caja_id
+                      })
+                      if (c.registro_caja) {
+                        if (sucursal?.id && monedaId) {
+                          const session = await checkActiveCashSession(sucursal.id, monedaId)
+                          if (!session) {
+                            toast.error('Atención: Esta clase de pedido requiere registro de caja, pero no se encontró una sesión aperturada.')
+                          }
+                        } else {
+                          toast.error('Seleccione sucursal y moneda para validar la apertura de caja.')
+                        }
                       }
-                    } else {
-                      toast.error('Seleccione sucursal y moneda para validar la apertura de caja.')
-                    }
-                  }
-                }}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">MONEDA</label>
-              <MonedaSelect
-                value={monedaId || undefined}
-                onChange={(m) => {
-                  if (m) {
-                    setMonedaId(m.id)
-                    setMonedaSimbolo(m.simbolo)
-                  }
-                }}
-              />
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">CLIENTE</label>
-              <ClienteSelect
-                selectedLabel={cliente?.nombre}
-                onSelect={(c) => setCliente({ id: c.id, nombre: c.nombre })}
-              />
-            </div>
-
-            <div className="space-y-4 pt-2">
-              <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">COMPROBANTE</label>
-                <input
-                  type="text"
-                  placeholder="F001-000001"
-                  value={comprobante}
-                  onChange={(e) => setComprobante(e.target.value)}
-                  className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
-                />
+                    }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">MONEDA</label>
+                  <MonedaSelect
+                    value={monedaId || undefined}
+                    onChange={(m) => {
+                      if (m) {
+                        setMonedaId(m.id)
+                        setMonedaSimbolo(m.simbolo)
+                      }
+                    }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">COMPROBANTE</label>
+                  <input
+                    type="text"
+                    placeholder="F001-000001"
+                    value={comprobante}
+                    onChange={(e) => setComprobante(e.target.value)}
+                    className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">FECHA VENTA</label>
+                  <input
+                    type="date"
+                    value={fechaVenta}
+                    onChange={(e) => setFechaVenta(e.target.value)}
+                    className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
+                  />
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">FECHA VENTA</label>
-                <input
-                  type="date"
-                  value={fechaVenta}
-                  onChange={(e) => setFechaVenta(e.target.value)}
-                  className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 ml-1">OBSERVACIONES</label>
-              <textarea
-                rows={3}
-                placeholder="Notas adicionales..."
-                value={observaciones}
-                onChange={(e) => setObservaciones(e.target.value)}
-                className="w-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none resize-none"
-              />
-            </div>
+            )}
           </div>
 
-          <div className="mt-auto p-6 bg-slate-900 rounded-[28px] border border-slate-800 shadow-2xl">
+          {/* Card: Cliente */}
+          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm shrink-0">
+            <button
+              onClick={() => setExpandedCards(p => ({ ...p, cliente: !p.cliente }))}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+            >
+              <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Cliente</span>
+              {expandedCards.cliente ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            </button>
+            {expandedCards.cliente && (
+              <div className="p-4 pt-0 space-y-4 border-t border-slate-100 dark:border-slate-800 mt-2">
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">TIPO DOC.</label>
+                  <DocumentoIdentificacionSelect
+                    value={docIdentificacion?.id}
+                    onSelect={(d) => setDocIdentificacion({ id: d.id, abreviatura: d.abreviatura })}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">NÚMERO DOC.</label>
+                  <input
+                    type="text"
+                    value={numeroIdentificacion}
+                    onBlur={handleNumeroDocBlur}
+                    onChange={(e) => setNumeroIdentificacion(e.target.value)}
+                    className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
+                  />
+                </div>
+                {docIdentificacion?.abreviatura === 'RUC' ? (
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">RAZÓN SOCIAL</label>
+                    <input
+                      type="text"
+                      value={nombre}
+                      onChange={(e) => setNombre(e.target.value)}
+                      className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
+                    />
+                  </div>
+                ) : (
+                  <>
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">NOMBRES</label>
+                      <input
+                        type="text"
+                        value={nombresCompletos}
+                        onChange={(e) => setNombresCompletos(e.target.value)}
+                        className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">APELLIDOS</label>
+                      <input
+                        type="text"
+                        value={apellidosCompletos}
+                        onChange={(e) => setApellidosCompletos(e.target.value)}
+                        className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">DIRECCIÓN</label>
+                  <input
+                    type="text"
+                    value={direccion}
+                    onChange={(e) => setDireccion(e.target.value)}
+                    className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">DEP.</label>
+                    <input type="text" value={departamento} onChange={e => setDepartamento(e.target.value)} className="w-full h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">PROV.</label>
+                    <input type="text" value={provincia} onChange={e => setProvincia(e.target.value)} className="w-full h-10 px-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none" />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">DISTRITO</label>
+                  <input type="text" value={distrito} onChange={e => setDistrito(e.target.value)} className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Card: Medios de Pago */}
+          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm shrink-0">
+            <button
+              onClick={() => setExpandedCards(p => ({ ...p, pagos: !p.pagos }))}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Pagos</span>
+                {Object.values(mediosPagoSeleccionados).some(mp => mp.selected) && (
+                  <span className="size-2 rounded-full bg-blue-500"></span>
+                )}
+              </div>
+              {expandedCards.pagos ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            </button>
+            {expandedCards.pagos && (
+              <div className="p-4 pt-0 space-y-3 border-t border-slate-100 dark:border-slate-800 mt-2">
+                <div className="space-y-2">
+                  {mediosPagoOptions.map(mp => (
+                    <div key={mp.id} className="flex flex-col gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={mediosPagoSeleccionados[mp.id]?.selected || false}
+                          onChange={(e) => {
+                            const isChecked = e.target.checked
+                            let currentSum = 0
+                            Object.keys(mediosPagoSeleccionados).forEach(key => {
+                              if (Number(key) !== mp.id && mediosPagoSeleccionados[Number(key)]?.selected) {
+                                currentSum += parseFloat(mediosPagoSeleccionados[Number(key)].importe) || 0
+                              }
+                            })
+
+                            const remaining = Math.max(0, totals.total - currentSum)
+
+                            setMediosPagoSeleccionados(prev => ({
+                              ...prev,
+                              [mp.id]: {
+                                selected: isChecked,
+                                importe: isChecked ? remaining.toFixed(2) : ''
+                              }
+                            }))
+                          }}
+                          className="size-4 rounded text-blue-600 focus:ring-blue-500 outline-none"
+                        />
+                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{mp.descripcion}</span>
+                      </div>
+                      {mediosPagoSeleccionados[mp.id]?.selected && (
+                        <div className="relative ml-6">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold">{monedaSimbolo}</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={mediosPagoSeleccionados[mp.id]?.importe || ''}
+                            onChange={(e) => setMediosPagoSeleccionados({
+                              ...mediosPagoSeleccionados,
+                              [mp.id]: { selected: true, importe: e.target.value }
+                            })}
+                            className="w-full h-8 pl-8 pr-3 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold focus:border-blue-500 outline-none text-right"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+
+                  {(() => {
+                    const sum = Object.values(mediosPagoSeleccionados)
+                      .filter(mp => mp.selected)
+                      .reduce((acc, mp) => acc + (parseFloat(mp.importe) || 0), 0)
+                    const diff = totals.total - sum
+                    const isAnySelected = Object.values(mediosPagoSeleccionados).some(mp => mp.selected)
+
+                    if (!isAnySelected) return null
+
+                    return (
+                      <div className={cn(
+                        "mt-3 p-3 rounded-xl border text-[10px] font-black uppercase flex justify-between items-center",
+                        Math.abs(diff) < 0.01
+                          ? "bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/20 text-green-600 dark:text-green-400"
+                          : "bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400"
+                      )}>
+                        <span>DIFERENCIA:</span>
+                        <span className="text-sm">{monedaSimbolo} {Math.abs(diff).toFixed(2)}</span>
+                      </div>
+                    )
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Card: Otros */}
+          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm shrink-0">
+            <button
+              onClick={() => setExpandedCards(p => ({ ...p, otros: !p.otros }))}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+            >
+              <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Observaciones</span>
+              {expandedCards.otros ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            </button>
+            {expandedCards.otros && (
+              <div className="p-4 pt-0 border-t border-slate-100 dark:border-slate-800 mt-2">
+                <textarea
+                  rows={3}
+                  placeholder="Notas adicionales..."
+                  value={observaciones}
+                  onChange={(e) => setObservaciones(e.target.value)}
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none resize-none"
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="mt-auto p-6 bg-slate-900 rounded-[24px] border border-slate-800 shadow-2xl shrink-0">
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-500">Total</span>
