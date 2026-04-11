@@ -1,0 +1,22 @@
+prisma/seed.ts(1,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
+src/app/(dashboard)/maestros/materiales/components/MaterialForm.tsx(726,23): error TS2322: Type '{ className: string; placeholder: string; excludeIds: number[]; onSelect: (mat: any) => void; }' is not assignable to type 'IntrinsicAttributes & MaterialSelectProps'.
+  Property 'excludeIds' does not exist on type 'IntrinsicAttributes & MaterialSelectProps'.
+src/app/(dashboard)/maestros/materiales/components/MaterialForm.tsx(766,21): error TS2322: Type '{ className: string; placeholder: string; excludeIds: number[]; onSelect: (mat: any) => void; }' is not assignable to type 'IntrinsicAttributes & MaterialSelectProps'.
+  Property 'excludeIds' does not exist on type 'IntrinsicAttributes & MaterialSelectProps'.
+src/app/api/almacen/route.ts(104,57): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/app/api/dashboard/route.ts(72,45): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/api/dashboard/route.ts(77,62): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/app/api/dashboard/route.ts(83,39): error TS7006: Parameter 't' implicitly has an 'any' type.
+src/app/api/dashboard/route.ts(89,45): error TS7006: Parameter 'v' implicitly has an 'any' type.
+src/app/api/logistica/almacenes/route.ts(97,54): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/app/api/logistica/almacenes/route.ts(139,54): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/app/api/logistica/esquemas-valoracion/route.ts(5,10): error TS2305: Module '"@prisma/client"' has no exported member 'Prisma'.
+src/app/api/materiales/route.ts(94,32): error TS7006: Parameter 'm' implicitly has an 'any' type.
+src/app/api/materiales/route.ts(101,48): error TS7006: Parameter 'r' implicitly has an 'any' type.
+src/app/api/precios/promociones/route.ts(152,56): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/app/api/tesoreria/bancos/route.ts(116,52): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/app/api/usuarios/route.ts(58,39): error TS7006: Parameter 'u' implicitly has an 'any' type.
+src/app/api/ventas/route.ts(72,52): error TS7006: Parameter 'tx' implicitly has an 'any' type.
+src/lib/prisma.ts(1,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
+test-db.ts(1,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.
+tmp/check_states.ts(1,10): error TS2305: Module '"@prisma/client"' has no exported member 'PrismaClient'.

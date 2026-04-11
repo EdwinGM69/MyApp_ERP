@@ -1,0 +1,49 @@
+﻿{
+  "materials": [
+    {
+      "id": 2,
+      "codigo": "MAT-002",
+      "costo_promedio": "0.00",
+      "updated_at": "2026-03-27T02:25:07.898Z"
+    },
+    {
+      "id": 4,
+      "codigo": "MAT-004",
+      "costo_promedio": "0.00",
+      "updated_at": "2026-03-27T02:24:26.639Z"
+    },
+    {
+      "id": 3,
+      "codigo": "MAT-003",
+      "costo_promedio": "0.00",
+      "updated_at": "2026-03-27T01:41:38.064Z"
+    },
+    {
+      "id": 1,
+      "codigo": "MAT-001",
+      "costo_promedio": "0.00",
+      "updated_at": "2026-03-25T08:40:21.422Z"
+    },
+    {
+      "id": 5,
+      "codigo": "MAT-005",
+      "costo_promedio": "0.00",
+      "updated_at": "2026-03-25T08:40:11.569Z"
+    }
+  ],
+  "costs": [],
+  "schemes": [
+    {
+      "id": 3,
+      "codigo": "CON-001",
+      "nombre": "Consumibles",
+      "metodo_costo": "Promedio m├│vil"
+    },
+    {
+      "id": 1,
+      "codigo": "MAT-STD",
+      "nombre": "Material estandar",
+      "metodo_costo": "Precio est├índar"
+    }
+  ]
+}

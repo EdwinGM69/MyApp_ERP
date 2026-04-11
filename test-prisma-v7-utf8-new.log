@@ -1,0 +1,117 @@
+﻿Testing Prisma connection...
+node.exe : 
+Connection failed:
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs/node.exe" "
+C:\Users\Sistema\App
+Data\Roamin ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (Conn   
+ ection failed::    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+Message: SASL: SCRAM
+-SERVER-FIRST-MESSAG
+E: client password 
+must be a string
+Stack: Error: SASL: 
+SCRAM-SERVER-FIRST-M
+ESSAGE: client 
+password must be a 
+string
+    at C:\Personal\E
+mprendimientos\Start
+Up Tecnología\ERP Sa
+aS2\node_modules\pg-
+pool\index.js:45:11
+    at process.proce
+ssTicksAndRejections
+ (node:internal/proc
+ess/task_queues:103:
+5)
+    at async PrismaP
+gAdapter.performIO (
+C:\Personal\Emprendi
+mientos\StartUp 
+Tecnología\ERP SaaS2
+\node_modules\@prism
+a\adapter-pg\dist\in
+dex.js:652:22)
+    at async PrismaP
+gAdapter.queryRaw (C
+:\Personal\Emprendim
+ientos\StartUp 
+Tecnología\ERP SaaS2
+\node_modules\@prism
+a\adapter-pg\dist\in
+dex.js:602:30)
+    at async 
+e.interpretNode (C:\
+Personal\Emprendimie
+ntos\StartUp 
+Tecnología\ERP SaaS2
+\node_modules\@prism
+a\client-engine-runt
+ime\src\interpreter\
+query-interpreter.ts
+:186:26)
+    at async 
+e.interpretNode (C:\
+Personal\Emprendimie
+ntos\StartUp 
+Tecnología\ERP SaaS2
+\node_modules\@prism
+a\client-engine-runt
+ime\src\interpreter\
+query-interpreter.ts
+:213:41)
+    at async 
+e.interpretNode (C:\
+Personal\Emprendimie
+ntos\StartUp 
+Tecnología\ERP SaaS2
+\node_modules\@prism
+a\client-engine-runt
+ime\src\interpreter\
+query-interpreter.ts
+:272:41)
+    at async e.run (
+C:\Personal\Emprendi
+mientos\StartUp 
+Tecnología\ERP SaaS2
+\node_modules\@prism
+a\client-engine-runt
+ime\src\interpreter\
+query-interpreter.ts
+:94:23)
+    at async 
+e.execute (C:\Person
+al\Emprendimientos\S
+tartUp 
+Tecnología\ERP SaaS2
+\node_modules\@prism
+a\client\src\runtime
+\core\engines\client
+\LocalExecutor.ts:81
+:12)
+    at async 
+jt.request (C:\Perso
+nal\Emprendimientos\
+StartUp 
+Tecnología\ERP SaaS2
+\node_modules\@prism
+a\client\src\runtime
+\core\engines\client
+\ClientEngine.ts:492
+:22)

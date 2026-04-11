@@ -1,0 +1,93 @@
+﻿
+> erp-saas@0.1.0 build
+> prisma generate && next build
+
+node.exe : Loaded 
+Prisma config from 
+prisma.config.ts.
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs/node.exe" "
+C:\Users\Sistema\App
+Data\Roamin ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (Load   
+ ed Prisma c...i    
+sma.config.ts.:    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+
+Prisma schema 
+loaded from prisma\s
+chema.prisma.
+
+Ô£ö Generated Prisma Client (v7.5.0) to .\node_modules\@prisma\client in 1.13s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+
+Ôû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env
+
+ÔÜá The 
+"middleware" file 
+convention is 
+deprecated. Please 
+use "proxy" 
+instead. Learn 
+more: https://nextjs
+.org/docs/messages/m
+iddleware-to-proxy
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 16.5s
+  Running TypeScript ...
+Failed to type 
+check.
+
+./check_monedas.ts:1
+:30
+Type error: Cannot 
+find module './prism
+a/generated/client' 
+or its 
+corresponding type 
+declarations.
+
+[31m[1m>[0m 
+[90m1 |[0m 
+[36mimport[0m { [
+33mPrismaClient[0m 
+} [36mfrom[0m [32
+m'./prisma/generated
+/client'[0m
+  [90m  |[0m      
+                    
+    [31m[1m^[0m
+  [90m2 |[0m 
+[36mconst[0m 
+prisma = 
+[36mnew[0m [33mPr
+ismaClient[0m()
+  [90m3 |[0m 
+[36masync[0m 
+[36mfunction[0m 
+main() {
+  [90m4 |[0m   
+[36mconst[0m 
+monedas = 
+[36mawait[0m prism
+a.moneda.findMany()
+Next.js build 
+worker exited with 
+code: 1 and signal: 
+null

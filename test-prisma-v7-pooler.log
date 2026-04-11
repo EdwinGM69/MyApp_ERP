@@ -1,0 +1,196 @@
+﻿Testing Prisma connection...
+node.exe : 
+Connection failed:
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs/node.exe" "
+C:\Users\Sistema\App
+Data\Roamin ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (Conn   
+ ection failed::    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+PrismaClientKnownReq
+uestError: 
+Invalid `prisma.empr
+esa.count()` 
+invocation in
+C:\Personal\Emprendi
+mientos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\test-prisma-v7.ts:
+6:41
+
+  3 async function 
+test() {
+  4   console.log('T
+esting Prisma 
+connection...');
+  5   try {
+ÔåÆ 6     const 
+counts = await prism
+a.empresa.count(
+Error opening a TLS 
+connection: The 
+server does not 
+support SSL 
+connections
+    at Gr.handleRequ
+estError (C:\Persona
+l\Emprendimientos\St
+artUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client\src\runtim
+e\RequestHandler.ts:
+237:13)
+    at Gr.handleAndL
+ogRequestError (C:\P
+ersonal\Emprendimien
+tos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client\src\runtim
+e\RequestHandler.ts:
+183:12)
+    at Gr.request (C
+:\Personal\Emprendim
+ientos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client\src\runtim
+e\RequestHandler.ts:
+152:12)
+    at process.proce
+ssTicksAndRejections
+ (node:internal/proc
+ess/task_queues:103:
+5)
+    at async a (C:\P
+ersonal\Emprendimien
+tos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client\src\runtim
+e\getPrismaClient.ts
+:938:24)
+    at async test (C
+:\Personal\Emprendim
+ientos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\test-prisma-v7.ts:
+6:20) {
+  code: 'P1011',
+  meta: {
+    modelName: 
+'Empresa',
+    
+driverAdapterError: 
+DriverAdapterError: 
+TlsConnectionError
+        at PrismaPgA
+dapter.onError (C:\P
+ersonal\Emprendimien
+tos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\adapter-pg\dist\i
+ndex.js:687:11)
+        at PrismaPgA
+dapter.performIO (C:
+\Personal\Emprendimi
+entos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\adapter-pg\dist\i
+ndex.js:682:12)
+        at process.p
+rocessTicksAndReject
+ions (node:internal/
+process/task_queues:
+103:5)
+        at async Pri
+smaPgAdapter.queryRa
+w (C:\Personal\Empre
+ndimientos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\adapter-pg\dist\i
+ndex.js:602:30)
+        at async 
+e.interpretNode (C:\
+Personal\Emprendimie
+ntos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client-engine-run
+time\src\interpreter
+\query-interpreter.t
+s:186:26)
+        at async 
+e.interpretNode (C:\
+Personal\Emprendimie
+ntos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client-engine-run
+time\src\interpreter
+\query-interpreter.t
+s:213:41)
+        at async 
+e.interpretNode (C:\
+Personal\Emprendimie
+ntos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client-engine-run
+time\src\interpreter
+\query-interpreter.t
+s:272:41)
+        at async 
+e.run (C:\Personal\E
+mprendimientos\Start
+Up Tecnolog├¡a\ERP S
+aaS2\node_modules\@p
+risma\client-engine-
+runtime\src\interpre
+ter\query-interprete
+r.ts:94:23)
+        at async 
+e.execute (C:\Person
+al\Emprendimientos\S
+tartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client\src\runtim
+e\core\engines\clien
+t\LocalExecutor.ts:8
+1:12)
+        at async 
+jt.request (C:\Perso
+nal\Emprendimientos\
+StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client\src\runtim
+e\core\engines\clien
+t\ClientEngine.ts:49
+2:22) {
+      cause: 
+[Object]
+    }
+  },
+  clientVersion: 
+'7.5.0'
+}

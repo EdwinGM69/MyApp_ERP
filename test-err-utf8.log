@@ -1,0 +1,170 @@
+﻿node.exe : C:\Users\
+Sistema\AppData\Loca
+l\npm-cache\_npx\1bf
+7c3c15bf47d04\node_m
+odules\ts-node\src\i
+ndex.ts:859
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs/node.exe" "
+C:\Users\Sistema\App
+Data\Roamin ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (C:\U   
+ sers\Sistem...r    
+c\index.ts:859:    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+    return new TSErr
+or(diagnosticText, 
+diagnosticCodes, 
+diagnostics);
+           ^
+TSError: Ô¿» Unable 
+to compile 
+TypeScript:
+test-create.ts(8,7):
+ error TS2322: Type 
+'{ sucursal_id: 
+number; 
+tipo_operacion_id: 
+number; documento: 
+string; 
+numero_pedido: 
+string; cliente_id: 
+null; proveedor_id: 
+null; referencia: 
+string; 
+observaciones: 
+string; empresa_id: 
+number; created_by: 
+number; detalles: { 
+...; }; }' is not 
+assignable to type '
+(Without<MovimientoA
+lmacenCreateInput, M
+ovimientoAlmacenUnch
+eckedCreateInput> & 
+MovimientoAlmacenUnc
+heckedCreateInput) 
+| (Without<...> & Mo
+vimientoAlmacenCreat
+eInput)'.
+  Type '{ 
+sucursal_id: 
+number; 
+tipo_operacion_id: 
+number; documento: 
+string; 
+numero_pedido: 
+string; cliente_id: 
+null; proveedor_id: 
+null; referencia: 
+string; 
+observaciones: 
+string; empresa_id: 
+number; created_by: 
+number; detalles: { 
+...; }; }' is not 
+assignable to type '
+Without<MovimientoAl
+macenCreateInput, Mo
+vimientoAlmacenUnche
+ckedCreateInput> & M
+ovimientoAlmacenUnch
+eckedCreateInput'.
+    Property 
+'numero_mov' is 
+missing in type '{ 
+sucursal_id: 
+number; 
+tipo_operacion_id: 
+number; documento: 
+string; 
+numero_pedido: 
+string; cliente_id: 
+null; proveedor_id: 
+null; referencia: 
+string; 
+observaciones: 
+string; empresa_id: 
+number; created_by: 
+number; detalles: { 
+...; }; }' but 
+required in type 'Mo
+vimientoAlmacenUnche
+ckedCreateInput'.
+
+    at 
+createTSError (C:\Us
+ers\Sistema\AppData\
+Local\npm-cache\_npx
+\1bf7c3c15bf47d04\no
+de_modules\ts-node\s
+rc\index.ts:859:12)
+    at 
+reportTSError (C:\Us
+ers\Sistema\AppData\
+Local\npm-cache\_npx
+\1bf7c3c15bf47d04\no
+de_modules\ts-node\s
+rc\index.ts:863:19)
+    at getOutput (C:
+\Users\Sistema\AppDa
+ta\Local\npm-cache\_
+npx\1bf7c3c15bf47d04
+\node_modules\ts-nod
+e\src\index.ts:1077:
+36)
+    at 
+Object.compile (C:\U
+sers\Sistema\AppData
+\Local\npm-cache\_np
+x\1bf7c3c15bf47d04\n
+ode_modules\ts-node\
+src\index.ts:1433:41
+)
+    at 
+Module.m._compile (C
+:\Users\Sistema\AppD
+ata\Local\npm-cache\
+_npx\1bf7c3c15bf47d0
+4\node_modules\ts-no
+de\src\index.ts:1617
+:30)
+    at node:internal
+/modules/cjs/loader:
+1936:10
+    at Object.requir
+e.extensions.<comput
+ed> [as .ts] (C:\Use
+rs\Sistema\AppData\L
+ocal\npm-cache\_npx\
+1bf7c3c15bf47d04\nod
+e_modules\ts-node\sr
+c\index.ts:1621:12)
+    at Module.load (
+node:internal/module
+s/cjs/loader:1525:32
+)
+    at Module._load 
+(node:internal/modul
+es/cjs/loader:1327:1
+2)
+    at TracingChanne
+l.traceSync (node:di
+agnostics_channel:32
+8:14) {
+  diagnosticCodes: 
+[ 2322 ]
+}

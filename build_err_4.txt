@@ -1,0 +1,91 @@
+﻿
+> erp-saas@0.1.0 build
+> prisma generate && next build
+
+node.exe : Loaded 
+Prisma config from 
+prisma.config.ts.
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs/node.exe" "
+C:\Users\Sistema\App
+Data\Roamin ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (Load   
+ ed Prisma c...i    
+sma.config.ts.:    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+
+Prisma schema 
+loaded from prisma\s
+chema.prisma.
+
+Ô£ö Generated Prisma Client (v7.5.0) to .\node_modules\@prisma\client in 1.06s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+
+Ôû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env
+
+ÔÜá The 
+"middleware" file 
+convention is 
+deprecated. Please 
+use "proxy" 
+instead. Learn 
+more: https://nextjs
+.org/docs/messages/m
+iddleware-to-proxy
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 14.1s
+  Running TypeScript ...
+Failed to type 
+check.
+
+./src/app/api/logist
+ica/esquemas-valorac
+ion/[id]/materiales/
+route.ts:56:17
+Type error: Type 
+'number' is not 
+assignable to type 
+'boolean | BoolField
+UpdateOperationsInpu
+t | undefined'.
+
+  [90m54 |[0m     
+    }
+  [90m55 |[0m     
+  },
+[31m[1m>[0m 
+[90m56 |[0m       
+update: { activo: 
+[35m1[0m },
+  [90m   |[0m     
+            
+[31m[1m^[0m
+  [90m57 |[0m     
+  create: {
+  [90m58 |[0m     
+    esquema_id: 
+[33mNumber[0m(id),
+  [90m59 |[0m     
+    material_id: [3
+3mNumber[0m(materia
+lId),
+Next.js build 
+worker exited with 
+code: 1 and signal: 
+null

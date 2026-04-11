@@ -1,0 +1,167 @@
+﻿
+> erp-saas@0.1.0 build
+> prisma generate && next build
+
+node.exe : Loaded 
+Prisma config from 
+prisma.config.ts.
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs/node.exe" "
+C:\Users\Sistema\App
+Data\Roamin ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (Load   
+ ed Prisma c...i    
+sma.config.ts.:    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+
+Prisma schema 
+loaded from prisma\s
+chema.prisma.
+Error: Prisma 
+schema validation - 
+(get-dmmf wasm)
+Error code: P1012
+[1;91merror[0m: 
+[1mError 
+validating field 
+`empresa` in model 
+`EsquemaMaterial`: 
+The relation field 
+`empresa` on model 
+`EsquemaMaterial` 
+is missing an 
+opposite relation 
+field on the model 
+`Empresa`. Either 
+run `prisma format` 
+or add it 
+manually.[0m
+  [1;94m-->[0m  [
+4mprisma\schema.pris
+ma:416[0m
+[1;94m   | [0m
+[1;94m415 | [0m  
+material          
+Material           
+@relation(fields: 
+[material_id], 
+references: [id])
+[1;94m416 | [0m  
+[1;91mempresa      
+     Empresa        
+    
+@relation(fields: 
+[empresa_id], 
+references: 
+[id])[0m
+[1;94m417 | [0m  
+usuario_creador     
+Usuario?         @re
+lation("SustitutoCre
+ador", fields: 
+[created_by], 
+references: [id])
+[1;94m   | [0m
+[1;91merror[0m: 
+[1mError 
+validating field 
+`usuario_creador` 
+in model 
+`EsquemaMaterial`: 
+The relation field 
+`usuario_creador` 
+on model 
+`EsquemaMaterial` 
+is missing an 
+opposite relation 
+field on the model 
+`Usuario`. Either 
+run `prisma format` 
+or add it 
+manually.[0m
+  [1;94m-->[0m  [
+4mprisma\schema.pris
+ma:417[0m
+[1;94m   | [0m
+[1;94m416 | [0m  
+empresa           
+Empresa            
+@relation(fields: 
+[empresa_id], 
+references: [id])
+[1;94m417 | [0m  
+[1;91musuario_creado
+r     Usuario?      
+   @relation("Sustit
+utoCreador", 
+fields: 
+[created_by], 
+references: 
+[id])[0m
+[1;94m418 | [0m  
+usuario_modificador 
+Usuario?         @re
+lation("SustitutoMod
+ificador", fields: 
+[updated_by], 
+references: [id])
+[1;94m   | [0m
+[1;91merror[0m: 
+[1mError 
+validating field `us
+uario_modificador` 
+in model 
+`EsquemaMaterial`: 
+The relation field `
+usuario_modificador`
+ on model 
+`EsquemaMaterial` 
+is missing an 
+opposite relation 
+field on the model 
+`Usuario`. Either 
+run `prisma format` 
+or add it 
+manually.[0m
+  [1;94m-->[0m  [
+4mprisma\schema.pris
+ma:418[0m
+[1;94m   | [0m
+[1;94m417 | [0m  
+usuario_creador     
+Usuario?         @re
+lation("SustitutoCre
+ador", fields: 
+[created_by], 
+references: [id])
+[1;94m418 | [0m  
+[1;91musuario_modifi
+cador Usuario?      
+   @relation("Sustit
+utoModificador", 
+fields: 
+[updated_by], 
+references: 
+[id])[0m
+[1;94m419 | [0m
+[1;94m   | [0m
+
+Validation Error 
+Count: 3
+[Context: getDmmf]
+
+Prisma CLI Version 
+: 7.5.0

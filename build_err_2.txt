@@ -1,0 +1,103 @@
+﻿
+> erp-saas@0.1.0 build
+> prisma generate && next build
+
+node.exe : Loaded 
+Prisma config from 
+prisma.config.ts.
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs/node.exe" "
+C:\Users\Sistema\App
+Data\Roamin ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (Load   
+ ed Prisma c...i    
+sma.config.ts.:    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+
+Prisma schema 
+loaded from prisma\s
+chema.prisma.
+
+Ô£ö Generated Prisma Client (v7.5.0) to .\node_modules\@prisma\client in 1.01s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+
+Ôû▓ Next.js 16.2.1 (Turbopack)
+- Environments: .env
+
+ÔÜá The 
+"middleware" file 
+convention is 
+deprecated. Please 
+use "proxy" 
+instead. Learn 
+more: https://nextjs
+.org/docs/messages/m
+iddleware-to-proxy
+  Creating an optimized production build ...
+Ô£ô Compiled successfully in 14.6s
+  Running TypeScript ...
+Failed to type 
+check.
+
+./src/app/api/logist
+ica/esquemas-valorac
+ion/[id]/materiales/
+route.ts:9:36
+Type error: 
+Property 
+'esquemaMaterial' 
+does not exist on 
+type 'PrismaClient<P
+rismaClientOptions, 
+never, 
+DefaultArgs>'.
+
+  [90m 7 |[0m     
+[36mconst[0m { id 
+} = [36mawait[0m 
+params
+  [90m 8 |[0m     
+[36mconst[0m { 
+empresaId } = 
+[36mawait[0m 
+requireAuth(req)
+[31m[1m>[0m 
+[90m 9 |[0m     
+[36mconst[0m 
+materials = 
+[36mawait[0m prism
+a.esquemaMaterial.fi
+ndMany({
+  [90m   |[0m     
+                    
+           
+[31m[1m^[0m
+  [90m10 |[0m     
+  where: { 
+esquema_id: [33mNum
+ber[0m(id), 
+empresa_id: 
+empresaId },
+  [90m11 |[0m     
+  include: {
+  [90m12 |[0m     
+    material: {
+Next.js build 
+worker exited with 
+code: 1 and signal: 
+null

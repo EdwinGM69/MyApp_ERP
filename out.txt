@@ -1,0 +1,71 @@
+﻿node.exe : Loaded 
+Prisma config from 
+prisma.config.ts.
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs/node.exe" "
+C:\Users\Sistema\App
+Data\Roamin ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (Load   
+ ed Prisma c...i    
+sma.config.ts.:    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+
+Prisma schema 
+loaded from prisma\s
+chema.prisma.
+Error: Prisma 
+schema validation - 
+(get-dmmf wasm)
+Error code: P1012
+[1;91merror[0m: 
+[1mError 
+validating field `mo
+vimiento_detalles` 
+in model `EsquemaVal
+oracion`: The 
+relation field `movi
+miento_detalles` on 
+model 
+`EsquemaValoracion` 
+is missing an 
+opposite relation 
+field on the model `
+MovimientoAlmacenDet
+alle`. Either run 
+`prisma format` or 
+add it manually.[0m
+  [1;94m-->[0m  [
+4mprisma\schema.pris
+ma:346[0m
+[1;94m   | [0m
+[1;94m345 | [0m  
+material_costos     
+MaterialCosto[]
+[1;94m346 | [0m  
+[1;91mmovimiento_det
+alles MovimientoAlma
+cenDetalle[][0m
+[1;94m347 | [0m  
+materiales          
+Material[]
+[1;94m   | [0m
+
+Validation Error 
+Count: 1
+[Context: getDmmf]
+
+Prisma CLI Version 
+: 7.5.0

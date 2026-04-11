@@ -1,0 +1,40 @@
+﻿node.exe : PG Query 
+Failure: SASL: SCRAM
+-SERVER-FIRST-MESSAG
+E: client password 
+must be a string
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs\node.exe" 
+-e "const { Pool } 
+= require('pg ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (PG Q   
+ uery Failur...u    
+st be a string:    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+Error: SASL: SCRAM-S
+ERVER-FIRST-MESSAGE:
+ client password 
+must be a string
+    at C:\Personal\E
+mprendimientos\Start
+Up Tecnolog├¡a\ERP S
+aaS2\node_modules\pg
+-pool\index.js:45:11
+    at process.proce
+ssTicksAndRejections
+ (node:internal/proc
+ess/task_queues:103:
+5)

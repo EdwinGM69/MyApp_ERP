@@ -1,0 +1,31 @@
+﻿node.exe : Loaded 
+Prisma config from 
+prisma.config.ts.
+En línea: 1 Carácter: 1
++ & "C:\Program 
+Files\nodejs/node.exe" "
+C:\Users\Sistema\AppData
+\Roamin ...
++ ~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo      
+        : NotSpecified  
+  : (Loaded Prisma c.   
+ ..isma.config.ts.:S    
+tring) [], RemoteEx    
+ception
+    + FullyQualifiedErr 
+   orId : NativeComman  
+  dError
+ 
+
+Prisma schema loaded 
+from 
+prisma\schema.prisma.
+
+Ô£ö Generated Prisma Client (v7.5.0) to .\node_modules\@prisma\client in 1.30s
+
+Start by importing your Prisma Client (See: https://pris.ly/d/importing-client)
+
+

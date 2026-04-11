@@ -1,0 +1,115 @@
+﻿Testing Prisma connection...
+node.exe : 
+Connection failed:
+En línea: 1 
+Carácter: 1
++ & "C:\Program File
+s\nodejs/node.exe" "
+C:\Users\Sistema\App
+Data\Roamin ...
++ ~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~
+    + CategoryInfo  
+            : NotS  
+  pecified: (Conn   
+ ection failed::    
+String) [], Rem    
+oteException
+    + FullyQualifie 
+   dErrorId : Nati  
+  veCommandError
+ 
+Error: SASL: SCRAM-S
+ERVER-FIRST-MESSAGE:
+ client password 
+must be a string
+    at C:\Personal\E
+mprendimientos\Start
+Up Tecnolog├¡a\ERP S
+aaS2\node_modules\pg
+-pool\index.js:45:11
+    at process.proce
+ssTicksAndRejections
+ (node:internal/proc
+ess/task_queues:103:
+5)
+    at async PrismaP
+gAdapter.performIO (
+C:\Personal\Emprendi
+mientos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\adapter-pg\dist\i
+ndex.js:652:22)
+    at async PrismaP
+gAdapter.queryRaw (C
+:\Personal\Emprendim
+ientos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\adapter-pg\dist\i
+ndex.js:602:30)
+    at async 
+e.interpretNode (C:\
+Personal\Emprendimie
+ntos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client-engine-run
+time\src\interpreter
+\query-interpreter.t
+s:186:26)
+    at async 
+e.interpretNode (C:\
+Personal\Emprendimie
+ntos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client-engine-run
+time\src\interpreter
+\query-interpreter.t
+s:213:41)
+    at async 
+e.interpretNode (C:\
+Personal\Emprendimie
+ntos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client-engine-run
+time\src\interpreter
+\query-interpreter.t
+s:272:41)
+    at async e.run (
+C:\Personal\Emprendi
+mientos\StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client-engine-run
+time\src\interpreter
+\query-interpreter.t
+s:94:23)
+    at async 
+e.execute (C:\Person
+al\Emprendimientos\S
+tartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client\src\runtim
+e\core\engines\clien
+t\LocalExecutor.ts:8
+1:12)
+    at async 
+jt.request (C:\Perso
+nal\Emprendimientos\
+StartUp 
+Tecnolog├¡a\ERP SaaS
+2\node_modules\@pris
+ma\client\src\runtim
+e\core\engines\clien
+t\ClientEngine.ts:49
+2:22) {
+  clientVersion: 
+'7.5.0'
+}
