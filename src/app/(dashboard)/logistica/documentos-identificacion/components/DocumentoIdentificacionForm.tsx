@@ -12,6 +12,7 @@ interface Documento {
   id: number
   descripcion: string
   abreviatura: string
+  tipo: string
   activo: boolean
   created_at?: string
   updated_at?: string
@@ -30,12 +31,14 @@ export default function DocumentoIdentificacionForm({ documentoToEdit }: Documen
   // Form State
   const [descripcion, setDescripcion] = useState('')
   const [abreviatura, setAbreviatura] = useState('')
+  const [tipo, setTipo] = useState('Natural')
   const [activo, setActivo] = useState(true)
 
   useEffect(() => {
     if (documentoToEdit) {
       setDescripcion(documentoToEdit.descripcion)
       setAbreviatura(documentoToEdit.abreviatura)
+      setTipo(documentoToEdit.tipo)
       setActivo(documentoToEdit.activo)
     }
   }, [documentoToEdit])
@@ -48,6 +51,7 @@ export default function DocumentoIdentificacionForm({ documentoToEdit }: Documen
       id: documentoToEdit?.id,
       descripcion,
       abreviatura,
+      tipo,
       activo,
     }
 
@@ -143,6 +147,37 @@ export default function DocumentoIdentificacionForm({ documentoToEdit }: Documen
                     placeholder="Ej: CC, NIT, PAS, etc."
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider mb-4">Tipo Entidad incluida</label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setTipo('natural')}
+                      className={cn(
+                        "flex-1 py-3 px-4 rounded-xl border-2 font-bold text-sm transition-all flex items-center justify-center gap-2",
+                        tipo === 'natural'
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                          : "border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300 dark:hover:border-slate-600"
+                      )}
+                    >
+                      <span className="material-symbols-outlined text-xl">person</span>
+                      Persona Natural
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTipo('empresa')}
+                      className={cn(
+                        "flex-1 py-3 px-4 rounded-xl border-2 font-bold text-sm transition-all flex items-center justify-center gap-2",
+                        tipo === 'empresa'
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                          : "border-slate-200 dark:border-slate-700 text-slate-500 hover:border-slate-300 dark:hover:border-slate-600"
+                      )}
+                    >
+                      <span className="material-symbols-outlined text-xl">business</span>
+                      Empresa
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -209,7 +244,7 @@ export default function DocumentoIdentificacionForm({ documentoToEdit }: Documen
                       <>
                         <p className="text-sm font-black text-slate-800 dark:text-white leading-tight">{documentoToEdit.usuario_modificador.nombre}</p>
                         <p className="text-[10px] text-slate-400 font-medium mt-0.5">
-                           {documentoToEdit.updated_at ? format(new Date(documentoToEdit.updated_at), 'dd MMM, hh:mm aa') : ''}
+                          {documentoToEdit.updated_at ? format(new Date(documentoToEdit.updated_at), 'dd MMM, hh:mm aa') : ''}
                         </p>
                       </>
                     ) : (

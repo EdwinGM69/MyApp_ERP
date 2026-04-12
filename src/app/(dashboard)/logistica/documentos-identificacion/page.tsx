@@ -13,6 +13,7 @@ interface Documento {
   id: number
   descripcion: string
   abreviatura: string
+  tipo: string
   activo: boolean
 }
 
@@ -68,14 +69,14 @@ export default function DocumentosIdentificacionPage() {
   }
 
   const columns: Column<Documento>[] = [
-    { 
-      key: 'id', 
+    {
+      key: 'id',
       header: 'ID',
       width: 'w-24',
       render: (d: Documento) => <span className="text-slate-500 font-mono text-xs">{d.id}</span>
     },
-    { 
-      key: 'descripcion', 
+    {
+      key: 'descripcion',
       header: 'DESCRIPCIÓN DEL DOCUMENTO',
       render: (d: Documento) => (
         <div className="flex items-center gap-3">
@@ -91,8 +92,8 @@ export default function DocumentosIdentificacionPage() {
         </div>
       )
     },
-    { 
-      key: 'activo', 
+    {
+      key: 'activo',
       header: 'ESTADO',
       render: (d: Documento) => (
         <Badge variant={d.activo ? 'success' : 'neutral'}>

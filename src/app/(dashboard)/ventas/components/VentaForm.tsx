@@ -285,6 +285,7 @@ export default function VentaForm() {
       let precioUnitBase = 0 // Initialize to 0 as first step is expected to set it
       let subtotalBruto = 0
       let totalImpuesto = 0
+      let totalDescuento = 0
 
       const results: Record<string, number> = {}
       const varContext: Record<string, number> = {}
@@ -329,12 +330,6 @@ export default function VentaForm() {
             console.warn(`DEBUG: Step "${paso.descripcion_corta}" (CondId: ${paso.condicion_id}) NO found in ${todasCondiciones.length} active conditions.`)
             console.log('DEBUG: Active Cond IDs available:', todasCondiciones.map(c => c.tipo_condicion_id))
 
-            // FALLBACK: Si es un paso de tipo Impuesto y no se encontró condición, usar 18% por defecto
-            /*if (paso.tipo === 'Impuesto') {
-              console.log('DEBUG: Applying IGV fallback (18%)')
-              valorBase = 18
-              esporcentaje = true
-            }*/
             valorBase = 0
             esporcentaje = true
           }
@@ -359,7 +354,7 @@ export default function VentaForm() {
           // This ensures that line-specific values (like real quantity) take precedence
           const stepSlug = paso.descripcion_corta.toLowerCase().trim().replace(/\s+/g, '_')
           const stepName = paso.descripcion_corta.toLowerCase().trim()
-          
+
           // Create context WITHOUT spreading varContext directly, filter out stepSlug and step name from varContext
           const filteredVarContext: Record<string, number> = {}
           Object.keys(varContext).forEach(k => {
@@ -372,7 +367,7 @@ export default function VentaForm() {
               filteredVarContext[k] = varContext[k]
             }
           })
-          
+
           const evalContext: Record<string, number> = {
             ...filteredVarContext,
             cantidad: cantidad,
@@ -384,7 +379,7 @@ export default function VentaForm() {
             // Also add alias without prefix (e.g., "valor_descuento" -> also add "descuento")
             ...(stepSlug.includes('_') ? { [stepSlug.split('_').pop()!]: valorBase } : {})
           }
-          
+
           console.log(`DEBUG: Step "${paso.descripcion_corta}" - stepSlug: ${stepSlug}, valorBase: ${valorBase}, filter keys: ${Object.keys(filteredVarContext).join(', ')}`)
 
           // 2.2 Replace step references (s1, s2, etc.)
@@ -400,7 +395,7 @@ export default function VentaForm() {
               const regex = new RegExp(`\\b${vName}\\b`, 'gi')
               formula = formula.replace(regex, evalContext[vName].toString())
             })
-          
+
           console.log(`DEBUG: Step "${paso.descripcion_corta}" - Formula after replace: "${formula}", valorBase: ${valorBase}`)
 
           // If required condition not found, set valorFinal to 0 and skip formula evaluation
@@ -445,6 +440,10 @@ export default function VentaForm() {
         } else if (paso.tipo === 'Subtotal') {
           subtotalBruto = valorFinal // Running total for next steps
           console.log(`DEBUG: Updated Running Subtotal: ${subtotalBruto}`)
+        } else if (paso.tipo === 'Descuento') {
+          totalDescuento = valorFinal
+          subtotalBruto = subtotalBruto - valorFinal
+          console.log(`DEBUG: Step Descuento: valorFinal=${valorFinal}, totalDescuento=${totalDescuento}, subtotalBruto=${subtotalBruto}`)
         }
 
         return {
@@ -467,8 +466,9 @@ export default function VentaForm() {
           l.pasos_calculados = pasosCalculados
           l.cantidad = cantidad
           l.precio_unit = precioUnitBase
+          l.descuento = totalDescuento
           l.impuesto = totalImpuesto
-          l.subtotal = subtotalBruto + totalImpuesto - l.descuento
+          l.subtotal = subtotalBruto + totalImpuesto
         }
         return next
       })
@@ -575,16 +575,25 @@ export default function VentaForm() {
   const handleNumeroDocBlur = async () => {
     if (!numeroIdentificacion) return
     try {
-      const res = await apiFetch(`/api/clientes?search=${numeroIdentificacion}`)
+      const res = await apiFetch(`/api/clientes?search=${numeroIdentificacion}&pageSize=50`)
       if (res.ok) {
         const body = await res.json()
-        const match = body.data?.find((c: any) => c.nif === numeroIdentificacion)
+        console.log('DEBUG: Clientes encontrados:', body.data?.length, 'buscando:', numeroIdentificacion)
+        console.log('DEBUG: Datos recibidos:', JSON.stringify(body.data))
+        const match = body.data?.find((c: any) => c.nif?.toString()?.toLowerCase() === numeroIdentificacion.toLowerCase())
+        console.log('DEBUG: Cliente match:', match)
         if (match) {
           setCliente(match)
           setNombre(match.nombre || '')
           setNombresCompletos(match.nombres_completos || '')
           setApellidosCompletos(match.apellidos_completos || '')
           setDireccion(match.direccion || '')
+          setDepartamento(match.departamento || '')
+          setProvincia(match.provincia || '')
+          setDistrito(match.distrito || '')
+          console.log('DEBUG: Departamento asignado:', match.departamento)
+          console.log('DEBUG: Provincia asignado:', match.provincia)
+          console.log('DEBUG: Distrito asignado:', match.distrito)
           toast.success('Cliente encontrado y cargado')
         }
       }
@@ -613,7 +622,7 @@ export default function VentaForm() {
     if (invalidLine) return toast.error('Debe completar material, almacén y unidad para todos los productos')
 
     const selectedMediosPagoIds = Object.keys(mediosPagoSeleccionados).filter(id => mediosPagoSeleccionados[Number(id)].selected)
-    
+
     if (selectedMediosPagoIds.length === 0) {
       return toast.error('Debe seleccionar al menos un medio de pago')
     }

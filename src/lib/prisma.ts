@@ -33,22 +33,24 @@ if (!dbUrl) {
   throw new Error('No database URL found. Please set DB_DIRECT_URL, DIRECT_URL, or DATABASE_URL environment variable.')
 }
 
-const connectionString = dbUrl.replace('sslmode=require', 'sslmode=verify-full')
+const connectionString = dbUrl.replace('sslmode=require', '').replace('sslmode=verify-full', '').replace('&&', '&').replace('?&', '?').replace(/&\s*$/, '').replace(/\?$/, '')
 
 console.log('[PRISMA] Environment:', process.env.NODE_ENV)
 console.log('[PRISMA] Using connection string:', connectionString.replace(/:[^:@]+@/, ':****@'))
 
-// SSL configuration - allow self-signed certificates for Supabase pooler
-const isSupabase = connectionString.includes('supabase.co') || connectionString.includes('pooler')
-const sslConfig = isSupabase
-  ? { rejectUnauthorized: false }
-  : process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: true }
-    : { rejectUnauthorized: false }
+// SSL configuration - allow self-signed certificates
+const env = process.env.NODE_ENV?.trim()
+const sslConfig = env === 'production'
+  ? { rejectUnauthorized: true }
+  : { rejectUnauthorized: false }
+
+console.log('[PRISMA] SSL config:', JSON.stringify(sslConfig))
 
 const pool = new Pool({
   connectionString,
-  ssl: sslConfig
+  ssl: {
+    rejectUnauthorized: false
+  }
 })
 const adapter = new PrismaPg(pool)
 

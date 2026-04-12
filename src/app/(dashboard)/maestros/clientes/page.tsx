@@ -69,6 +69,9 @@ export default function ClientesPage() {
   }, [selectedId, clientes])
 
   const handleOpenEditor = (c?: Cliente) => {
+    if (c) {
+      console.log('DEBUG: Abriendo editor con cliente:', JSON.stringify(c))
+    }
     setEditingData(c || {
       codigo: '',
       tipo: 'natural',
@@ -91,7 +94,9 @@ export default function ClientesPage() {
 
   const handleSave = async () => {
     if (!editingData) return
-    
+
+    console.log('DEBUG: Guardando cliente:', JSON.stringify(editingData))
+
     // Convert empty strings to null for optional fields
     const dataToSave = {
       ...editingData,
@@ -107,7 +112,9 @@ export default function ClientesPage() {
       distrito: editingData.distrito || null,
       contacto: editingData.contacto || null,
     }
-    
+
+    console.log('DEBUG: Data a guardar:', JSON.stringify(dataToSave))
+
     setSaving(true)
     try {
       const isNew = !editingData.id
@@ -360,7 +367,7 @@ export default function ClientesPage() {
                     type="text"
                     value={editingData.direccion || ''}
                     onChange={(e) => setEditingData({ ...editingData, direccion: e.target.value })}
-                    placeholder="Av. Principal 123"
+                    placeholder="Ej: Av. Principal 123"
                     className="w-full h-12 px-5 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none text-sm font-bold bg-slate-50/50 dark:bg-slate-900 focus:ring-2 focus:ring-primary/20 transition-all"
                   />
                 </div>
@@ -383,7 +390,7 @@ export default function ClientesPage() {
                       type="text"
                       value={editingData.departamento || ''}
                       onChange={(e) => setEditingData({ ...editingData, departamento: e.target.value })}
-                      placeholder="Lima"
+                      placeholder="Ej: Lima"
                       className="w-full h-12 px-5 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none text-sm font-bold bg-slate-50/50 dark:bg-slate-900 focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                   </div>
@@ -393,7 +400,7 @@ export default function ClientesPage() {
                       type="text"
                       value={editingData.provincia || ''}
                       onChange={(e) => setEditingData({ ...editingData, provincia: e.target.value })}
-                      placeholder="Lima"
+                      placeholder="Ej: Lima"
                       className="w-full h-12 px-5 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none text-sm font-bold bg-slate-50/50 dark:bg-slate-900 focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                   </div>
@@ -403,7 +410,7 @@ export default function ClientesPage() {
                       type="text"
                       value={editingData.distrito || ''}
                       onChange={(e) => setEditingData({ ...editingData, distrito: e.target.value })}
-                      placeholder="Lince"
+                      placeholder="Ej: Lince"
                       className="w-full h-12 px-5 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none text-sm font-bold bg-slate-50/50 dark:bg-slate-900 focus:ring-2 focus:ring-primary/20 transition-all"
                     />
                   </div>

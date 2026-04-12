@@ -11,7 +11,7 @@ process.env.PGSSLMODE_DISABLE = '1'
 
 const connectionString = (process.env.POSTGRES_URL_NON_POOLING || process.env.DATABASE_URL || '').replace('sslmode=require', 'sslmode=disable')
 
-const pool = new Pool({ 
+const pool = new Pool({
   connectionString,
   ssl: false,
 })
@@ -58,7 +58,7 @@ async function main() {
     create: {
       empresa_id: empresa.id,
       rol_id: adminRol.id,
-      nombre: 'Carlos Mendoza',
+      nombre: 'Administrador',
       email: 'admin@empresademo.com',
       password_hash: passwordHash,
       activo: true,

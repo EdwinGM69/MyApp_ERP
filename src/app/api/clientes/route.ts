@@ -55,6 +55,8 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
+    console.log('DEBUG API clientes - search:', search, 'encontrados:', total, 'pageSize:', pageSize)
+    console.log('DEBUG API clientes - primer resultado:', clientes[0] ? JSON.stringify(clientes[0]) : 'sin datos')
     return NextResponse.json({ data: clientes, total, page, pageSize, totalPages: Math.ceil(total / pageSize) })
   } catch (err) {
     return NextResponse.json({ error: 'Error al obtener clientes' }, { status: 500 })
@@ -65,6 +67,7 @@ export async function POST(req: NextRequest) {
   try {
     const { empresaId, userId } = await requireAuth(req)
     const body = await req.json()
+    console.log('DEBUG POST clientes - body recibido:', JSON.stringify(body))
     const data = clienteSchema.parse(body)
 
     // Validar que no exista un cliente con el mismo codigo o nombre

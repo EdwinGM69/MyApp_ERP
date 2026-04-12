@@ -84,24 +84,73 @@ export async function GET(req: NextRequest) {
         take: pageSize,
         orderBy: { fecha_venta: 'desc' },
         include: {
-          cliente: {
-            select: { id: true, nombre: true, codigo: true, tipo: true }
+          cliente: { select: { id: true, nombre: true, codigo: true, tipo: true, nif: true } },
+          sucursal: { select: { id: true, descripcion: true } },
+          moneda: { select: { id: true, descripcion: true, simbolo: true } },
+          dcto_identificacion: { select: { id: true, abreviatura: true, descripcion: true } },
+          detalles: {
+            include: {
+              material: { select: { id: true, codigo: true, descripcion: true } },
+              unidad_medida: { select: { id: true, abreviatura: true } },
+              condiciones: {
+                select: {
+                  id: true, descripcion_corta: true, simbolo: true,
+                  tipo: true, valor_condicion: true, importe: true
+                }
+              }
+            }
           },
-          sucursal: {
-            select: { id: true, descripcion: true }
-          },
-          moneda: {
-            select: { id: true, descripcion: true, simbolo: true }
-          },
-          dcto_identificacion: true,
           medios_pago: {
-            include: { medio_pago: true }
-          }
+            include: { medio_pago: { select: { id: true, descripcion: true } } }
+          },
         }
       }),
     ])
 
-    return NextResponse.json({ data: ventas, total, page, pageSize, totalPages: Math.ceil(total / pageSize) })
+    // Enrich each venta with its FlujoDocumentos (Venta → CajaTransaccion, MovimientoAlmacen)
+    const ventasEnriquecidas = await Promise.all(ventas.map(async (v) => {
+      // 1. Get the FlujoDocumentos entry for this venta (tipo_referencia = 'V')
+      const flujoVenta = await prisma.flujoDocumentos.findFirst({
+        where: { empresa_id: empresaId, referencia_id: v.id, tipo_referencia: 'V' }
+      })
+
+      // 2. Get dependent flujos (tipo 'C' and 'I') that have referencia_anterior_id = v.id
+      const flujosHijos = await prisma.flujoDocumentos.findMany({
+        where: { empresa_id: empresaId, referencia_anterior_id: v.id, activo: true }
+      })
+
+      // 3. Resolve Caja and Almacen data
+      let flujoCaja: { id: number; created_at: Date } | null = null
+      let flujoAlmacen: { id: number; numero_mov: string; created_at: Date } | null = null
+
+      for (const f of flujosHijos) {
+        if (f.tipo_referencia === 'C') {
+          const tc = await prisma.transaccionCaja.findUnique({
+            where: { id: f.referencia_id },
+            select: { id: true, created_at: true }
+          })
+          if (tc) flujoCaja = tc
+        }
+        if (f.tipo_referencia === 'I') {
+          const ma = await prisma.movimientoAlmacen.findUnique({
+            where: { id: f.referencia_id },
+            select: { id: true, numero_mov: true, created_at: true }
+          })
+          if (ma) flujoAlmacen = ma
+        }
+      }
+
+      return {
+        ...v,
+        flujo_documentos: {
+          venta: flujoVenta ? { id: flujoVenta.id, created_at: flujoVenta.created_at } : null,
+          caja: flujoCaja,
+          almacen: flujoAlmacen,
+        }
+      }
+    }))
+
+    return NextResponse.json({ data: ventasEnriquecidas, total, page, pageSize, totalPages: Math.ceil(total / pageSize) })
   } catch (err: any) {
     console.error('Error al obtener ventas:', err)
     return NextResponse.json({
@@ -140,6 +189,17 @@ export async function POST(req: NextRequest) {
       const signoOrigen = clasePedido.tipo_operacion?.signo_origen
       if (!signoOrigen) throw new Error('Tipo de operación no tiene signo_origen definido')
 
+      // 1.1 Fetch DocumentoIdentificacion configuration
+      const documentoIdentificacion = await tx.documentoIdentificacion.findUnique({
+        where: { id: documento_identificacion_id },
+        select: { tipo: true }
+      })
+
+      if (!documentoIdentificacion) throw new Error('Tipo documento identificación no encontrado')
+
+      const tipoEntidad = documentoIdentificacion.tipo
+      if (!tipoEntidad) throw new Error('Tipo Entidad no definida en DOcumentoIdentificacion')
+
       // 2. Manage Cliente
       let finalClienteId = cliente_id
       if (!finalClienteId && ventaData.numero_identificacion) {
@@ -153,7 +213,7 @@ export async function POST(req: NextRequest) {
             data: {
               empresa_id: empresaId,
               codigo: `C-${Date.now().toString().slice(-6)}`,
-              tipo: 'natural',
+              tipo: tipoEntidad,
               nombre: nombreFinal,
               nombres_completos: ventaData.nombres_completos,
               apellidos_completos: ventaData.apellidos_completos,
@@ -190,7 +250,7 @@ export async function POST(req: NextRequest) {
               precio_unit: d.precio_unit,
               descuento: d.descuento,
               impuesto: d.impuesto,
-              subtotal: d.subtotal - d.impuesto,
+              subtotal: (d.cantidad * d.precio_unit) - d.descuento,
               created_by: userId,
               condiciones: d.condiciones ? {
                 create: d.condiciones.filter((c: any) => c.condicion_id).map((c: any) => ({

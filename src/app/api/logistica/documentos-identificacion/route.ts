@@ -6,6 +6,7 @@ import { z } from 'zod'
 const documentoSchema = z.object({
   descripcion: z.string().min(1, 'La descripción es requerida'),
   abreviatura: z.string().min(1, 'La abreviatura es requerida'),
+  tipo: z.string(),
   activo: z.boolean().optional(),
 })
 
@@ -64,17 +65,17 @@ export async function POST(req: NextRequest) {
   try {
     const { empresaId, userId } = await requireAuth(req)
     const body = await req.json()
-    
+
     const data = documentoSchema.parse(body)
 
     const documento = await prisma.documentoIdentificacion.create({
-      data: { 
-        ...data, 
-        empresa_id: empresaId, 
-        created_by: userId 
+      data: {
+        ...data,
+        empresa_id: empresaId,
+        created_by: userId
       },
     })
-    
+
     return NextResponse.json(documento, { status: 201 })
   } catch (err: any) {
     console.error('[POST /api/logistica/documentos-identificacion] Error:', err)
@@ -98,9 +99,9 @@ export async function PUT(req: NextRequest) {
 
     const documento = await prisma.documentoIdentificacion.update({
       where: { id: Number(id), empresa_id: empresaId },
-      data: { 
-        ...data, 
-        updated_by: userId 
+      data: {
+        ...data,
+        updated_by: userId
       },
     })
     return NextResponse.json(documento)
@@ -122,12 +123,12 @@ export async function DELETE(req: NextRequest) {
     const { empresaId } = await requireAuth(req)
     const body = await req.json()
     const { id } = body
-    
-    await prisma.documentoIdentificacion.update({ 
-        where: { id: Number(id), empresa_id: empresaId }, 
-        data: { activo: false } 
+
+    await prisma.documentoIdentificacion.update({
+      where: { id: Number(id), empresa_id: empresaId },
+      data: { activo: false }
     })
-    
+
     return NextResponse.json({ ok: true })
   } catch (err) {
     return NextResponse.json({ error: 'Error al desactivar el documento' }, { status: 500 })
