@@ -19,6 +19,41 @@ const empresaSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
+    const { searchParams } = req.nextUrl
+    const search = searchParams.get('search')
+    const page = parseInt(searchParams.get('page') ?? '1')
+    const pageSize = parseInt(searchParams.get('pageSize') ?? '50')
+
+    // Si hay parámetros de búsqueda, devolver lista de empresas
+    if (search || pageSize !== 50 || page !== 1) {
+      const where = search ? {
+        OR: [
+          { nombre: { contains: search, mode: 'insensitive' as const } },
+          { nif: { contains: search, mode: 'insensitive' as const } },
+        ]
+      } : {}
+
+      const [total, empresas] = await Promise.all([
+        prisma.empresa.count({ where }),
+        prisma.empresa.findMany({
+          where,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+          orderBy: { nombre: 'asc' },
+          select: { id: true, nombre: true, nif: true }
+        })
+      ])
+
+      return NextResponse.json({ 
+        data: empresas, 
+        total, 
+        page, 
+        pageSize, 
+        totalPages: Math.ceil(total / pageSize) 
+      })
+    }
+
+    // Comportamiento original: devolver empresa del usuario
     const { empresaId } = await requireAuth(req)
 
     const empresa = await prisma.empresa.findUnique({

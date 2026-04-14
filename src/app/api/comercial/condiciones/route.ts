@@ -57,12 +57,30 @@ export async function GET(req: NextRequest) {
     const { searchParams } = req.nextUrl
 
     const tipoCondicionId = searchParams.get('tipo_condicion_id')
+    const materialIdsParam = searchParams.get('materialIds')
     const materialId = searchParams.get('material_id')
+    
+    let materialIds: number[] = []
+    if (materialIdsParam) {
+      materialIds = materialIdsParam.split(',').map(Number).filter(n => !isNaN(n))
+    }
 
-    const where = {
+    const now = new Date()
+    
+    const where: any = {
       empresa_id: empresaId,
+      activo: true,
+      fecha_desde: { lte: now },
       ...(tipoCondicionId ? { tipo_condicion_id: Number(tipoCondicionId) } : {}),
-      ...(materialId ? { material_id: Number(materialId) } : {}),
+    }
+    
+    if (materialIds.length > 0) {
+      where.OR = [
+        { material_id: { in: materialIds } },
+        { material_id: null }
+      ]
+    } else if (materialId) {
+      where.material_id = Number(materialId)
     }
 
     const condiciones = await prisma.condicion.findMany({

@@ -55,11 +55,20 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') ?? '1')
     const pageSize = parseInt(searchParams.get('pageSize') ?? '10')
     const search = searchParams.get('search') ?? ''
+    const sucursalId = searchParams.get('sucursalId')
 
     const where = {
       empresa_id: empresaId,
       ...(search ? {
         descripcion: { contains: search, mode: 'insensitive' as const }
+      } : {}),
+      ...(sucursalId ? {
+        sucursales_vinculadas: {
+          some: {
+            sucursal_id: parseInt(sucursalId),
+            activo: true
+          }
+        }
       } : {}),
     }
 

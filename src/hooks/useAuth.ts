@@ -13,6 +13,9 @@ interface AuthUser {
   monedaDefault: string
   monedaId?: number
   monedaSimbolo: string
+  hasSucursales: boolean
+  currentSucursal: any | null
+  userSucursales: any[]
 }
 
 interface AuthStore {

@@ -15,6 +15,7 @@ const usuarioSchema = z.object({
   is_superadmin: z.boolean().optional(),
   two_factor_enabled: z.boolean().optional(),
   preferencias: z.any().optional(),
+  last_sucursal_id: z.number().int().positive().optional().nullable(),
   roles_adicionales: z.array(z.number().int().positive()).optional(),
 })
 
@@ -31,11 +32,11 @@ export async function GET(req: NextRequest) {
       empresa_id: empresaId,
       ...(search
         ? {
-            OR: [
-              { nombre: { contains: search, mode: 'insensitive' as const } },
-              { email: { contains: search, mode: 'insensitive' as const } },
-            ],
-          }
+          OR: [
+            { nombre: { contains: search, mode: 'insensitive' as const } },
+            { email: { contains: search, mode: 'insensitive' as const } },
+          ],
+        }
         : {}),
     }
 
@@ -107,6 +108,7 @@ export async function POST(req: NextRequest) {
         preferencias: data.preferencias ? data.preferencias : undefined,
         empresa_id: empresaId,
         created_by: userId,
+        last_sucursal_id: data.last_sucursal_id || null,
         roles_adicionales: data.roles_adicionales && data.roles_adicionales.length > 0 ? {
           create: data.roles_adicionales.map((rolId: any) => ({
             rol_id: rolId

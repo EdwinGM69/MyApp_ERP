@@ -16,18 +16,19 @@ interface Material {
   moneda: string
 }
 
+interface MaterialCategoria {
+  id: number
+  codigo: string
+  descripcion: string
+}
+
 interface PromocionDetalle {
   id?: number
   material_id: number
-  tipo_promocion?: string | null
-  tipo_descuento?: string | null
-  valor?: number | null
-  material?: Material
 }
 
 interface Promocion {
   id: number
-  codigo_promocion: string
   nombre: string
   descripcion?: string | null
   tipo: string
@@ -35,6 +36,7 @@ interface Promocion {
   fecha_fin?: string | null
   activo: boolean
   detalles?: PromocionDetalle[]
+  categorias?: { categoria_id: number, categoria: { id: number, descripcion: string } }[]
   created_at?: string
   updated_at?: string
   creador?: { nombre: string }
@@ -50,10 +52,12 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
   const isEditing = !!promocionToEdit
   const [saving, setSaving] = useState(false)
   const [materiales, setMateriales] = useState<Material[]>([])
+  const [categorias, setCategorias] = useState<MaterialCategoria[]>([])
+  const [isSelectingCategoria, setIsSelectingCategoria] = useState(false)
+  const [assignedCategorias, setAssignedCategorias] = useState<number[]>([])
   const [mounted, setMounted] = useState(false)
 
   // Form state
-  const [codigoPromocion, setCodigoPromocion] = useState(promocionToEdit?.codigo_promocion ?? '')
   const [nombre, setNombre] = useState(promocionToEdit?.nombre ?? '')
   const [descripcion, setDescripcion] = useState(promocionToEdit?.descripcion ?? '')
   const [tipo, setTipo] = useState(promocionToEdit?.tipo ?? 'Descuento %')
@@ -72,14 +76,31 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
     }
   }, [])
 
+  const fetchCategorias = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/materiales/categorias?pageSize=1000')
+      const json = await res.json()
+      setCategorias(json.data ?? [])
+    } catch (error) {
+      console.error('Error al cargar categorías:', error)
+    }
+  }, [])
+
   useEffect(() => {
     fetchMateriales()
+    fetchCategorias()
     setMounted(true)
     if (!promocionToEdit) {
-      setCodigoPromocion(`PROM-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`)
       setFechaInicio(new Date().toISOString().split('T')[0])
     }
-  }, [fetchMateriales, promocionToEdit])
+  }, [fetchMateriales, fetchCategorias, promocionToEdit])
+
+  useEffect(() => {
+    if (promocionToEdit?.categorias) {
+      const cats = promocionToEdit.categorias.map(c => c.categoria_id)
+      setAssignedCategorias(cats)
+    }
+  }, [promocionToEdit])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -87,18 +108,18 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
 
     const payload = {
       id: promocionToEdit?.id,
-      codigo_promocion: codigoPromocion,
       nombre,
       descripcion: descripcion || null,
       tipo,
       fecha_inicio: fechaInicio,
       fecha_fin: fechaFin || null,
       activo,
+      cantidad_compra: 2,
+      cantidad_regalo: 1,
+      canales: [],
+      categorias: assignedCategorias.map(id => ({ categoria_id: id })),
       detalles: detallesLineas.filter(d => d.material_id).map(d => ({
         material_id: Number(d.material_id),
-        tipo_promocion: d.tipo_promocion || 'Descuento',
-        tipo_descuento: d.tipo_descuento || 'Porcentaje',
-        valor: d.valor ? Number(d.valor) : 0
       }))
     }
 
@@ -124,7 +145,7 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
   }
 
   const addLinea = () => {
-    setDetallesLineas([...detallesLineas, { material_id: 0, tipo_promocion: 'Descuento', tipo_descuento: 'Porcentaje', valor: 0 }])
+    setDetallesLineas([...detallesLineas, { material_id: 0 }])
   }
 
   const updateLinea = (index: number, field: string, value: any) => {
@@ -139,6 +160,19 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
     setDetallesLineas(newLineas)
   }
 
+  const handleAddCategoria = (categoriaId: number) => {
+    if (!assignedCategorias.includes(categoriaId)) {
+      setAssignedCategorias([...assignedCategorias, categoriaId])
+    }
+    setIsSelectingCategoria(false)
+  }
+
+  const handleRemoveCategoria = (categoriaId: number) => {
+    setAssignedCategorias(assignedCategorias.filter(id => id !== categoriaId))
+  }
+
+  const availableCategoriasToAdd = categorias.filter(c => !assignedCategorias.includes(c.id))
+
   const formatAuditDate = (dateString?: string) => {
     if (!dateString) return '--'
     try {
@@ -149,9 +183,8 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
   }
 
   return (
-    <div className="flex flex-col min-h-full">
-      {/* Premium Sticky Header */}
-      <div className="sticky top-[-32px] z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 py-4 mb-8 -mt-8 -mx-8 px-8 flex items-center justify-between">
+    <div className="flex flex-col min-h-0">
+      <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 py-4 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             type="button"
@@ -191,7 +224,7 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
         </div>
       </div>
 
-      <form id="promocion-form" onSubmit={handleSubmit} className="max-w-[1200px] mx-auto w-full space-y-8 pb-10">
+      <form id="promocion-form" onSubmit={handleSubmit} className="max-w-[1200px] mx-auto w-full space-y-8 pb-10 px-8">
         <p className="text-sm text-slate-500 mb-4 px-2">Complete la información detallada para configurar las campañas y ofertas activas en el sistema POS.</p>
 
         {/* 1. Información General */}
@@ -204,14 +237,7 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
           </div>
 
           <div className="p-8 grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="space-y-2">
-              <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">ID PROMO</label>
-              <input
-                type="text" disabled
-                value={codigoPromocion}
-                className="w-full px-5 py-3.5 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium text-slate-500 outline-none"
-              />
-            </div>
+
 
             <div className="space-y-2 md:col-span-2">
               <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">NOMBRE DE PROMOCIÓN</label>
@@ -321,7 +347,67 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
           </div>
         </div>
 
-        {/* 3. Líneas de Promoción */}
+        {/* 3. Categoría de Aplicación */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm overflow-hidden transition-all hover:shadow-md">
+          <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-violet-50 dark:bg-violet-500/10 flex items-center justify-center text-violet-600">
+              <span className="material-symbols-outlined text-[20px]">category</span>
+            </div>
+            <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-wider">Categoría de Aplicación</h3>
+          </div>
+
+          <div className="p-8">
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Categorías Asignadas</p>
+            <div className="flex flex-wrap gap-3 items-center">
+              {assignedCategorias.map(categoriaId => {
+                const categoria = categorias.find(c => c.id === categoriaId)
+                if (!categoria) return null
+                return (
+                  <div key={categoriaId} className="flex items-center gap-2 bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800 text-violet-700 dark:text-violet-400 px-4 py-2 rounded-xl text-sm font-bold shadow-sm group">
+                    {categoria.descripcion}
+                    <button type="button" onClick={() => handleRemoveCategoria(categoriaId)} className="text-violet-300 hover:text-red-500 transition-colors flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[18px]">cancel</span>
+                    </button>
+                  </div>
+                )
+              })}
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsSelectingCategoria(!isSelectingCategoria)}
+                  className="flex items-center gap-2 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 border-dashed text-slate-400 hover:border-violet-400 hover:text-violet-500 px-5 py-2 rounded-xl text-sm font-bold transition-all"
+                >
+                  <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                  + Agregar
+                </button>
+                {isSelectingCategoria && availableCategoriasToAdd.length > 0 && (
+                  <div className="absolute top-full mt-2 left-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl w-60 z-20 py-3 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="px-4 pb-2 mb-2 border-b border-slate-50 dark:border-slate-800">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Seleccionar Categoría</p>
+                    </div>
+                    {availableCategoriasToAdd.map(categoria => (
+                      <button
+                        key={categoria.id}
+                        type="button"
+                        className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors"
+                        onClick={() => handleAddCategoria(categoria.id)}
+                      >
+                        {categoria.descripcion}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 font-medium mt-4 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm">info</span>
+              Seleccione las categorías de materiales donde se aplicará esta promoción. Deje vacío para aplicar a todas.
+            </p>
+          </div>
+        </div>
+
+        {/* 4. Líneas de Promoción */}
         <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200/60 dark:border-slate-800/60 shadow-sm overflow-hidden transition-all hover:shadow-md">
           <div className="p-5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -356,7 +442,7 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                     {detallesLineas.map((linea, idx) => {
-                      const mat = materiales.find(m => m.id === Number(linea.material_id)) || linea.material
+                      const mat = materiales.find(m => m.id === Number(linea.material_id))
                       return (
                         <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
                           <td className="px-6 py-4">
@@ -378,42 +464,6 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
                             <div className="px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-lg text-sm font-bold text-slate-400">
                               {mat ? Number(mat.precio_venta).toLocaleString('es-ES', { minimumFractionDigits: 2 }) : '0.00'} {mat?.moneda}
                             </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="relative">
-                              <select
-                                value={linea.tipo_promocion || 'Descuento'}
-                                onChange={(e) => updateLinea(idx, 'tipo_promocion', e.target.value)}
-                                className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium appearance-none [background-image:none] pr-10 focus:ring-2 focus:ring-blue-500/20"
-                              >
-                                <option value="Descuento">Descuento</option>
-                                <option value="Paga">Paga</option>
-                                <option value="Regalo">Regalo</option>
-                              </select>
-                              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">expand_more</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="relative">
-                              <select
-                                value={linea.tipo_descuento || 'Porcentaje'}
-                                onChange={(e) => updateLinea(idx, 'tipo_descuento', e.target.value)}
-                                className="w-full px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium appearance-none [background-image:none] pr-10 focus:ring-2 focus:ring-blue-500/20"
-                              >
-                                <option value="Porcentaje">Porcentaje (%)</option>
-                                <option value="Monto Fijo">Monto Fijo</option>
-                              </select>
-                              <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none text-[18px]">expand_more</span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <input
-                              type="number" step="0.01"
-                              value={linea.valor !== null && linea.valor !== undefined ? linea.valor : ''}
-                              onChange={(e) => updateLinea(idx, 'valor', e.target.value)}
-                              placeholder="0.00"
-                              className="w-32 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-bold text-blue-600 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-right"
-                            />
                           </td>
                           <td className="px-6 py-4 text-center">
                             <button

@@ -10,6 +10,8 @@ import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import SucursalGuard from '@/components/SucursalGuard'
+import { useSucursal } from '@/contexts/SucursalContext'
 
 // ── Interfaces ─────────────────────────────────────────────
 interface VentaDetalleCondicion {
@@ -422,6 +424,7 @@ function VentaCard({ venta, monedaSimbolo, onAnular }: {
 
 // ── VentasPage ──────────────────────────────────────────────
 export default function VentasPage() {
+  const { currentSucursal } = useSucursal()
   const [ventas, setVentas] = useState<Venta[]>([])
   const [loading, setLoading] = useState(true)
   const monedaSimbolo = useAuthStore(state => state.user?.monedaSimbolo || '$')
@@ -434,6 +437,7 @@ export default function VentasPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), search })
+      if (currentSucursal?.id) params.set('sucursalId', String(currentSucursal.id))
       const res = await apiFetch(`/api/ventas?${params}`)
       if (!res.ok) throw new Error('Error fetching sales')
       const json = await res.json()
@@ -444,7 +448,7 @@ export default function VentasPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, search])
+  }, [page, pageSize, search, currentSucursal])
 
   useEffect(() => { fetchVentas() }, [fetchVentas])
 
@@ -456,11 +460,12 @@ export default function VentasPage() {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
-      <Topbar title="Gestión de Ventas / Facturación" />
+    <SucursalGuard moduleName="Ventas">
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <Topbar title="Gestión de Ventas / Facturación" />
 
-      <main className="flex-1 overflow-y-auto p-8 bg-slate-50 dark:bg-background-dark">
-        <div className="max-w-7xl mx-auto">
+        <main className="flex-1 overflow-y-auto p-8 bg-slate-50 dark:bg-background-dark">
+          <div className="max-w-7xl mx-auto">
 
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -533,5 +538,6 @@ export default function VentasPage() {
         </div>
       </main>
     </div>
+    </SucursalGuard>
   )
 }

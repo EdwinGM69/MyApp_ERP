@@ -17,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="font-display antialiased">
+      <body className="font-display antialiased h-full">
         <AuthRefresh />
         {children}
         <Toaster

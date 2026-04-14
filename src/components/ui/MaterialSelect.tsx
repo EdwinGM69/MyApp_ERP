@@ -30,7 +30,7 @@ export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar ma
   const [loading, setLoading] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [mounted, setMounted] = useState(false)
-  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
+  const [coords, setCoords] = useState<{ top: number; left: number; width: number; direction?: 'up' | 'down' }>({ top: 0, left: 0, width: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -41,10 +41,20 @@ export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar ma
   useEffect(() => {
     if (open && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
+      const dropdownHeight = 350 // approximate height of dropdown
+      const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
+      
+      // If not enough space below (less than 100px), show above
+      const showAbove = spaceBelow < 100 && spaceAbove > spaceBelow
+      
       setCoords({
-        top: rect.bottom + window.scrollY,
+        top: showAbove 
+          ? rect.top - dropdownHeight + window.scrollY
+          : rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
-        width: rect.width
+        width: rect.width,
+        direction: showAbove ? 'up' : 'down'
       })
     }
   }, [open])
@@ -55,11 +65,19 @@ export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar ma
     const updatePosition = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect()
-        setCoords({
-          top: rect.bottom + window.scrollY,
+        const dropdownHeight = 350
+        const spaceBelow = window.innerHeight - rect.bottom
+        const spaceAbove = rect.top
+        const showAbove = spaceBelow < 100 && spaceAbove > spaceBelow
+        
+        setCoords(prev => ({
+          ...prev,
+          top: showAbove 
+            ? rect.top - dropdownHeight + window.scrollY
+            : rect.bottom + window.scrollY,
           left: rect.left + window.scrollX,
-          width: rect.width
-        })
+          direction: showAbove ? 'up' : 'down'
+        }))
       }
     }
     window.addEventListener('scroll', updatePosition, true)
@@ -140,17 +158,26 @@ export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar ma
             width: Math.max(coords.width, 350),
             zIndex: 9999
           }}
-          className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+          className={cn(
+            "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl overflow-hidden animate-in duration-200",
+            coords.direction === 'up' ? "fade-in zoom-in-95" : "fade-in zoom-in-95"
+          )}
         >
-          <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50">
-            <input
-              autoFocus
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Escriba código o descripción..."
-              className="w-full px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[13px] outline-none focus:border-blue-500 transition-all dark:text-white"
-            />
+          <div className={cn("p-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/50", coords.direction === 'up' && "rounded-t-2xl")}
+          >
+            <div className="flex items-center gap-2">
+              {coords.direction === 'up' && (
+                <span className="material-symbols-outlined text-slate-400 text-sm">arrow_upward</span>
+              )}
+              <input
+                autoFocus
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Escriba código o descripción..."
+                className="flex-1 px-4 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[13px] outline-none focus:border-blue-500 transition-all dark:text-white"
+              />
+            </div>
           </div>
           
           <div className="max-h-64 overflow-y-auto py-2">

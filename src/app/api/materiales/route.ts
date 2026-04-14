@@ -3,6 +3,92 @@ import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 
+async function getParametroPrecioVenta(empresaId: number, userId: number): Promise<string | null> {
+  try {
+    console.log('[POS] getParametroPrecioVenta empresaId:', empresaId, 'userId:', userId)
+    
+    // Debug: ver todos los parametros para esta empresa
+    const allParams = await prisma.$queryRawUnsafe<any[]>(`
+      SELECT id, codigo, nivel, tipo_dato, valor_string, empresa_id, created_by, activo
+      FROM "ParametroSistema" 
+      WHERE empresa_id = $1 OR empresa_id IS NULL
+      LIMIT 20
+    `, empresaId)
+    console.log('[POS] All parametros for empresa:', JSON.stringify(allParams))
+    
+    const result = await prisma.$queryRawUnsafe<any[]>(`
+      SELECT
+        p.tipo_dato,
+        p.nivel,
+        CASE p.tipo_dato
+          WHEN 'STRING' THEN p.valor_string
+          WHEN 'NUMBER' THEN p.valor_number::TEXT
+          WHEN 'BOOLEAN' THEN p.valor_boolean::TEXT
+          WHEN 'DATE' THEN p.valor_date::TEXT
+          WHEN 'JSON' THEN p.valor_json::TEXT
+          ELSE COALESCE(p.valor_string, p.valor_number::TEXT)
+        END AS valor
+      FROM "ParametroSistema" p
+      WHERE
+        p.codigo = 'POS.PREVTA'
+        AND p.activo = true
+        AND (
+          (p.nivel = 'USUARIO' AND p.empresa_id = $1 AND p.created_by = $2)
+          OR (p.nivel = 'EMPRESA' AND p.empresa_id = $1)
+          OR (p.nivel = 'MODULO' AND p.empresa_id IS NULL)
+          OR (p.nivel = 'SISTEMA' AND p.empresa_id IS NULL)
+        )
+      ORDER BY
+        CASE p.nivel
+          WHEN 'USUARIO' THEN 1
+          WHEN 'EMPRESA' THEN 2
+          WHEN 'MODULO' THEN 3
+          WHEN 'SISTEMA' THEN 4
+        END
+      LIMIT 1
+    `, empresaId, userId)
+    console.log('[POS] POS.PREVTA parametro result:', JSON.stringify(result))
+    if (!result || result.length === 0) {
+      console.log('[POS] No parametro found for POS.PREVTA')
+      return null
+    }
+    return result[0]?.valor ?? null
+  } catch (e) {
+    console.error('[POS] Error getting parametro precio venta:', e)
+    return null
+  }
+}
+
+async function getDynamicPrice(
+  empresaId: number,
+  materialId: number,
+  monedaId: number,
+  tipoCondicionCodigo: string
+): Promise<number | null> {
+  try {
+    console.log('[POS] getDynamicPrice params:', { empresaId, materialId, monedaId, tipoCondicionCodigo })
+    const result = await prisma.$queryRawUnsafe<any[]>(`
+      SELECT c.valor
+      FROM "Condicion" c
+      JOIN "TipoCondicion" tc ON tc.id = c.tipo_condicion_id
+      WHERE tc.empresa_id = $1
+        AND tc.codigo = $2
+        AND c.moneda_id = $3
+        AND c.activo = true
+        AND c.fecha_desde <= NOW()
+        AND (c.fecha_hasta IS NULL OR c.fecha_hasta >= NOW())
+        AND (c.material_id = $4 OR c.material_id IS NULL)
+      ORDER BY c.material_id DESC NULLS LAST, c.fecha_desde DESC
+      LIMIT 1
+    `, empresaId, tipoCondicionCodigo, monedaId, materialId)
+    console.log('[POS] getDynamicPrice result:', result)
+    return result[0]?.valor ? Number(result[0].valor) : null
+  } catch (e) {
+    console.error('Error getting dynamic price:', e)
+    return null
+  }
+}
+
 const materialSchema = z.object({
   codigo: z.string().min(1),
   descripcion: z.string().min(1),
@@ -54,7 +140,7 @@ const materialSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const { empresaId } = await requireAuth(req)
+    const { empresaId, userId } = await requireAuth(req)
     const { searchParams } = req.nextUrl
 
     const page = parseInt(searchParams.get('page') ?? '1')
@@ -62,6 +148,92 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') ?? ''
     const categoriaId = searchParams.get('categoriaId')
     const tipoId = searchParams.get('tipoId')
+    const sucursalId = searchParams.get('sucursalId')
+
+    let estadoStockId: number | null = null
+    console.log('[materiales API] Starting stock logic, empresaId:', empresaId)
+    try {
+      // Step 1 & 2: Get ParametroSistema records for POS.PEDVTA
+      // Filter by empresa_id if present, or get all without empresa_id
+      const paramResult = await prisma.$queryRawUnsafe<any[]>(`
+        SELECT id, nivel, tipo_dato, valor_string, valor_number, valor_boolean, valor_date, valor_json, empresa_id
+        FROM "ParametroSistema"
+        WHERE codigo = 'POS.PEDVTA' AND activo = true
+          AND (empresa_id = $1 OR empresa_id IS NULL)
+        ORDER BY 
+          CASE 
+            WHEN nivel = 'USUARIO' THEN 1
+            WHEN nivel = 'EMPRESA' THEN 2
+            WHEN nivel = 'MODULO' THEN 3
+            WHEN nivel = 'SISTEMA' THEN 4
+            ELSE 5
+          END
+        LIMIT 1
+      `, empresaId)
+
+      console.log('[materiales API] POS.PEDVTA param result:', paramResult)
+
+      if (paramResult && paramResult.length > 0) {
+        const param = paramResult[0]
+        
+        // Step 3: Get the value based on tipo_dato
+        let clasePedidoCodigo: string | number | boolean | null = null
+        
+        switch (param.tipo_dato) {
+          case 'STRING':
+            clasePedidoCodigo = param.valor_string
+            break
+          case 'NUMBER':
+            clasePedidoCodigo = param.valor_number
+            break
+          case 'BOOLEAN':
+            clasePedidoCodigo = param.valor_boolean
+            break
+          case 'DATE':
+            clasePedidoCodigo = param.valor_date
+            break
+          case 'JSON':
+            clasePedidoCodigo = param.valor_json
+            break
+        }
+
+        console.log('[materiales API] clasePedidoCodigo:', clasePedidoCodigo, 'type:', param.tipo_dato)
+
+        // Step 4: Find the ClasePedido and get estado_stock_id
+        if (clasePedidoCodigo) {
+          // Determine if the code is numeric (ID) or string (codigo)
+          const isNumeric = !isNaN(Number(clasePedidoCodigo))
+          
+          let clasePedido: any = null
+          
+          if (isNumeric) {
+            // Search by ID
+            clasePedido = await prisma.clasePedido.findFirst({
+              where: { 
+                id: Number(clasePedidoCodigo),
+                empresa_id: empresaId
+              },
+              select: { estado_stock_id: true }
+            })
+          } else {
+            // Search by codigo
+            clasePedido = await prisma.clasePedido.findFirst({
+              where: { 
+                codigo: String(clasePedidoCodigo),
+                empresa_id: empresaId
+              },
+              select: { estado_stock_id: true }
+            })
+          }
+          
+          estadoStockId = clasePedido?.estado_stock_id ?? null
+          console.log('[materiales API] clasePedido found:', clasePedido, 'estado_stock_id:', estadoStockId)
+        }
+      }
+    } catch (e) {
+      console.error('[materiales API] Error getting POS.PEDVTA param:', e)
+    }
+    console.log('[materiales API] final estadoStockId:', estadoStockId)
 
     const where = {
       empresa_id: empresaId,
@@ -94,39 +266,40 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
-    // Augment with optional IDs and real-time stock via raw SQL since Prisma client is out of sync
+// Augment with optional IDs and real-time stock via raw SQL since Prisma client is out of sync
     const ids = materiales.map((m: any) => m.id)
-    if (ids.length > 0) {
+    const sucursalIdNum = sucursalId ? parseInt(sucursalId) : null
+    console.log('[materiales API] Fetching stock - empresaId:', empresaId, 'sucursalId:', sucursalId, 'parsed:', sucursalIdNum, 'estadoStockId:', estadoStockId)
+    if (ids.length > 0 && estadoStockId && sucursalIdNum) {
       try {
-        const [rawExtra, rawStock] = await Promise.all([
-          prisma.$queryRawUnsafe<any[]>(
-            `SELECT id, esquema_id, ubicacion_default_id FROM "Material" WHERE id = ANY($1::int[])`,
-            ids
-          ),
-          prisma.$queryRawUnsafe<any[]>(
-            `SELECT material_id, SUM(cantidad)::float as total_stock 
-             FROM "StockMaterial" 
-             WHERE empresa_id = $1 AND material_id = ANY($2::int[])
-             GROUP BY material_id`,
-            empresaId,
-            ids
-          )
-        ])
+        const rawStock = await prisma.$queryRawUnsafe<any[]>(
+          `SELECT material_id, SUM(cantidad)::float as total_stock 
+           FROM "StockMaterial" 
+           WHERE empresa_id = $1 AND material_id = ANY($2::int[]) AND sucursal_id = $3 AND estado_stock_id = $4
+           GROUP BY material_id`,
+          empresaId,
+          ids,
+          sucursalIdNum,
+          estadoStockId
+        )
+        console.log('[materiales API] Stock query result for sucursal', sucursalIdNum, ':', rawStock)
 
-        const extraMap = new Map(rawExtra.map((r: any) => [r.id, { esquema_id: r.esquema_id, ubicacion_default_id: r.ubicacion_default_id }]))
         const stockMap = new Map(rawStock.map((s: any) => [s.material_id, s.total_stock]))
 
         materiales.forEach((m: any) => {
-          const extra = extraMap.get(m.id)
-          m.esquema_id = extra?.esquema_id ?? null
-          m.ubicacion_default_id = extra?.ubicacion_default_id ?? null
           m.stock_actual = stockMap.get(m.id) ?? 0
-          // Mapping unidad_medida for easier UI consumption if needed
           m.unidad_medida = m.unidad_medida_rel?.descripcion || 'und'
         })
       } catch (e) {
         console.error('Error fetching raw data:', e)
       }
+    } else {
+      // No estadoStockId or sucursalId configured, set stock to 0
+      console.log('[materiales API] No stock query - estadoStockId:', estadoStockId, 'sucursalIdNum:', sucursalIdNum)
+      materiales.forEach((m: any) => {
+        m.stock_actual = 0
+        m.unidad_medida = m.unidad_medida_rel?.descripcion || 'und'
+      })
     }
 
     return NextResponse.json({ data: materiales, total, page, pageSize, totalPages: Math.ceil(total / pageSize) })

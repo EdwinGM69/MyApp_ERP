@@ -15,9 +15,10 @@ interface SucursalSelectProps {
   placeholder?: string
   className?: string
   selectedLabel?: string
+  selectedId?: number
 }
 
-export default function SucursalSelect({ onSelect, placeholder = 'Seleccionar sucursal...', className, selectedLabel }: SucursalSelectProps) {
+export default function SucursalSelect({ onSelect, placeholder = 'Seleccionar sucursal...', className, selectedLabel, selectedId }: SucursalSelectProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [options, setOptions] = useState<Sucursal[]>([])

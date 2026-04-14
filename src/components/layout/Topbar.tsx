@@ -4,6 +4,7 @@ import { useAuthStore } from '@/hooks/useAuth'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { useState, useEffect } from 'react'
 import UserAccountModal from './UserAccountModal'
+import UserSucursalSelect from '@/components/ui/UserSucursalSelect'
 
 interface TopbarProps {
   title: string
@@ -33,17 +34,6 @@ export default function Topbar({ title }: TopbarProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="relative w-64 hidden md:block">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xl">
-            search
-          </span>
-          <input
-            type="text"
-            placeholder="Buscar..."
-            className="w-full bg-slate-100 dark:bg-slate-800 border-none rounded-lg py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-slate-400 text-slate-700 dark:text-slate-200"
-          />
-        </div>
-
         <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors relative">
           <span className="material-symbols-outlined">notifications</span>
           <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" />
@@ -56,6 +46,10 @@ export default function Topbar({ title }: TopbarProps) {
         >
           <span className="material-symbols-outlined">settings</span>
         </a>
+
+        <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
+
+        <UserSucursalSelect />
 
         <div className="h-8 w-px bg-slate-200 dark:bg-slate-700 mx-1" />
 

@@ -15,9 +15,10 @@ interface AlmacenSelectProps {
   placeholder?: string
   className?: string
   selectedLabel?: string
+  sucursalId?: number
 }
 
-export default function AlmacenSelect({ onSelect, placeholder = 'Seleccionar almacén...', className, selectedLabel }: AlmacenSelectProps) {
+export default function AlmacenSelect({ onSelect, placeholder = 'Seleccionar almacén...', className, selectedLabel, sucursalId }: AlmacenSelectProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [options, setOptions] = useState<Almacen[]>([])
@@ -48,7 +49,9 @@ export default function AlmacenSelect({ onSelect, placeholder = 'Seleccionar alm
       if (!open) return
       setLoading(true)
       try {
-        const res = await apiFetch(`/api/logistica/almacenes?search=${search}&pageSize=50`)
+        const params = new URLSearchParams({ search, pageSize: '50' })
+        if (sucursalId) params.set('sucursalId', sucursalId.toString())
+        const res = await apiFetch(`/api/logistica/almacenes?${params}`)
         const json = await res.json()
         setOptions(json.data || [])
       } catch (error) {

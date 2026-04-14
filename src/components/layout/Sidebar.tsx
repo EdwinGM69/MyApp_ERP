@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/hooks/useAuth'
+import { useSucursal } from '@/contexts/SucursalContext'
 import toast from 'react-hot-toast'
 
 const navItems = [
@@ -63,6 +64,7 @@ const maestrosCategories = [
 const adminItems = [
   { href: '/empresa', icon: 'settings_applications', label: 'Empresa' },
   { href: '/usuarios', icon: 'manage_accounts', label: 'Usuarios' },
+  { href: '/maestros/configuracion/parametros-sistema', icon: 'settings', label: 'Parámetros del Sistema' },
   { href: '/logistica/industrias', icon: 'factory', label: 'Industrias' },
   { href: '/logistica/paises', icon: 'public', label: 'Países' },
   { href: '/logistica/documentos-identificacion', icon: 'badge', label: 'Documentos ID' },
@@ -91,6 +93,7 @@ export default function Sidebar() {
 
   const clearAuth = useAuthStore((s) => s.clearAuth)
   const user = useAuthStore((s) => s.user)
+  const { currentSucursal, hasSucursales } = useSucursal()
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
@@ -126,6 +129,12 @@ export default function Sidebar() {
           <p className="text-slate-500 text-xs font-medium mt-0.5">
             {mounted ? (user?.empresa || 'Administración General') : ''}
           </p>
+          {mounted && hasSucursales && currentSucursal && (
+            <p className="text-slate-400 text-xs font-medium mt-0.5 flex items-center gap-1">
+              <span className="material-symbols-outlined text-xs">business</span>
+              {currentSucursal.descripcion}
+            </p>
+          )}
         </div>
       </div>
 

@@ -3,9 +3,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import Topbar from '@/components/layout/Topbar'
 import Badge from '@/components/ui/Badge'
-import { apiFetch, useAuthStore } from '@/hooks/useAuth'
+import { apiFetch, useAuthStore, getAuthStore } from '@/hooks/useAuth'
 import { formatCurrency, generateOrderNumber } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { useSucursal } from '@/contexts/SucursalContext'
 
 interface Material {
   id: number
@@ -37,24 +38,140 @@ export default function POSPage() {
   const [descuentoCupon, setDescuentoCupon] = useState(0)
   const [mounted, setMounted] = useState(false)
   const monedaSimbolo = useAuthStore(state => state.user?.monedaSimbolo || '$')
+  const { currentSucursal } = useSucursal()
 
   const [nif, setNif] = useState('')
   const [clienteNombre, setClienteNombre] = useState('')
   const [clienteId, setClienteId] = useState<number | null>(null)
+  const [promociones, setPromociones] = useState<Map<number, { cantidad_compra: number; cantidad_regalo: number }>>(new Map())
+  const [descuentos, setDescuentos] = useState<Map<number, { valor: number; porcentaje: boolean; simbolo: string }>>(new Map())
 
   const fetchMateriales = useCallback(async () => {
+    console.log('[POS] fetchMateriales called, search:', search, 'currentSucursal:', currentSucursal)
+    if (!currentSucursal) {
+      console.log('[POS] No currentSucursal, skipping fetch')
+      return
+    }
     setLoading(true)
     const params = new URLSearchParams({ search, pageSize: '50', page: '1' })
+    const sucursalId = currentSucursal?.id
+    console.log('[POS] sucursalId:', sucursalId)
+    if (sucursalId) {
+      params.set('sucursalId', String(sucursalId))
+    }
+    console.log('[POS] Calling API with params:', params.toString())
     const res = await apiFetch(`/api/materiales?${params}`)
     const json = await res.json()
+    console.log('[POS] API response:', json.data?.length, 'materials')
     setMateriales((json.data ?? []).filter((m: Material) => m.stock_actual > 0))
     setLoading(false)
-  }, [search])
+  }, [search, currentSucursal])
 
+  // Fetch materiales when mounted or when sucursal becomes available
   useEffect(() => { 
+    console.log('[POS] useEffect triggered, currentSucursal:', currentSucursal)
     setMounted(true)
-    fetchMateriales() 
-  }, [fetchMateriales])
+    if (currentSucursal) {
+      fetchMateriales()
+    }
+  }, [fetchMateriales, currentSucursal])
+
+  // Fetch promociones when materiales are loaded
+  const fetchPromociones = useCallback(async (materialIds: number[]) => {
+    if (materialIds.length === 0) return
+    console.log('[POS] fetchPromociones called with:', materialIds)
+    try {
+      const res = await apiFetch(`/api/pos/promociones?materialIds=${materialIds.join(',')}`)
+      const json = await res.json()
+      console.log('[POS] promociones response:', json.data)
+      if (json.data) {
+        const map = new Map<number, { cantidad_compra: number; cantidad_regalo: number }>()
+        json.data.forEach((p: any) => {
+          map.set(p.material_id, { cantidad_compra: p.cantidad_compra, cantidad_regalo: p.cantidad_regalo })
+        })
+        setPromociones(map)
+        console.log('[POS] promociones map set, size:', map.size)
+      }
+    } catch (e) {
+      console.error('[POS] Error fetching promociones:', e)
+    }
+  }, [])
+
+  // Call fetchPromociones after materiales are loaded
+  useEffect(() => {
+    console.log('[POS] promociones effect - materiales.length:', materiales.length, 'currentSucursal:', currentSucursal)
+    if (materiales.length > 0 && currentSucursal) {
+      const ids = materiales.map(m => m.id)
+      console.log('[POS] Calling fetchPromociones with:', ids)
+      fetchPromociones(ids)
+    }
+  }, [materiales, currentSucursal, fetchPromociones])
+
+  // Fetch descuentos
+  const fetchDescuentos = useCallback(async (materialIds: number[]) => {
+    if (materialIds.length === 0) return
+    console.log('[POS] fetchDescuentos called with:', materialIds)
+    try {
+      const empresaId = getAuthStore().user?.empresaId
+      const paramRes = await apiFetch('/api/parametros-sistema?codigo=POS.DCTVENTA')
+      const paramJson = await paramRes.json()
+      console.log('[POS] POS.DCTVENTA param response:', paramJson.data)
+
+      if (paramJson.data && paramJson.data.length > 0) {
+        const param = paramJson.data.find((p: any) =>
+          (p.nivel === 'EMPRESA' || p.nivel === 'USUARIO' || p.nivel === 'MODULO' || p.nivel === 'SISTEMA') &&
+          (p.empresa_id === empresaId || !p.empresa_id)
+        )
+        console.log('[POS] Descuento param found:', param)
+
+        if (param) {
+          const tipoCondicionCodigo = param.valor_string || 'DCTOVT'
+          console.log('[POS] tipoCondicionCodigo:', tipoCondicionCodigo)
+
+          const tipoRes = await apiFetch('/api/tipos-condicion?search=' + tipoCondicionCodigo)
+          const tipoJson = await tipoRes.json()
+          console.log('[POS] tipos-condicion response:', tipoJson.data)
+
+          const tipoCondicion = tipoJson.data?.find((t: any) => t.codigo === tipoCondicionCodigo)
+          const tipoCondicionId = tipoCondicion?.id
+          console.log('[POS] tipoCondicionId:', tipoCondicionId)
+
+          if (tipoCondicionId) {
+            const res = await apiFetch(`/api/comercial/condiciones?materialIds=${materialIds.join(',')}&tipo_condicion_id=${tipoCondicionId}`)
+            const json = await res.json()
+            console.log('[POS] condiciones response:', json.data)
+
+            if (json.data) {
+              const map = new Map<number, { valor: number; porcentaje: boolean; simbolo: string }>()
+              json.data.forEach((c: any) => {
+                if (c.material_id) {
+                  map.set(c.material_id, {
+                    valor: c.valor,
+                    porcentaje: c.porcentaje,
+                    simbolo: c.moneda?.simbolo || '$'
+                  })
+                }
+              })
+              setDescuentos(map)
+              console.log('[POS] descuentos map set, size:', map.size)
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[POS] Error fetching descuentos:', e)
+    }
+  }, [])
+
+  // Call fetchDescuentos after materiales are loaded
+  useEffect(() => {
+    console.log('[POS] descuentos effect - materiales.length:', materiales.length, 'currentSucursal:', currentSucursal)
+    if (materiales.length > 0 && currentSucursal) {
+      const ids = materiales.map(m => m.id)
+      console.log('[POS] Calling fetchDescuentos with:', ids)
+      fetchDescuentos(ids)
+    }
+  }, [materiales, currentSucursal, fetchDescuentos])
 
   useEffect(() => {
     const timer = setTimeout(async () => {
@@ -211,9 +328,23 @@ export default function POSPage() {
             </div>
           ) : (
             <div className="flex-1 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 content-start overflow-y-auto pb-4">
-              {filteredMateriales.map((m) => (
+{filteredMateriales.map((m) => {
+                const promo = promociones.get(m.id)
+                const desc = descuentos.get(m.id)
+                const descBadge = desc ? (desc.porcentaje ? `-${desc.valor}%` : `-${formatCurrency(desc.valor, { symbol: desc.simbolo })}`) : ''
+                return (
                 <button key={m.id} onClick={() => addToCart(m)}
-                  className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 hover:border-primary hover:shadow-lg hover:shadow-primary/10 transition-all text-left group">
+                  className="bg-white dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800 hover:border-primary hover:shadow-lg hover:shadow-primary/10 transition-all text-left group relative">
+                  {promo && (
+                    <span className="absolute top-2 left-2 z-10 whitespace-nowrap px-1.5 py-0.5 text-[10px] font-bold bg-green-500 text-white rounded-full shadow">
+                      {promo.cantidad_compra}x{promo.cantidad_regalo}
+                    </span>
+                  )}
+                  {descBadge && (
+                    <span className="absolute top-2 right-2 z-10 whitespace-nowrap px-1.5 py-0.5 text-[10px] font-bold bg-red-500 text-white rounded-full shadow">
+                      {descBadge}
+                    </span>
+                  )}
                   <div className="w-full h-24 bg-slate-100 dark:bg-slate-800 rounded-lg mb-3 flex items-center justify-center overflow-hidden">
                     {m.imagen_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
@@ -229,7 +360,7 @@ export default function POSPage() {
                   <p className="text-base font-bold text-primary">{mounted ? formatCurrency(Number(m.precio_venta), { symbol: monedaSimbolo }) : '...'}</p>
                   <p className="text-xs text-slate-400 mt-1">Stock: {Number(m.stock_actual)}</p>
                 </button>
-              ))}
+              )})}
 
               {filteredMateriales.length === 0 && (
                 <div className="col-span-full text-center py-12 text-slate-400">

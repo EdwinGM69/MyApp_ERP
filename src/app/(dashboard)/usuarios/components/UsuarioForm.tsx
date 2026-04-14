@@ -21,6 +21,7 @@ interface Usuario {
   is_superadmin: boolean
   two_factor_enabled: boolean
   preferencias?: any
+  last_sucursal_id?: number | null
   rol_id: number
   rol: { nombre: string }
   roles_adicionales?: { rol_id: number, rol: { nombre: string } }[]
@@ -63,6 +64,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [twoFactor, setTwoFactor] = useState(false)
+  const [lastSucursalId, setLastSucursalId] = useState<number | null>(null)
 
   const [idioma, setIdioma] = useState(defaultPreferences.idioma)
   const [zonaHoraria, setZonaHoraria] = useState(defaultPreferences.zona_horaria)
@@ -146,6 +148,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
         isSuperadmin: usuarioToEdit.is_superadmin || false,
         assignedRoles: userRoles,
         twoFactor: usuarioToEdit.two_factor_enabled || false,
+        lastSucursalId: usuarioToEdit.last_sucursal_id || null,
         idioma: prefs.idioma || defaultPreferences.idioma,
         zonaHoraria: prefs.zona_horaria || defaultPreferences.zona_horaria,
         notifInventario: notifs.alertas_inventario ?? true,
@@ -163,6 +166,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
         isSuperadmin: false,
         assignedRoles: [],
         twoFactor: false,
+        lastSucursalId: null,
         idioma: defaultPreferences.idioma,
         zonaHoraria: defaultPreferences.zona_horaria,
         notifInventario: defaultPreferences.notificaciones.alertas_inventario,
@@ -228,6 +232,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
         activo: true,
         rol_id: mainRolId,
         roles_adicionales: additionalRoles,
+        last_sucursal_id: lastSucursalId,
         preferencias: {
           idioma,
           zona_horaria: zonaHoraria,

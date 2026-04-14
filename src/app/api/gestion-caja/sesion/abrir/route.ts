@@ -14,11 +14,15 @@ export async function POST(req: NextRequest) {
       denominaciones // Array of { denominacion_id, cantidad, subtotal }
     } = body
 
-    // 1. Check if user already has an active session
+    // 1. Check if user already has an active session for this sucursal
     const active = await prisma.cajaGestion.findFirst({
-      where: { usuario_apertura_id: userId, estado: 'Aperturada' }
+      where: { 
+        usuario_apertura_id: userId, 
+        estado: 'Aperturada',
+        sucursal_id: sucursal_id
+      }
     })
-    if (active) return NextResponse.json({ error: 'Ya tienes una sesión activa' }, { status: 400 })
+    if (active) return NextResponse.json({ error: 'Ya tienes una sesión activa en esta sucursal' }, { status: 400 })
 
     // 2. Create session and optional denominations in a transaction
     const session = await prisma.$transaction(async (tx) => {

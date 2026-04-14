@@ -10,6 +10,12 @@
     --primary: #0d6cf2;
   }
 
+  html,
+  body {
+    height: 100%;
+    overflow: hidden;
+  }
+
   body {
     font-family: 'Inter', sans-serif;
     @apply bg-background-light text-slate-900;

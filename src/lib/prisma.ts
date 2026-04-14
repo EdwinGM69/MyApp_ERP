@@ -2,7 +2,9 @@ import { PrismaClient } from '@prisma/client'
 import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 
-const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient; pool: Pool | null }
+
+let pool: Pool | null = null
 
 function getDbUrl(): string {
   const urls = [
@@ -46,18 +48,37 @@ const sslConfig = env === 'production'
 
 console.log('[PRISMA] SSL config:', JSON.stringify(sslConfig))
 
-const pool = new Pool({
+pool = new Pool({
   connectionString,
   ssl: {
     rejectUnauthorized: false
-  }
+  },
+  max: 10,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 })
 const adapter = new PrismaPg(pool)
 
 export const prisma =
   globalForPrisma.prisma ||
-  new PrismaClient({ adapter })
+  new PrismaClient({ 
+    adapter,
+    transactionOptions: {
+      maxWait: 30000,
+      timeout: 30000,
+    }
+  })
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma
+  globalForPrisma.pool = pool
+}
+
+process.on('beforeExit', async () => {
+  if (pool) {
+    await pool.end()
+    pool = null
+  }
+})
 
 export default prisma

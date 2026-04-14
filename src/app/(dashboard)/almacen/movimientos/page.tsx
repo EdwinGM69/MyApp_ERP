@@ -8,9 +8,12 @@ import Badge from '@/components/ui/Badge'
 import Pagination from '@/components/ui/Pagination'
 import { cn, formatDate } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
+import SucursalGuard from '@/components/SucursalGuard'
+import { useSucursal } from '@/contexts/SucursalContext'
 
 export default function MovimientosPage() {
   const router = useRouter()
+  const { currentSucursal } = useSucursal()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [data, setData] = useState<any[]>([])
@@ -21,7 +24,9 @@ export default function MovimientosPage() {
   const fetchData = useCallback(async () => {
     setIsLoading(true)
     try {
-      const res = await fetch(`/api/almacen?page=${page}&pageSize=${pageSize}`)
+      const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) })
+      if (currentSucursal?.id) params.set('sucursalId', String(currentSucursal.id))
+      const res = await fetch(`/api/almacen?${params}`)
       const json = await res.json()
       if (json.data) {
         setData(json.data)
@@ -33,7 +38,7 @@ export default function MovimientosPage() {
     } finally {
       setIsLoading(false)
     }
-  }, [page, pageSize])
+  }, [page, pageSize, currentSucursal])
 
   useEffect(() => {
     fetchData()
@@ -133,8 +138,9 @@ export default function MovimientosPage() {
   ]
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 border-l border-slate-200/60 dark:border-slate-800/60">
-      <Topbar title="Inventarios" />
+    <SucursalGuard moduleName="Inventario">
+      <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-900 border-l border-slate-200/60 dark:border-slate-800/60">
+        <Topbar title="Inventarios" />
 
       <div className="flex-1 overflow-y-auto p-8 max-w-7xl mx-auto w-full min-h-0">
         {/* Header section with Premium design */}
@@ -221,5 +227,6 @@ export default function MovimientosPage() {
         </div>
       </div>
     </div>
+    </SucursalGuard>
   )
 }

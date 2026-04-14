@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { apiFetch } from '@/hooks/useAuth'
 import SucursalSelect from '@/components/ui/SucursalSelect'
 import CajaSelect from '@/components/ui/CajaSelect'
@@ -8,15 +8,17 @@ import MonedaSelect from '@/components/ui/MonedaSelect'
 import CajaDenominacionGrid from './CajaDenominacionGrid'
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
+import { useSucursal } from '@/contexts/SucursalContext'
 
 interface Props {
   onOpened: () => void
 }
 
 export default function CajaApertura({ onOpened }: Props) {
+  const { currentSucursal } = useSucursal()
   const [formData, setFormData] = useState({
-    sucursal_id: 0,
-    sucursal_label: '',
+    sucursal_id: currentSucursal?.id || 0,
+    sucursal_label: currentSucursal?.descripcion || '',
     caja_id: 0,
     caja_label: '',
     moneda_id: 0,
@@ -24,6 +26,20 @@ export default function CajaApertura({ onOpened }: Props) {
     moneda_simbolo: '$',
     monto_apertura: 0,
   })
+  
+  // Reset form when sucursal changes
+  useEffect(() => {
+    setFormData({
+      sucursal_id: currentSucursal?.id || 0,
+      sucursal_label: currentSucursal?.descripcion || '',
+      caja_id: 0,
+      caja_label: '',
+      moneda_id: 0,
+      moneda_label: '',
+      moneda_simbolo: '$',
+      monto_apertura: 0,
+    })
+  }, [currentSucursal])
   const [denominaciones, setDenominaciones] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
   const [showDenominaciones, setShowDenominaciones] = useState(false)

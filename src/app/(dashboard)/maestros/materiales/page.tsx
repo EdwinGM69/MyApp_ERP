@@ -9,6 +9,7 @@ import Badge from '@/components/ui/Badge'
 import { apiFetch, useAuthStore } from '@/hooks/useAuth'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { useSucursal } from '@/contexts/SucursalContext'
 
 interface Material {
   id: number
@@ -41,16 +42,20 @@ export default function MaterialesPage() {
   const monedaSimbolo = useAuthStore(state => state.user?.monedaSimbolo || '$')
   const [saving, setSaving] = useState(false)
   const router = useRouter()
+  const { currentSucursal } = useSucursal()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), search })
+    if (currentSucursal?.id) {
+      params.set('sucursalId', String(currentSucursal.id))
+    }
     const res = await apiFetch(`/api/materiales?${params}`)
     const json = await res.json()
     setData(json.data ?? [])
     setTotal(json.total ?? 0)
     setLoading(false)
-  }, [page, pageSize, search])
+  }, [page, pageSize, search, currentSucursal])
 
   useEffect(() => { fetchData() }, [fetchData])
 

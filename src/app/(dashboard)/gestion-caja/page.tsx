@@ -6,15 +6,19 @@ import CajaApertura from '@/components/gestion-caja/CajaApertura'
 import CajaDashboard from '@/components/gestion-caja/CajaDashboard'
 import Topbar from '@/components/layout/Topbar'
 import toast from 'react-hot-toast'
+import SucursalGuard from '@/components/SucursalGuard'
+import { useSucursal } from '@/contexts/SucursalContext'
 
 export default function GestionCajaPage() {
+  const { currentSucursal } = useSucursal()
   const [activeSession, setActiveSession] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   const checkActiveSession = async () => {
+    if (!currentSucursal) return
     setLoading(true)
     try {
-      const res = await apiFetch('/api/gestion-caja/sesion/activa')
+      const res = await apiFetch(`/api/gestion-caja/sesion/activa?sucursalId=${currentSucursal.id}`)
       const data = await res.json()
       setActiveSession(data)
     } catch (error) {
@@ -27,7 +31,7 @@ export default function GestionCajaPage() {
 
   useEffect(() => {
     checkActiveSession()
-  }, [])
+  }, [currentSucursal])
 
   if (loading) {
     return (
@@ -46,8 +50,9 @@ export default function GestionCajaPage() {
   }
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50 dark:bg-slate-950/50 overflow-hidden">
-      <Topbar title="Gestión de Caja" />
+    <SucursalGuard moduleName="Gestión de Caja">
+      <div className="flex-1 flex flex-col min-h-0 bg-slate-50/50 dark:bg-slate-950/50 overflow-hidden">
+        <Topbar title="Gestión de Caja" />
       <div className="flex-1 overflow-y-auto p-6 pt-2">
         <div className="max-w-7xl mx-auto space-y-6">
           {!activeSession ? (
@@ -58,5 +63,6 @@ export default function GestionCajaPage() {
         </div>
       </div>
     </div>
+    </SucursalGuard>
   )
 }

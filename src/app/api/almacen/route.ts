@@ -73,9 +73,11 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') ?? '1');
     const pageSize = parseInt(searchParams.get('pageSize') ?? '10');
     const search = searchParams.get('search') ?? '';
+    const sucursalId = searchParams.get('sucursalId');
 
     const where = {
       empresa_id: empresaId,
+      ...(sucursalId ? { sucursal_id: parseInt(sucursalId) } : {}),
       ...(search ? {
         OR: [
           { numero_mov: { contains: search, mode: 'insensitive' as const } },

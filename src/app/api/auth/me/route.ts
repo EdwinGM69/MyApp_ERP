@@ -22,6 +22,18 @@ export async function GET(req: NextRequest) {
             nombre: true,
             moneda_default: true
           }
+        },
+        last_sucursal_id: true,
+        usuario_sucursales: {
+          include: {
+            sucursal: {
+              select: {
+                id: true,
+                descripcion: true,
+                activo: true
+              }
+            }
+          }
         }
       }
     })
@@ -34,11 +46,39 @@ export async function GET(req: NextRequest) {
     let moneda = null
     if (user.empresa.id && user.empresa.moneda_default) {
       moneda = await prisma.moneda.findFirst({
-        where: { 
+        where: {
           empresa_id: user.empresa.id,
           abreviatura: user.empresa.moneda_default
         }
       })
+    }
+
+    // Get active sucursales assigned to user
+    const activeSucursales = user.usuario_sucursales
+      .filter(us => us.sucursal.activo)
+      .map(us => us.sucursal)
+
+    // Determine current sucursal
+    let currentSucursal = null
+    if (activeSucursales.length > 0) {
+      if (user.last_sucursal_id) {
+        currentSucursal = activeSucursales.find(s => s.id === user.last_sucursal_id) || null
+        if (!currentSucursal) {
+          // If last_sucursal_id is not valid, use first one and update DB
+          currentSucursal = activeSucursales[0]
+          await prisma.usuario.update({
+            where: { id: userId },
+            data: { last_sucursal_id: currentSucursal.id }
+          })
+        }
+      } else {
+        // No last_sucursal_id, use first one and update DB
+        currentSucursal = activeSucursales[0]
+        await prisma.usuario.update({
+          where: { id: userId },
+          data: { last_sucursal_id: currentSucursal.id }
+        })
+      }
     }
 
     const authUser = {
@@ -51,7 +91,10 @@ export async function GET(req: NextRequest) {
       empresaId: user.empresa.id,
       monedaDefault: user.empresa.moneda_default || null,
       monedaId: moneda?.id || null,
-      monedaSimbolo: moneda?.simbolo || '$'
+      monedaSimbolo: moneda?.simbolo || '$',
+      hasSucursales: activeSucursales.length > 0,
+      currentSucursal: currentSucursal,
+      userSucursales: activeSucursales
     }
 
     return NextResponse.json({ user: authUser })

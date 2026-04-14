@@ -8,13 +8,14 @@ import { apiFetch, useAuthStore } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import MaterialSelect from '@/components/ui/MaterialSelect'
 import DocumentoIdentificacionSelect from '@/components/ui/DocumentoIdentificacionSelect'
-import SucursalSelect from '@/components/ui/SucursalSelect'
+
 import ClasePedidoSelect from '@/components/ui/ClasePedidoSelect'
 import AlmacenSelect from '@/components/ui/AlmacenSelect'
 import UnidadSelect from '@/components/ui/UnidadSelect'
 import MonedaSelect from '@/components/ui/MonedaSelect'
 import Topbar from '@/components/layout/Topbar'
 import { getAuthStore } from '@/hooks/useAuth'
+import { useSucursal } from '@/contexts/SucursalContext'
 import { clonePageVaryPathWithNewSearchParams } from 'next/dist/client/components/segment-cache/vary-path'
 
 interface EsquemaCalculoPaso {
@@ -57,6 +58,7 @@ interface VentaDetalle {
 
 export default function VentaForm() {
   const router = useRouter()
+  const { currentSucursal } = useSucursal()
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
 
@@ -78,7 +80,12 @@ export default function VentaForm() {
     const user = getAuthStore().user
     if (user?.monedaId) setMonedaId(user.monedaId)
     if (user?.monedaSimbolo) setMonedaSimbolo(user.monedaSimbolo)
-  }, [])
+
+    // Set sucursal from context
+    if (currentSucursal) {
+      setSucursal({ id: currentSucursal.id, descripcion: currentSucursal.descripcion })
+    }
+  }, [currentSucursal])
 
   const [cliente, setCliente] = useState<{ id: number; nombre: string } | null>(null)
   const [docIdentificacion, setDocIdentificacion] = useState<{ id: number; abreviatura: string } | null>(null)
@@ -95,9 +102,9 @@ export default function VentaForm() {
   const [mediosPagoSeleccionados, setMediosPagoSeleccionados] = useState<Record<number, { selected: boolean, importe: string }>>({})
 
   const [expandedCards, setExpandedCards] = useState({
-    generales: true,
-    cliente: true,
-    pagos: true,
+    generales: false,
+    cliente: false,
+    pagos: false,
     otros: false
   })
 
@@ -754,6 +761,34 @@ export default function VentaForm() {
               </>
             )}
           </button>
+
+          {/* Cards de Totales */}
+          <div className="grid grid-cols-4 gap-3 px-8 pb-4 shrink-0">
+            <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Subtotal</div>
+              <div className="text-base font-black text-slate-900 dark:text-white tracking-tight">
+                {mounted ? formatCurrency(totals.subtotal, { symbol: monedaSimbolo }) : '...'}
+              </div>
+            </div>
+            <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Descuento</div>
+              <div className="text-base font-black text-red-600 tracking-tight">
+                {mounted ? formatCurrency(totals.descuento, { symbol: monedaSimbolo }) : '...'}
+              </div>
+            </div>
+            <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Impuesto</div>
+              <div className="text-base font-black text-amber-600 tracking-tight">
+                {mounted ? formatCurrency(totals.impuesto, { symbol: monedaSimbolo }) : '...'}
+              </div>
+            </div>
+            <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 shadow-xl">
+              <div className="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-1">Total</div>
+              <div className="text-xl font-black text-white tracking-tight">
+                {mounted ? formatCurrency(totals.total, { symbol: monedaSimbolo }) : '...'}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -774,10 +809,9 @@ export default function VentaForm() {
               <div className="p-4 pt-0 space-y-4 border-t border-slate-100 dark:border-slate-800 mt-2">
                 <div className="space-y-1">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">SUCURSAL</label>
-                  <SucursalSelect
-                    selectedLabel={sucursal?.descripcion}
-                    onSelect={(s) => setSucursal({ id: s.id, descripcion: s.descripcion })}
-                  />
+                  <div className="h-10 px-4 flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-900 dark:text-white">
+                    {sucursal?.descripcion || 'Cargando...'}
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">CLASE PEDIDO</label>
@@ -928,6 +962,28 @@ export default function VentaForm() {
             )}
           </div>
 
+          {/* Card: Otros */}
+          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm shrink-0">
+            <button
+              onClick={() => setExpandedCards(p => ({ ...p, otros: !p.otros }))}
+              className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
+            >
+              <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Observaciones</span>
+              {expandedCards.otros ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+            </button>
+            {expandedCards.otros && (
+              <div className="p-4 pt-0 border-t border-slate-100 dark:border-slate-800 mt-2">
+                <textarea
+                  rows={3}
+                  placeholder="Notas adicionales..."
+                  value={observaciones}
+                  onChange={(e) => setObservaciones(e.target.value)}
+                  className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none resize-none"
+                />
+              </div>
+            )}
+          </div>
+
           {/* Card: Medios de Pago */}
           <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm shrink-0">
             <button
@@ -1018,38 +1074,7 @@ export default function VentaForm() {
             )}
           </div>
 
-          {/* Card: Otros */}
-          <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm shrink-0">
-            <button
-              onClick={() => setExpandedCards(p => ({ ...p, otros: !p.otros }))}
-              className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-900 transition-colors"
-            >
-              <span className="text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Observaciones</span>
-              {expandedCards.otros ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
-            </button>
-            {expandedCards.otros && (
-              <div className="p-4 pt-0 border-t border-slate-100 dark:border-slate-800 mt-2">
-                <textarea
-                  rows={3}
-                  placeholder="Notas adicionales..."
-                  value={observaciones}
-                  onChange={(e) => setObservaciones(e.target.value)}
-                  className="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none resize-none"
-                />
-              </div>
-            )}
-          </div>
 
-          <div className="mt-auto p-6 bg-slate-900 rounded-[24px] border border-slate-800 shadow-2xl shrink-0">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-500">Total</span>
-                <span className="text-3xl font-black text-white leading-none tracking-tighter">
-                  {mounted ? formatCurrency(totals.total, { symbol: monedaSimbolo }) : '...'}
-                </span>
-              </div>
-            </div>
-          </div>
         </aside>
 
         {/* Main Content: Products */}
@@ -1103,6 +1128,7 @@ export default function VentaForm() {
                           <AlmacenSelect
                             selectedLabel={linea.almacen_descripcion}
                             onSelect={(a) => handleAlmacenSelect(index, a)}
+                            sucursalId={sucursal?.id}
                           />
                           {linea.stock !== null && (
                             <div className="mt-2 flex items-center gap-1.5 ml-1">
@@ -1188,8 +1214,6 @@ export default function VentaForm() {
                                   </div>
                                 ))}
                               </div>
-
-                              {/* Summary totals row removed */}
                             </div>
                           )}
                         </div>

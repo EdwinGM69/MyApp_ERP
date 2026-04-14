@@ -63,10 +63,12 @@ export async function GET(req: NextRequest) {
     const pageSize = parseInt(searchParams.get('pageSize') ?? '10')
     const search = searchParams.get('search') ?? ''
     const clienteId = searchParams.get('clienteId')
+    const sucursalId = searchParams.get('sucursalId')
 
     const where = {
       empresa_id: empresaId,
       ...(clienteId ? { cliente_id: parseInt(clienteId) } : {}),
+      ...(sucursalId ? { sucursal_id: parseInt(sucursalId) } : {}),
       ...(search ? {
         OR: [
           { numero_pedido: { contains: search, mode: 'insensitive' as const } },

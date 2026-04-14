@@ -6,6 +6,21 @@ datasource db {
   provider = "postgresql"
 }
 
+enum NivelParametroSistema {
+  SISTEMA
+  MODULO
+  EMPRESA
+  USUARIO
+}
+
+enum TipoDatoParametroSistema {
+  STRING
+  NUMBER
+  BOOLEAN
+  DATE
+  JSON
+}
+
 model Empresa {
   id                       Int                             @id @default(autoincrement())
   nombre                   String
@@ -69,9 +84,10 @@ model Empresa {
   condiciones              Condicion[]
   esquemas_calculo         EsquemaCalculo[]
   clases_pedido            ClasePedido[]
-  monedas_denominacion     MonedaDenominacion[]
-  transacciones_caja       TransaccionCaja[]
-  flujos_documentos        FlujoDocumentos[]
+   monedas_denominacion     MonedaDenominacion[]
+   transacciones_caja       TransaccionCaja[]
+   flujos_documentos        FlujoDocumentos[]
+   parametros_sistema       ParametroSistema[]
 }
 
 model Rol {
@@ -95,6 +111,7 @@ model Usuario {
   is_superadmin                  Boolean                   @default(false)
   two_factor_enabled             Boolean                   @default(false)
   preferencias                   Json?
+  last_sucursal_id               Int?
   activo                         Boolean                   @default(true)
   recordar                       Boolean                   @default(false)
   reset_token                    String?
@@ -166,6 +183,9 @@ model Usuario {
   empresa_modulos_creados        EmpresaModulo[]           @relation("EmpresaModuloCreador")
   empresa                        Empresa                   @relation(fields: [empresa_id], references: [id])
   rol                            Rol                       @relation(fields: [rol_id], references: [id])
+  last_sucursal                  Sucursal?                 @relation(fields: [last_sucursal_id], references: [id])
+  usuario_sucursales             UsuarioSucursal[]         @relation("UsuarioToUsuarioSucursal")
+  usuarioSucursales_creadas      UsuarioSucursal[]         @relation("UsuarioSucursalCreador")
   roles_adicionales              UsuarioRol[]
   tipos_condicion_creados        TipoCondicion[]           @relation("TipoCondicionCreador")
   tipos_condicion_modificados    TipoCondicion[]           @relation("TipoCondicionModificador")
@@ -183,9 +203,11 @@ model Usuario {
   caja_arqueos                   CajaArqueo[]              @relation("UsuarioArqueo")
   transacciones_creadas          TransaccionCaja[]         @relation("TransaccionCreador")
   transacciones_modificadas      TransaccionCaja[]         @relation("TransaccionModificador")
-  flujos_documentos_creados      FlujoDocumentos[]         @relation("FlujoDocumentosCreador")
+   flujos_documentos_creados      FlujoDocumentos[]         @relation("FlujoDocumentosCreador")
+   parametros_sistema_creados     ParametroSistema[]        @relation("ParametroSistemaCreador")
+   parametros_sistema_modificados ParametroSistema[]        @relation("ParametroSistemaModificador")
 
-  @@unique([empresa_id, email])
+   @@unique([empresa_id, email])
 }
 
 model UsuarioRol {
@@ -197,6 +219,19 @@ model UsuarioRol {
   usuario    Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
 
   @@unique([usuario_id, rol_id])
+}
+
+model UsuarioSucursal {
+  id          Int      @id @default(autoincrement())
+  usuario_id  Int
+  sucursal_id Int
+  created_at  DateTime @default(now())
+  created_by  Int?
+  usuario     Usuario  @relation("UsuarioToUsuarioSucursal", fields: [usuario_id], references: [id])
+  sucursal    Sucursal @relation(fields: [sucursal_id], references: [id])
+  usuario_creador Usuario? @relation("UsuarioSucursalCreador", fields: [created_by], references: [id])
+
+  @@unique([usuario_id, sucursal_id])
 }
 
 model Impuesto {
@@ -572,74 +607,90 @@ model EstadoStock {
 model Cupon {
   id            Int            @id @default(autoincrement())
   empresa_id    Int
-  codigo_cupon  String
-  codigo        String
+  nombre        String
+  descripcion   String
   tipo          String
   valor         Decimal        @db.Decimal(10, 2)
-  moneda        String         @default("USD")
-  limite_uso    Int?
-  usos_actuales Int            @default(0)
+  moneda_id     Int
+  ilimitado     Boolean
+  limite_uso    Int?           @default(0)
+  usos_actuales Int?           @default(0)
+  acumulable    Boolean
   fecha_inicio  DateTime
-  fecha_fin     DateTime?
+  fecha_fin     DateTime
   activo        Boolean        @default(true)
   created_at    DateTime       @default(now())
   updated_at    DateTime       @updatedAt
   created_by    Int?
   updated_by    Int?
   empresa       Empresa        @relation(fields: [empresa_id], references: [id])
+  moneda        Moneda         @relation(fields: [moneda_id], references: [id])
   detalles      CuponDetalle[]
+  cupones       CuponCategoria[]
 
-  @@unique([empresa_id, codigo_cupon])
-  @@unique([empresa_id, codigo])
+  @@unique([empresa_id, nombre])
+}
+
+model CuponCategoria {
+  id            Int      @id @default(autoincrement())
+  cupon_id      Int
+  categoria_id  Int
+  cupon         Cupon    @relation(fields: [cupon_id], references: [id])
+  categoria     MaterialCategoria @relation(fields: [categoria_id], references: [id])
 }
 
 model CuponDetalle {
   id          Int      @id @default(autoincrement())
   cupon_id    Int
   material_id Int
-  created_at  DateTime @default(now())
-  updated_at  DateTime @updatedAt
-  created_by  Int?
-  updated_by  Int?
   cupon       Cupon    @relation(fields: [cupon_id], references: [id])
   material    Material @relation(fields: [material_id], references: [id])
 }
 
 model Promocion {
-  id               Int                @id @default(autoincrement())
-  empresa_id       Int
-  codigo_promocion String
-  nombre           String
-  descripcion      String?
-  tipo             String
-  fecha_inicio     DateTime
-  fecha_fin        DateTime?
-  activo           Boolean            @default(true)
-  created_at       DateTime           @default(now())
-  updated_at       DateTime           @updatedAt
-  created_by       Int?
-  updated_by       Int?
-  empresa          Empresa            @relation(fields: [empresa_id], references: [id])
-  detalles         PromocionDetalle[]
+  id                Int                @id @default(autoincrement())
+  empresa_id        Int
+  nombre            String
+  descripcion       String
+  fecha_inicio      DateTime
+  fecha_fin         DateTime
+  cantidad_compra   Int
+  cantidad_regalo   Int
+  activo            Boolean            @default(true)
+  created_at        DateTime           @default(now())
+  updated_at        DateTime           @updatedAt
+  created_by        Int?
+  updated_by        Int?
+  empresa           Empresa            @relation(fields: [empresa_id], references: [id])
+  detalles          PromocionDetalle[]
+  canales           PromocionCanal[]
+  categorias        PromocionCategoria[]
 
-  @@unique([empresa_id, codigo_promocion])
+  @@unique([empresa_id, nombre])
 }
 
 model PromocionDetalle {
   id             Int       @id @default(autoincrement())
   promocion_id   Int
   material_id    Int
-  cantidad       Decimal   @default(1) @db.Decimal(10, 3)
-  precio_combo   Decimal?  @db.Decimal(12, 2)
-  tipo_promocion String?
-  tipo_descuento String?
-  valor          Decimal?  @db.Decimal(12, 2)
-  created_at     DateTime  @default(now())
-  updated_at     DateTime  @updatedAt
-  created_by     Int?
-  updated_by     Int?
   material       Material  @relation(fields: [material_id], references: [id])
   promocion      Promocion @relation(fields: [promocion_id], references: [id])
+}
+
+model PromocionCanal {
+  id            Int      @id @default(autoincrement())
+  promocion_id  Int
+  canal         String
+  promocion     Promocion @relation(fields: [promocion_id], references: [id])
+}
+
+model PromocionCategoria {
+  id            Int      @id @default(autoincrement())
+  promocion_id  Int
+  categoria_id  Int
+  promocion     Promocion @relation(fields: [promocion_id], references: [id])
+  categoria     MaterialCategoria @relation(fields: [categoria_id], references: [id])
+
 }
 
 model Venta {
@@ -973,6 +1024,8 @@ model MaterialCategoria {
   created_by          Int?
   updated_by          Int?
   materiales          Material[]
+  promociones         PromocionCategoria[]
+  cupones             CuponCategoria[]
   usuario_creador     Usuario?   @relation("CategoriaCreador", fields: [created_by], references: [id])
   empresa             Empresa    @relation(fields: [empresa_id], references: [id])
   usuario_modificador Usuario?   @relation("CategoriaModificador", fields: [updated_by], references: [id])
@@ -1046,6 +1099,7 @@ model Moneda {
   transacciones             TransaccionCaja[]
   monedas_denominaciones    MonedaDenominacion[]
   ventas                    Venta[]
+  cupones                   Cupon[]
 
   @@unique([empresa_id, abreviatura])
 }
@@ -1189,6 +1243,8 @@ model Sucursal {
   sesiones_caja        CajaGestion[]
   transacciones_caja   TransaccionCaja[]
   ventas               Venta[]
+  usuario_sucursales   UsuarioSucursal[]
+  usuarios_last        Usuario[]
 
   @@unique([empresa_id, descripcion])
 }
@@ -1436,6 +1492,7 @@ model Modulo {
   descripcion     String
   activo          Boolean         @default(true)
   empresa_modulos EmpresaModulo[]
+  parametros_sistema ParametroSistema[]
 }
 
 model EmpresaModulo {
@@ -1661,6 +1718,36 @@ model FlujoDocumentos {
   activo                    Boolean     @default(true)
   created_at                DateTime    @default(now())
   created_by                Int
-  usuario_creador           Usuario     @relation("FlujoDocumentosCreador", fields: [created_by], references: [id])
-  empresa                   Empresa     @relation(fields: [empresa_id], references: [id])
+   usuario_creador           Usuario     @relation("FlujoDocumentosCreador", fields: [created_by], references: [id])
+   empresa                   Empresa     @relation(fields: [empresa_id], references: [id])
+}
+
+model ParametroSistema {
+  id                   Int                      @id @default(autoincrement())
+  empresa_id           Int?
+  nivel                NivelParametroSistema
+  modulo_id            Int
+  codigo               String
+  descripcion          String
+  tipo_dato            TipoDatoParametroSistema
+  valor_string         String?
+  valor_number         Decimal?
+  valor_boolean        Boolean?
+  valor_date           DateTime?
+  valor_json           Json?
+  editable             Boolean                   @default(false)
+  requiere_reinicio    Boolean                   @default(false)
+  etiqueta             String
+  activo               Boolean                   @default(true)
+  created_at           DateTime                  @default(now())
+  updated_at           DateTime                  @updatedAt
+  created_by           Int?
+  updated_by           Int?
+
+  empresa              Empresa?                  @relation(fields: [empresa_id], references: [id])
+  modulo               Modulo                    @relation(fields: [modulo_id], references: [id])
+  usuario_creador      Usuario?                  @relation("ParametroSistemaCreador", fields: [created_by], references: [id])
+  usuario_modificador  Usuario?                  @relation("ParametroSistemaModificador", fields: [updated_by], references: [id])
+
+  @@unique([empresa_id, nivel, modulo_id, codigo])
 }

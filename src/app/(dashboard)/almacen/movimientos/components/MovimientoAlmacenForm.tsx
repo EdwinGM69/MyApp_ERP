@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { apiFetch } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import MaterialSelect from '@/components/ui/MaterialSelect'
+import { useSucursal } from '@/contexts/SucursalContext'
 
 interface Distribucion {
   id: string
@@ -43,6 +44,7 @@ interface ProductoLinea {
 
 export default function MovimientoAlmacenForm() {
   const router = useRouter()
+  const { currentSucursal } = useSucursal()
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [isReady, setIsReady] = useState(false)
@@ -57,7 +59,7 @@ export default function MovimientoAlmacenForm() {
   const [ubicaciones, setUbicaciones] = useState<any[]>([])
 
   // Header state
-  const [sucursalId, setSucursalId] = useState<number>(1)
+  const [sucursalId, setSucursalId] = useState<number>(currentSucursal?.id || 1)
   const [tipoOperacionId, setTipoOperacionId] = useState<number>(1)
   const [documento, setDocumento] = useState('')
   const [fecha, setFecha] = useState('')
@@ -118,9 +120,8 @@ export default function MovimientoAlmacenForm() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [resSuc, resAlm, resTip, resEst, resCli, resPro, resUbi] = await Promise.all([
+        const [resSuc, resTip, resEst, resCli, resPro, resUbi] = await Promise.all([
           apiFetch('/api/empresa/sucursales'),
-          apiFetch('/api/logistica/almacenes?pageSize=100'),
           apiFetch('/api/logistica/tipos-operacion?pageSize=100'),
           apiFetch('/api/estados-stock?pageSize=100'),
           apiFetch('/api/clientes?pageSize=100'),
@@ -134,9 +135,8 @@ export default function MovimientoAlmacenForm() {
           return Array.isArray(json) ? json : (json.data || [])
         }
 
-        const [suc, alm, tip, est, cli, pro, ubi] = await Promise.all([
+        const [suc, tip, est, cli, pro, ubi] = await Promise.all([
           extract(resSuc),
-          extract(resAlm),
           extract(resTip),
           extract(resEst),
           extract(resCli),
@@ -145,7 +145,6 @@ export default function MovimientoAlmacenForm() {
         ])
 
         setSucursales(suc)
-        setAlmacenes(alm)
         setTiposOperacion(tip)
         setEstadosStock(est)
         setClientes(cli)
@@ -160,10 +159,33 @@ export default function MovimientoAlmacenForm() {
     loadData()
   }, [])
 
+  // Load almacenes when sucursalId changes
+  useEffect(() => {
+    const loadAlmacenes = async () => {
+      if (!sucursalId) return
+      try {
+        const res = await apiFetch(`/api/logistica/almacenes?pageSize=100&sucursalId=${sucursalId}`)
+        if (res.ok) {
+          const json = await res.json()
+          setAlmacenes(Array.isArray(json) ? json : (json.data || []))
+        }
+      } catch (error) {
+        console.error('Error loading almacenes:', error)
+      }
+    }
+    loadAlmacenes()
+  }, [sucursalId])
+
   useEffect(() => {
     setMounted(true)
     setFecha(new Date().toISOString().split('T')[0])
   }, [])
+
+  useEffect(() => {
+    if (currentSucursal?.id) {
+      setSucursalId(currentSucursal.id)
+    }
+  }, [currentSucursal])
 
   const addLinea = () => {
     // Find "Disponible" ID if available, otherwise default to 1
@@ -403,10 +425,9 @@ export default function MovimientoAlmacenForm() {
           <div className="space-y-4">
             <div className="space-y-2">
               <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">SUCURSAL ORIGEN</label>
-              <select value={sucursalId} onChange={(e) => setSucursalId(Number(e.target.value))}
-                className="w-full px-5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-[13px] font-medium focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
-                {sucursales.map(s => <option key={s.id} value={s.id}>{s.descripcion}</option>)}
-              </select>
+              <div className="w-full px-5 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-[13px] font-medium">
+                {sucursales.find(s => s.id === sucursalId)?.descripcion || 'Cargando...'}
+              </div>
             </div>
 
             <div className="space-y-2">
