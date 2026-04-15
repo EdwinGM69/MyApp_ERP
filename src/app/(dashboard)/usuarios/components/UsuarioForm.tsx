@@ -34,6 +34,7 @@ interface Usuario {
   activo: boolean
   avatar_url?: string | null
   sucursales_asignadas?: { sucursal_id: number }[]
+  usuario_sucursales?: { sucursal_id: number; sucursal?: { id: number; descripcion: string } }[]
 }
 
 interface UsuarioFormProps {
@@ -153,7 +154,9 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
       setTwoFactor(usuarioToEdit.two_factor_enabled || false)
 
       // Cargar sucursales asignadas
-      if (usuarioToEdit.sucursales_asignadas) {
+      if (usuarioToEdit.usuario_sucursales) {
+        setAssignedSucursales(usuarioToEdit.usuario_sucursales.map((s: any) => s.sucursal_id))
+      } else if (usuarioToEdit.sucursales_asignadas) {
         setAssignedSucursales(usuarioToEdit.sucursales_asignadas.map((s: any) => s.sucursal_id))
       }
 
