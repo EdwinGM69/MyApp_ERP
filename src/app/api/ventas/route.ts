@@ -167,6 +167,7 @@ export async function POST(req: NextRequest) {
   try {
     const { empresaId, userId } = await requireAuth(req)
     const body = await req.json()
+    console.log('[POST /api/ventas] Body:', JSON.stringify(body, null, 2))
     const {
       detalles,
       medios_pago,
@@ -243,30 +244,33 @@ export async function POST(req: NextRequest) {
           dcto_identificacion: { connect: { id: documento_identificacion_id } },
           cliente: { connect: { id: finalClienteId } },
           created_by: userId,
-          detalles: {
-            create: detalles.map((d: any) => ({
-              material_id: d.material_id,
-              almacen_id: d.almacen_id,
-              unidad_medida_id: d.unidad_medida_id,
-              cantidad: d.cantidad,
-              precio_unit: d.precio_unit,
-              descuento: d.descuento,
-              impuesto: d.impuesto,
-              subtotal: (d.cantidad * d.precio_unit) - d.descuento,
-              created_by: userId,
-              condiciones: d.condiciones ? {
-                create: d.condiciones.filter((c: any) => c.condicion_id).map((c: any) => ({
-                  tipo_condicion: { connect: { id: c.condicion_id } },
-                  esquema_calculo: c.esquema_id ? { connect: { id: c.esquema_id } } : undefined,
-                  valor_condicion: c.valor_condicion,
-                  simbolo: c.simbolo,
-                  descripcion_corta: c.descripcion_corta,
-                  tipo: c.tipo,
-                  importe: c.importe,
-                  created_by: userId,
-                }))
-              } : undefined
-            }))
+detalles: {
+            create: detalles.map((d: any) => {
+              console.log('[POST /api/ventas] Detail:', JSON.stringify(d, null, 2))
+              return {
+                material_id: d.material_id,
+                almacen_id: d.almacen_id,
+                unidad_medida_id: d.unidad_medida_id,
+                cantidad: d.cantidad,
+                precio_unit: d.precio_unit,
+                descuento: d.descuento,
+                impuesto: d.impuesto,
+                subtotal: (d.cantidad * d.precio_unit) - d.descuento,
+                created_by: userId,
+                condiciones: d.condiciones ? {
+                  create: d.condiciones.filter((c: any) => c.condicion_id).map((c: any) => ({
+                    tipo_condicion: { connect: { id: c.condicion_id } },
+                    esquema_calculo: c.esquema_id ? { connect: { id: c.esquema_id } } : undefined,
+                    valor_condicion: c.valor_condicion,
+                    simbolo: c.simbolo,
+                    descripcion_corta: c.descripcion_corta,
+                    tipo: c.tipo,
+                    importe: c.importe,
+                    created_by: userId,
+                  }))
+                } : undefined
+              }
+            })
           },
           medios_pago: medios_pago && medios_pago.length > 0 ? {
             create: medios_pago.map((mp: any) => ({

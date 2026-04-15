@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 interface Sucursal {
   id: number
   descripcion: string
+  activo: boolean
 }
 
 interface UserSucursalSelectProps {
@@ -56,7 +57,11 @@ export default function UserSucursalSelect({ className }: UserSucursalSelectProp
   // Handle sucursal change
   const handleSelect = async (sucursal: Sucursal) => {
     try {
-      await setCurrentSucursal(sucursal)
+      const sucursalWithActivo: Sucursal = {
+        ...sucursal,
+        activo: sucursal.activo ?? true
+      }
+      await setCurrentSucursal(sucursalWithActivo)
     } catch (error) {
       console.error('Error updating sucursal:', error)
     } finally {

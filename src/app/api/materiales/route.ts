@@ -289,6 +289,7 @@ export async function GET(req: NextRequest) {
         materiales.forEach((m: any) => {
           m.stock_actual = stockMap.get(m.id) ?? 0
           m.unidad_medida = m.unidad_medida_rel?.descripcion || 'und'
+          m.unidad_medida_id = m.unidad_medida_rel?.id || 1
         })
       } catch (e) {
         console.error('Error fetching raw data:', e)
@@ -299,6 +300,7 @@ export async function GET(req: NextRequest) {
       materiales.forEach((m: any) => {
         m.stock_actual = 0
         m.unidad_medida = m.unidad_medida_rel?.descripcion || 'und'
+        m.unidad_medida_id = m.unidad_medida_rel?.id || 1
       })
     }
 

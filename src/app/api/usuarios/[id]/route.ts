@@ -16,6 +16,8 @@ const usuarioUpdateSchema = z.object({
   two_factor_enabled: z.boolean().optional(),
   preferencias: z.any().optional(),
   roles_adicionales: z.array(z.number().int().positive()).optional(),
+  last_sucursal_id: z.number().int().positive().optional().nullable(),
+  sucursales_asignadas: z.array(z.number().int().positive()).optional(),
 })
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -34,7 +36,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         rol: true,
         roles_adicionales: {
           include: { rol: true }
-        }
+        },
+        usuario_sucursales: true
       }
     })
 
@@ -87,7 +90,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
-    const { roles_adicionales, password, ...restData } = data
+    const { roles_adicionales, sucursales_asignadas, password, ...restData } = data
 
     const updateData: any = {
       ...restData,
@@ -105,6 +108,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
+    if (sucursales_asignadas !== undefined) {
+      updateData.usuario_sucursales = {
+        deleteMany: {},
+        create: sucursales_asignadas.map(sId => ({ sucursal_id: sId, created_by: userId }))
+      }
+    }
+
     let usuario
     try {
       usuario = await prisma.usuario.update({
@@ -114,7 +124,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           rol: true,
           roles_adicionales: {
             include: { rol: true }
-          }
+          },
+          usuario_sucursales: true
         }
       })
     } catch (prismaError: any) {

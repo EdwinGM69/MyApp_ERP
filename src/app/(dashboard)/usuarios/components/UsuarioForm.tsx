@@ -7,6 +7,12 @@ import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import ConfirmDialog from '@/components/ui/ConfirmDialog'
 
+interface Sucursal {
+  id: number
+  descripcion: string
+  empresa_id: number
+}
+
 interface Rol {
   id: number
   nombre: string
@@ -27,6 +33,7 @@ interface Usuario {
   roles_adicionales?: { rol_id: number, rol: { nombre: string } }[]
   activo: boolean
   avatar_url?: string | null
+  sucursales_asignadas?: { sucursal_id: number }[]
 }
 
 interface UsuarioFormProps {
@@ -50,6 +57,9 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
   const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [roles, setRoles] = useState<Rol[]>([])
+  const [sucursales, setSucursales] = useState<Sucursal[]>([])
+  const [assignedSucursales, setAssignedSucursales] = useState<number[]>([])
+  const [isSelectingSucursal, setIsSelectingSucursal] = useState(false)
 
   const [nombre, setNombre] = useState('')
   const [email, setEmail] = useState('')
@@ -92,7 +102,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
     const hasChanged = JSON.stringify(currentValues) !== JSON.stringify(initialValuesRef.current)
     setIsFormDirty(hasChanged)
   }, [
-    nombre, email, telefono, posicion, isSuperadmin, assignedRoles, twoFactor,
+    nombre, email, telefono, posicion, isSuperadmin, assignedRoles, assignedSucursales, twoFactor,
     idioma, zonaHoraria, notifInventario, notifSemanal, notifChat, notifPromociones
   ])
 
@@ -109,6 +119,19 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
       }
     }
     fetchRoles()
+
+    async function fetchSucursales() {
+      try {
+        const res = await apiFetch('/api/sucursales')
+        if (res.ok) {
+          const json = await res.json()
+          setSucursales(json.data || json)
+        }
+      } catch (error) {
+        console.error('Error fetching sucursales:', error)
+      }
+    }
+    fetchSucursales()
   }, [])
 
   useEffect(() => {
@@ -128,6 +151,11 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
       setAssignedRoles(userRoles)
 
       setTwoFactor(usuarioToEdit.two_factor_enabled || false)
+
+      // Cargar sucursales asignadas
+      if (usuarioToEdit.sucursales_asignadas) {
+        setAssignedSucursales(usuarioToEdit.sucursales_asignadas.map((s: any) => s.sucursal_id))
+      }
 
       const prefs = usuarioToEdit.preferencias || defaultPreferences
       setIdioma(prefs.idioma || defaultPreferences.idioma)
@@ -188,6 +216,17 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
     setAssignedRoles(assignedRoles.filter(id => id !== rolId))
   }
 
+  const handleAddSucursal = (sucursalId: number) => {
+    if (!assignedSucursales.includes(sucursalId)) {
+      setAssignedSucursales([...assignedSucursales, sucursalId])
+    }
+    setIsSelectingSucursal(false)
+  }
+
+  const handleRemoveSucursal = (sucursalId: number) => {
+    setAssignedSucursales(assignedSucursales.filter(id => id !== sucursalId))
+  }
+
   const handleCancelClick = () => {
     if (isFormDirty) {
       setShowConfirm(true)
@@ -233,6 +272,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
         rol_id: mainRolId,
         roles_adicionales: additionalRoles,
         last_sucursal_id: lastSucursalId,
+        sucursales_asignadas: assignedSucursales,
         preferencias: {
           idioma,
           zona_horaria: zonaHoraria,
@@ -386,6 +426,64 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
                 />
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Sucursales Asignadas */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-sm">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white mb-6">Sucursales Asignadas</h3>
+
+          <div>
+            <div className="flex flex-wrap gap-3 items-center">
+              {assignedSucursales.map(sucursalId => {
+                const sucursal = sucursales.find(s => s.id === sucursalId)
+                if (!sucursal) return null
+                return (
+                  <div key={sucursalId} className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 px-4 py-2 rounded-xl text-sm font-bold shadow-sm group">
+                    <span className="material-symbols-outlined text-[18px]">store</span>
+                    {sucursal.descripcion}
+                    <button type="button" onClick={() => handleRemoveSucursal(sucursalId)} className="text-emerald-300 hover:text-red-500 transition-colors flex items-center justify-center">
+                      <span className="material-symbols-outlined text-[18px]">cancel</span>
+                    </button>
+                  </div>
+                )
+              })}
+
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsSelectingSucursal(!isSelectingSucursal)}
+                  className="flex items-center gap-2 bg-white dark:bg-slate-900 border-2 border-slate-200 dark:border-slate-700 border-dashed text-slate-400 hover:border-emerald-400 hover:text-emerald-500 px-5 py-2 rounded-xl text-sm font-bold transition-all"
+                >
+                  <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                  Asignar Sucursal
+                </button>
+                {isSelectingSucursal && sucursales.length > 0 && (
+                  <div className="absolute top-full mt-2 left-0 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl w-60 z-20 py-3 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                    <div className="px-4 pb-2 mb-2 border-b border-slate-50 dark:border-slate-800">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Seleccionar Sucursal</p>
+                    </div>
+                    {sucursales
+                      .filter(s => !assignedSucursales.includes(s.id))
+                      .map(sucursal => (
+                        <button
+                          key={sucursal.id}
+                          type="button"
+                          className="w-full text-left px-4 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800 text-sm font-bold text-slate-700 dark:text-slate-300 transition-colors flex items-center gap-2"
+                          onClick={() => handleAddSucursal(sucursal.id)}
+                        >
+                          <span className="material-symbols-outlined text-[18px]">store</span>
+                          {sucursal.descripcion}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+            <p className="text-xs text-slate-400 font-medium mt-4 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm">info</span>
+              Las sucursales asignadas determinan desde qué ubicaciones puede operar este usuario.
+            </p>
           </div>
         </div>
 

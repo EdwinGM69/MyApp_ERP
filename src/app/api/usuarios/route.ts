@@ -17,6 +17,7 @@ const usuarioSchema = z.object({
   preferencias: z.any().optional(),
   last_sucursal_id: z.number().int().positive().optional().nullable(),
   roles_adicionales: z.array(z.number().int().positive()).optional(),
+  sucursales_asignadas: z.array(z.number().int().positive()).optional(),
 })
 
 export async function GET(req: NextRequest) {
@@ -51,7 +52,8 @@ export async function GET(req: NextRequest) {
           rol: true,
           roles_adicionales: {
             include: { rol: true }
-          }
+          },
+          usuario_sucursales: true
         },
       }),
     ])
@@ -94,24 +96,29 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(data.password, 10)
 
+    const { roles_adicionales, sucursales_asignadas, ...restData } = data
+
     const usuario = await prisma.usuario.create({
       data: {
-        nombre: data.nombre,
-        email: data.email,
+        ...restData,
         password_hash: hashedPassword,
-        rol_id: data.rol_id,
-        activo: data.activo,
-        telefono: data.telefono,
-        posicion: data.posicion,
-        is_superadmin: data.is_superadmin || false,
-        two_factor_enabled: data.two_factor_enabled || false,
-        preferencias: data.preferencias ? data.preferencias : undefined,
+        telefono: restData.telefono,
+        posicion: restData.posicion,
+        is_superadmin: restData.is_superadmin || false,
+        two_factor_enabled: restData.two_factor_enabled || false,
+        preferencias: restData.preferencias ? restData.preferencias : undefined,
         empresa_id: empresaId,
         created_by: userId,
-        last_sucursal_id: data.last_sucursal_id || null,
-        roles_adicionales: data.roles_adicionales && data.roles_adicionales.length > 0 ? {
-          create: data.roles_adicionales.map((rolId: any) => ({
+        last_sucursal_id: restData.last_sucursal_id || null,
+        roles_adicionales: roles_adicionales && roles_adicionales.length > 0 ? {
+          create: roles_adicionales.map((rolId: any) => ({
             rol_id: rolId
+          }))
+        } : undefined,
+        usuario_sucursales: sucursales_asignadas && sucursales_asignadas.length > 0 ? {
+          create: sucursales_asignadas.map((sucursalId: any) => ({
+            sucursal_id: sucursalId,
+            created_by: userId
           }))
         } : undefined,
       },
@@ -119,7 +126,8 @@ export async function POST(req: NextRequest) {
         rol: true,
         roles_adicionales: {
           include: { rol: true }
-        }
+        },
+        usuario_sucursales: true
       }
     })
 
