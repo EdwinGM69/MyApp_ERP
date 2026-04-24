@@ -50,10 +50,21 @@ interface VentaDetalle {
   cantidad: number
   precio_unit: number
   descuento: number
+  descuento_cupon: number
+  descuento_cupon_unitario?: number
+  descuento_promocion: number
   impuesto: number
   subtotal: number
   stock: number | null
   pasos_calculados?: VentaDetalleCondicion[]
+  // Promotion fields
+  promocion_id?: number | null
+  promocion_label?: string | null // promotion name
+  promocion_badge?: string | null // e.g. "3x1"
+  promocion_cantidad_compra?: number | null
+  promocion_cantidad_regalo?: number | null
+  categoria_id?: number | null // stored to check category promos
+  aplica_cupon?: boolean // indicates if coupon applies to this line
 }
 
 export default function VentaForm() {
@@ -85,6 +96,9 @@ export default function VentaForm() {
     if (currentSucursal) {
       setSucursal({ id: currentSucursal.id, descripcion: currentSucursal.descripcion })
     }
+
+    // Load active coupons on mount
+    fetchCuponesActivos()
   }, [currentSucursal])
 
   const [cliente, setCliente] = useState<{ id: number; nombre: string } | null>(null)
@@ -153,12 +167,12 @@ export default function VentaForm() {
               setPasosEsquema(sortedPasos)
 
               // Recalculate all lines with new schema
-              lineas.forEach((l, idx) => {
-                if (l.material_id) {
-                  // We use the local sortedPasos to avoid waiting for state update
-                  calculateLineCalculations(idx, l.material_id, l.cantidad, sortedPasos, esJson.data.variables || [])
-                }
-              })
+               lineas.forEach((l, idx) => {
+                 if (l.material_id) {
+                   // We use the local sortedPasos to avoid waiting for state update
+                   calculateLineCalculations(idx, l.material_id, l.cantidad, l, sortedPasos, esJson.data.variables || [], cuponAplicadoGlobal)
+                 }
+               })
             }
             if (esJson.data?.variables) {
               setVariablesEsquema(esJson.data.variables)
@@ -175,13 +189,22 @@ export default function VentaForm() {
   // Lines state
   const [lineas, setLineas] = useState<VentaDetalle[]>([])
 
+  // Cupon state
+  const [cuponesActivos, setCuponesActivos] = useState<any[]>([])
+  const [showCuponSelector, setShowCuponSelector] = useState<Record<string, boolean>>({})
+  const [cuponSeleccionado, setCuponSeleccionado] = useState<Record<string, any>>({})
+  const [cuponAplicadoGlobal, setCuponAplicadoGlobal] = useState<any>(null)
+  const [materialesConCupon, setMaterialesConCupon] = useState<Record<string, boolean>>({})
+
   // Totals calculation (Keep for UI display)
   const totals = useMemo(() => {
-    const total = lineas.reduce((acc, l) => acc + (l.subtotal || 0), 0)
     const subtotal = lineas.reduce((acc, l) => acc + (l.cantidad * l.precio_unit), 0)
     const descuento = lineas.reduce((acc, l) => acc + (l.descuento || 0), 0)
+    const descuento_cupon = lineas.reduce((acc, l) => acc + (l.descuento_cupon || 0), 0)
+    const descuento_promocion = lineas.reduce((acc, l) => acc + (l.descuento_promocion || 0), 0)
     const impuesto = lineas.reduce((acc, l) => acc + (l.impuesto || 0), 0)
-    return { subtotal, descuento, impuesto, total }
+    const total = lineas.reduce((acc, l) => acc + (l.subtotal || 0), 0)
+    return { subtotal, descuento, descuento_cupon, descuento_promocion, impuesto, total }
   }, [lineas])
 
   const addLinea = () => {
@@ -198,9 +221,13 @@ export default function VentaForm() {
       cantidad: 1,
       precio_unit: 0,
       descuento: 0,
+      descuento_cupon: 0,
+      descuento_cupon_unitario: 0,
+      descuento_promocion: 0,
       impuesto: 0,
       subtotal: 0,
-      stock: null
+      stock: null,
+      aplica_cupon: false
     }
     setLineas([...lineas, newLinea])
     // NOTE: New lines start collapsed (breakdown shown only on demand)
@@ -208,12 +235,190 @@ export default function VentaForm() {
 
   const removeLinea = (index: number) => {
     const lineId = lineas[index].id
+    const hasOtherMaterials = lineas.some((l, i) => i !== index && l.material_id)
+
     setLineas(lineas.filter((_, i) => i !== index))
     setExpandedLines(prev => {
       const next = new Set(prev)
       next.delete(lineId)
       return next
     })
+    setShowCuponSelector(prev => {
+      const next = { ...prev }
+      delete next[lineId]
+      return next
+    })
+    setCuponSeleccionado(prev => {
+      const next = { ...prev }
+      delete next[lineId]
+      return next
+    })
+
+    // Remove coupon when last material is removed
+    if (!hasOtherMaterials && cuponAplicadoGlobal) {
+      eliminarCuponGlobal()
+    }
+  }
+
+  const fetchCuponesActivos = async () => {
+    if (cuponesActivos.length > 0) return
+    try {
+      const res = await apiFetch('/api/precios/cupones?pageSize=100')
+      if (res.ok) {
+        const json = await res.json()
+        console.log('Cupones API response:', json)
+        const hoy = new Date(fechaVenta || new Date())
+        const filtrados = (json.data || []).filter((c: any) =>
+          c.activo &&
+          new Date(c.fecha_inicio) <= hoy &&
+          new Date(c.fecha_fin) >= hoy
+        )
+        console.log('Cupones filtrados:', filtrados)
+        setCuponesActivos(filtrados)
+      }
+    } catch (err) {
+      console.error('Error fetching cupones:', err)
+    }
+  }
+
+  const toggleCuponSelector = async (lineId: string) => {
+    const newState = !showCuponSelector[lineId]
+    setShowCuponSelector(prev => ({ ...prev, [lineId]: newState }))
+    if (newState) {
+      await fetchCuponesActivos()
+      if (!expandedLines.has(lineId)) {
+        toggleLineExpansion(lineId)
+      }
+    }
+  }
+
+  const aplicarCuponGlobal = async (cupon: any) => {
+    // Fetch cupon details and categories
+    try {
+      const [detallesRes, categoriasRes] = await Promise.all([
+        apiFetch(`/api/precios/cupones/${cupon.id}/detalles`),
+        apiFetch(`/api/precios/cupones/${cupon.id}/categorias`)
+      ])
+
+      const detallesJson = await detallesRes.json()
+      const categoriasJson = await categoriasRes.json()
+
+      const cuponDetalles = detallesJson.data || []
+      const cuponCategorias = categoriasJson.data || []
+
+      // Get IDs that apply
+      const materialIdsAplica = new Set(cuponDetalles.map((d: any) => d.material_id))
+      const categoriaIdsAplica = new Set(cuponCategorias.map((c: any) => c.categoria_id))
+
+      // No restrictions = applies to all materials
+      const sinRestricciones = cuponDetalles.length === 0 && cuponCategorias.length === 0
+
+      // Find lines where material applies
+      const materialesAplican: string[] = []
+      const updatedLineas = lineas.map((linea) => {
+        if (!linea.material_id) return linea
+
+        // Check if material ID is in details
+        const materialMatch = materialIdsAplica.has(linea.material_id)
+        // Check if material category is in categories
+        const categoryMatch = linea.categoria_id && categoriaIdsAplica.has(linea.categoria_id)
+
+        if (sinRestricciones || materialMatch || categoryMatch) {
+          materialesAplican.push(linea.id)
+          // Calculate unit and total values
+          const cuponValorUnitario = cupon.tipo === 'PORCENTAJE'
+            ? linea.precio_unit * (cupon.valor / 100)
+            : cupon.valor
+          const cuponValorTotal = cuponValorUnitario * linea.cantidad
+    return {
+      ...linea,
+      descuento_cupon_unitario: cuponValorUnitario,
+      descuento_cupon: cuponValorTotal,
+      aplica_cupon: true
+    }
+        }
+        return linea
+      })
+
+      if (materialesAplican.length === 0) {
+        toast.error('El cupón no puede aplicarse a ningún material en el detalle')
+        return
+      }
+
+      // Update state
+      setCuponAplicadoGlobal(cupon)
+      setMaterialesConCupon(Object.fromEntries(materialesAplican.map(id => [id, true])))
+      setLineas(updatedLineas)
+
+      // Recalculate all lines
+      updatedLineas.forEach((linea, index) => {
+        if (linea.material_id && linea.pasos_calculados) {
+          calculateLineCalculations(index, linea.material_id, linea.cantidad, linea, undefined, undefined, cupon)
+        }
+      })
+
+      toast.success(`Cupón "${cupon.nombre}" aplicado a ${materialesAplican.length} producto(s)`)
+    } catch (err) {
+      console.error('Error applying coupon:', err)
+      toast.error('Error al aplicar el cupón')
+    }
+  }
+
+  const eliminarCuponGlobal = () => {
+    const cupon = cuponAplicadoGlobal
+    if (cupon) {
+      setCuponAplicadoGlobal(null)
+      setMaterialesConCupon({})
+
+      const updatedLineas = lineas.map((linea) => ({
+        ...linea,
+        descuento_cupon: 0,
+        descuento_cupon_unitario: 0,
+        aplica_cupon: false
+      }))
+      setLineas(updatedLineas)
+
+      // Recalculate all lines to update schema
+      updatedLineas.forEach((linea, index) => {
+        if (linea.material_id && linea.pasos_calculados) {
+          calculateLineCalculations(index, linea.material_id, linea.cantidad, linea)
+        }
+      })
+
+      toast.success('Cupón eliminado')
+    }
+  }
+
+  const checkMaterialQualifiesForCupon = async (
+    cupon: any,
+    materialId: number,
+    categoriaId: number | null | undefined
+  ): Promise<boolean> => {
+    try {
+      const [detallesRes, categoriasRes] = await Promise.all([
+        apiFetch(`/api/precios/cupones/${cupon.id}/detalles`),
+        apiFetch(`/api/precios/cupones/${cupon.id}/categorias`)
+      ])
+
+      const detallesJson = await detallesRes.json()
+      const categoriasJson = await categoriasRes.json()
+
+      const cuponDetalles = detallesJson.data || []
+      const cuponCategorias = categoriasJson.data || []
+
+      const materialIdsAplica = new Set(cuponDetalles.map((d: any) => d.material_id))
+      const categoriaIdsAplica = new Set(cuponCategorias.map((c: any) => c.categoria_id))
+
+      const sinRestricciones = cuponDetalles.length === 0 && cuponCategorias.length === 0
+
+      const materialMatch = materialIdsAplica.has(materialId)
+      const categoryMatch = categoriaId !== null && categoriaId !== undefined && categoriaIdsAplica.has(categoriaId)
+
+      return sinRestricciones || materialMatch || categoryMatch
+    } catch (err) {
+      console.error('Error checking coupon qualification:', err)
+      return false
+    }
   }
 
   const toggleLineExpansion = (lineId: string) => {
@@ -249,11 +454,22 @@ export default function VentaForm() {
     index: number,
     materialId: number,
     cantidad: number,
+    lineaData: Partial<VentaDetalle> = {},
     overridePasos?: EsquemaCalculoPaso[],
-    overrideVariables?: any[]
+    overrideVariables?: any[],
+    globalCupon?: any
   ) => {
     const activePasos = overridePasos || pasosEsquema
     const activeVariables = overrideVariables || variablesEsquema
+
+    // Promotion data from line
+    const promocionId = lineaData?.promocion_id
+    const promocionCantidadCompra = lineaData?.promocion_cantidad_compra
+    const promocionCantidadRegalo = lineaData?.promocion_cantidad_regalo
+
+    // Coupon data from line - use the total value directly
+    const descuentoCuponUnitario = lineaData?.descuento_cupon_unitario || 0
+    const descuentoCupon = lineaData?.descuento_cupon || 0
 
     if (!materialId || activePasos.length === 0) return
 
@@ -289,10 +505,25 @@ export default function VentaForm() {
         console.warn('DEBUG: No active conditions found for material', materialId, 'and date', dateForFiltering)
       }
 
-      let precioUnitBase = 0 // Initialize to 0 as first step is expected to set it
-      let subtotalBruto = 0
+      let precioUnitBase = lineaData?.precio_unit || 0 // Use current price as base, overridden by Precio steps
+      let subtotalBruto = (lineaData?.cantidad || 0) * precioUnitBase // Default subtotal
       let totalImpuesto = 0
       let totalDescuento = 0
+      let descuentosUnitarios = 0
+      let descuentoPromocion = 0
+      let descuentoCupon = 0
+      let descuentoCuponUnitarioAcumulado = lineaData?.descuento_cupon_unitario || 0
+
+      console.log('DEBUG: Initial calculation values:')
+      console.log('  precioUnitBase:', precioUnitBase)
+      console.log('  cantidad:', cantidad)
+      console.log('  initial subtotalBruto:', subtotalBruto)
+      console.log('  lineaData:', {
+        promocion_id: lineaData?.promocion_id,
+        promocion_cantidad_compra: lineaData?.promocion_cantidad_compra,
+        promocion_cantidad_regalo: lineaData?.promocion_cantidad_regalo,
+        descuento_cupon: lineaData?.descuento_cupon
+      })
 
       const results: Record<string, number> = {}
       const varContext: Record<string, number> = {}
@@ -305,13 +536,22 @@ export default function VentaForm() {
       })
       console.log('DEBUG: Variable context:', varContext)
 
-      // Calculate each step in sequence
-      const pasosCalculados: VentaDetalleCondicion[] = activePasos.map(paso => {
+      // Separate tax and non-tax steps to ensure discounts are applied before tax calculation
+      const taxPasos = activePasos.filter(p => p.tipo === 'Impuesto')
+      const nonTaxPasos = activePasos.filter(p => p.tipo !== 'Impuesto')
+
+      console.log('DEBUG: Starting calculation with', activePasos.length, 'total steps:', activePasos.map(p => `${p.tipo}: ${p.descripcion_corta}`))
+      console.log('DEBUG: Tax steps:', taxPasos.length, 'Non-tax steps:', nonTaxPasos.length)
+      console.log('DEBUG: Initial values - precioUnitBase:', precioUnitBase, 'subtotalBruto:', subtotalBruto, 'cantidad:', cantidad)
+
+      // Process non-tax steps first
+      const nonTaxCalculados: VentaDetalleCondicion[] = nonTaxPasos.map(paso => {
         let valorBase = 0
         let esporcentaje = false
 
         // 1. Get value from model "Condiciones" if step has a condicion_id
         console.log(`DEBUG: Processing step "${paso.descripcion_corta}" (Type: ${paso.tipo}, CondID: ${paso.condicion_id}, Formula: ${paso.formula})`)
+        console.log(`DEBUG: Step context - subtotalBruto: ${subtotalBruto}, precioUnitBase: ${precioUnitBase}, descuentosUnitarios: ${descuentosUnitarios}`)
 
         let condicionEncontrada = false
 
@@ -334,11 +574,20 @@ export default function VentaForm() {
             esporcentaje = condicion.porcentaje === true
             console.log(`DEBUG: Step "${paso.descripcion_corta}" found match. ID: ${condicion.id}, Value: ${valorBase}, %: ${esporcentaje}`)
           } else {
-            console.warn(`DEBUG: Step "${paso.descripcion_corta}" (CondId: ${paso.condicion_id}) NO found in ${todasCondiciones.length} active conditions.`)
-            console.log('DEBUG: Active Cond IDs available:', todasCondiciones.map(c => c.tipo_condicion_id))
+            // For coupon steps, check if there's a global coupon applied
+            const isCuponStep = paso.descripcion_corta.toLowerCase().includes('cupon') || paso.descripcion_corta.toLowerCase().includes('cupón')
+            if (isCuponStep && globalCupon) {
+              condicionEncontrada = true
+              valorBase = globalCupon.valor
+              esporcentaje = globalCupon.tipo === 'PORCENTAJE'
+              console.log(`DEBUG: Step "${paso.descripcion_corta}" using global coupon. Value: ${valorBase}, %: ${esporcentaje}`)
+            } else {
+              console.warn(`DEBUG: Step "${paso.descripcion_corta}" (CondId: ${paso.condicion_id}) NO found in ${todasCondiciones.length} active conditions.`)
+              console.log('DEBUG: Active Cond IDs available:', todasCondiciones.map(c => c.tipo_condicion_id))
 
-            valorBase = 0
-            esporcentaje = true
+              valorBase = 0
+              esporcentaje = true
+            }
           }
         } else {
           // Si no tiene condicion_id pero es de tipo Impuesto, aplicar IGV por defecto
@@ -425,10 +674,7 @@ export default function VentaForm() {
           valorFinal = 0
         }
 
-        // Store result for future steps
-        results[paso.secuencia_paso.toString()] = valorFinal
-
-        // Update running totals for context
+        // 3. Update running totals for context
         if (paso.tipo === 'Precio') {
           const formulaString = (paso.formula || '').toLowerCase()
           const isMultipliedByQty = formulaString.includes('cantidad')
@@ -448,10 +694,87 @@ export default function VentaForm() {
           subtotalBruto = valorFinal // Running total for next steps
           console.log(`DEBUG: Updated Running Subtotal: ${subtotalBruto}`)
         } else if (paso.tipo === 'Descuento') {
-          totalDescuento = valorFinal
-          subtotalBruto = subtotalBruto - valorFinal
-          console.log(`DEBUG: Step Descuento: valorFinal=${valorFinal}, totalDescuento=${totalDescuento}, subtotalBruto=${subtotalBruto}`)
+          const descripcionLower = paso.descripcion_corta.toLowerCase()
+
+          // Check if this is a promotion discount
+          const isPromocion = descripcionLower.includes('promocion') || descripcionLower.includes('promoción')
+          const isCupon = descripcionLower.includes('cupon') || descripcionLower.includes('cupón')
+          console.log(`DEBUG: Step "${paso.descripcion_corta}" - descripcionLower: "${descripcionLower}", isPromocion: ${isPromocion}, isCupon: ${isCupon}`)
+          if (isPromocion) {
+            // Promotion step: calculate discount from free units
+            console.log(`DEBUG: Promotion Step - promocionId: ${promocionId}, promocionCantidadCompra: ${promocionCantidadCompra}, promocionCantidadRegalo: ${promocionCantidadRegalo}, cantidad: ${cantidad}`)
+            console.log(`DEBUG: Promotion data from lineaData:`, {
+              promocion_id: lineaData?.promocion_id,
+              promocion_cantidad_compra: lineaData?.promocion_cantidad_compra,
+              promocion_cantidad_regalo: lineaData?.promocion_cantidad_regalo
+            })
+            if (promocionId && promocionCantidadCompra && promocionCantidadRegalo && cantidad >= promocionCantidadCompra) {
+              // Effective unit price after commercial AND coupon discounts
+              const precioEfectivo = precioUnitBase - descuentosUnitarios - descuentoCuponUnitarioAcumulado
+              // Number of free units
+              const unidadesGratis = Math.floor(cantidad / promocionCantidadCompra) * promocionCantidadRegalo
+              valorFinal = precioEfectivo * unidadesGratis
+              console.log(`DEBUG: Promotion Calculation - precioUnitBase: ${precioUnitBase}, descuentosUnitarios: ${descuentosUnitarios}, descuentoCuponUnitarioAcumulado: ${descuentoCuponUnitarioAcumulado}, precioEfectivo: ${precioEfectivo}, unidadesGratis: ${unidadesGratis}, valorFinal: ${valorFinal}`)
+              console.log(`DEBUG: Before applying promotion - subtotalBruto: ${subtotalBruto}, descuentoPromocion: ${descuentoPromocion}, totalDescuento: ${totalDescuento}`)
+              descuentoPromocion += valorFinal
+              totalDescuento += valorFinal
+              subtotalBruto = subtotalBruto - valorFinal
+              console.log(`DEBUG: After applying promotion - subtotalBruto: ${subtotalBruto}, descuentoPromocion: ${descuentoPromocion}, totalDescuento: ${totalDescuento}`)
+            } else {
+              valorFinal = 0
+              console.log(`DEBUG: Promotion NOT Applied - condition not met: promocionId=${!!promocionId}, compra=${promocionCantidadCompra}, regalo=${promocionCantidadRegalo}, cantidad=${cantidad}`)
+            }
+            console.log(`DEBUG: Step Promocion: valorFinal=${valorFinal}, descuentoPromocion=${descuentoPromocion}, totalDescuento=${totalDescuento}`)
+          }
+          // Check if this is a coupon discount
+          else if (isCupon) {
+            // Only apply coupon if the line qualifies
+            if (lineaData.aplica_cupon) {
+              // Coupon step: Calculate based on condition (global coupon)
+              if (condicionEncontrada && valorBase > 0) {
+                const descuentoUnitario = esporcentaje
+                  ? precioUnitBase * (valorBase / 100)
+                  : valorBase
+                descuentoCupon = descuentoUnitario * cantidad
+                totalDescuento += descuentoCupon
+                subtotalBruto -= descuentoCupon
+                // Update accumulated coupon unit discount
+                descuentoCuponUnitarioAcumulado = descuentoUnitario
+                // Update the line's coupon data
+                lineaData.descuento_cupon_unitario = descuentoUnitario
+                lineaData.descuento_cupon = descuentoCupon
+                valorFinal = descuentoCupon
+                console.log(`DEBUG: Coupon Calculated - unitario: ${descuentoUnitario}, total: ${descuentoCupon}, subtotalBruto=${subtotalBruto}`)
+              } else {
+                // Fallback to pre-calculated if no condition
+                console.log(`DEBUG: Coupon Step - using pre-calculated: descuentoCuponUnitario: ${descuentoCuponUnitario}, descuentoCupon: ${descuentoCupon}`)
+                descuentoCupon = descuentoCuponUnitario * cantidad
+                totalDescuento += descuentoCupon
+                subtotalBruto -= descuentoCupon
+                descuentoCuponUnitarioAcumulado = descuentoCuponUnitario
+                valorFinal = descuentoCupon
+              }
+            } else {
+              // Line does not qualify for coupon
+              descuentoCuponUnitarioAcumulado = 0
+              valorFinal = 0
+              console.log(`DEBUG: Coupon not applied - line does not qualify`)
+            }
+            console.log(`DEBUG: Step Cupon: valorFinal=${valorFinal}, descuentoCupon=${descuentoCupon}, totalDescuento=${totalDescuento}`)
+          }
+          // Commercial discount
+          else {
+            totalDescuento += valorFinal
+            if (cantidad > 0) {
+              descuentosUnitarios += valorFinal / cantidad
+            }
+            subtotalBruto = subtotalBruto - valorFinal
+            console.log(`DEBUG: Step Descuento (comercial): valorFinal=${valorFinal}, totalDescuento=${totalDescuento}, subtotalBruto=${subtotalBruto}`)
+          }
         }
+
+        // Store result for future steps (after all updates to valorFinal)
+        results[paso.secuencia_paso.toString()] = valorFinal
 
         return {
           condicion_id: paso.condicion_id,
@@ -464,23 +787,291 @@ export default function VentaForm() {
         }
       })
 
+      console.log('DEBUG: After non-tax steps - subtotalBruto:', subtotalBruto, 'descuentoPromocion:', descuentoPromocion, 'descuentoCupon:', descuentoCupon, 'totalDescuento:', totalDescuento, 'totalImpuesto:', totalImpuesto)
+      console.log('DEBUG: Non-tax pasosCalculados:', nonTaxCalculados.map(p => ({ desc: p.descripcion, valor: p.valor })))
+
+      // Process tax steps after all discounts are applied
+      const taxCalculados: VentaDetalleCondicion[] = taxPasos.map(paso => {
+        let valorBase = 0
+        let esporcentaje = false
+
+        // 1. Get value from model "Condiciones" if step has a condicion_id
+        console.log(`DEBUG: Processing tax step "${paso.descripcion_corta}" (Type: ${paso.tipo}, CondID: ${paso.condicion_id}, Formula: ${paso.formula})`)
+
+        let condicionEncontrada = false
+
+        if (paso.condicion_id) {
+          console.log(`DEBUG: Tax step "${paso.descripcion_corta}" searching for Condicion ID: ${paso.condicion_id}`)
+
+          const condicionEspecifica = todasCondiciones.find((c: any) =>
+            Number(c.tipo_condicion_id) === Number(paso.condicion_id) &&
+            Number(c.material_id) === Number(materialId)
+          )
+          const condicionGeneral = todasCondiciones.find((c: any) =>
+            Number(c.tipo_condicion_id) === Number(paso.condicion_id) &&
+            (c.material_id === null || c.material_id === undefined)
+          )
+
+          const condicion = condicionEspecifica || condicionGeneral
+          if (condicion) {
+            condicionEncontrada = true
+            valorBase = parseFloat(condicion.valor) || 0
+            esporcentaje = condicion.porcentaje === true
+            console.log(`DEBUG: Tax step "${paso.descripcion_corta}" found match. ID: ${condicion.id}, Value: ${valorBase}, %: ${esporcentaje}`)
+          } else {
+            // For coupon steps, check if there's a global coupon applied
+            const isCuponStep = paso.descripcion_corta.toLowerCase().includes('cupon') || paso.descripcion_corta.toLowerCase().includes('cupón')
+            if (isCuponStep && globalCupon) {
+              condicionEncontrada = true
+              valorBase = globalCupon.valor
+              esporcentaje = globalCupon.tipo === 'PORCENTAJE'
+              console.log(`DEBUG: Tax step "${paso.descripcion_corta}" using global coupon. Value: ${valorBase}, %: ${esporcentaje}`)
+            } else {
+              console.warn(`DEBUG: Tax step "${paso.descripcion_corta}" (CondId: ${paso.condicion_id}) NO found in ${todasCondiciones.length} active conditions.`)
+              console.log('DEBUG: Active Cond IDs available:', todasCondiciones.map(c => c.tipo_condicion_id))
+
+              valorBase = 0
+              esporcentaje = true
+            }
+          }
+        } else {
+          // Si no tiene condicion_id pero es de tipo Impuesto, aplicar IGV por defecto
+          if (paso.tipo === 'Impuesto') {
+            console.log('DEBUG: Tax step "Impuesto" without condicion_id - applying default 18%')
+            valorBase = 0
+            esporcentaje = true
+          }
+        }
+
+        // 2. Evaluate formula and determine final value
+        let valorFinal = 0
+        try {
+          let formula = (paso.formula || '1').toLowerCase().trim()
+          const originalFormula = formula
+
+          const baseCalculo = subtotalBruto || (cantidad * precioUnitBase)
+
+          // 2.1 Combine variable context with dynamic line data
+          const stepSlug = paso.descripcion_corta.toLowerCase().trim().replace(/\s+/g, '_')
+          const stepName = paso.descripcion_corta.toLowerCase().trim()
+
+          // Create context WITHOUT spreading varContext directly, filter out stepSlug and step name from varContext
+          const filteredVarContext: Record<string, number> = {}
+          Object.keys(varContext).forEach(k => {
+            const stepSlugLower = stepSlug.toLowerCase()
+            const stepNameLower = stepName.toLowerCase()
+            const stepNameUnderscore = stepNameLower.replace(/\s+/g, '_')
+            // Also filter if varContext key is contained in step name (e.g., "descuento" in "valor_descuento")
+            const keyContained = stepSlugLower.includes(k) || stepNameLower.includes(k)
+            if (!keyContained) {
+              filteredVarContext[k] = varContext[k]
+            }
+          })
+
+          const evalContext: Record<string, number> = {
+            ...filteredVarContext,
+            cantidad: cantidad,
+            precio_unit: precioUnitBase,
+            subtotal: baseCalculo,
+            valor_condicion: valorBase,
+            precio: valorBase,
+            [stepSlug]: valorBase,
+            // Also add alias without prefix (e.g., "valor_descuento" -> also add "descuento")
+            ...(stepSlug.includes('_') ? { [stepSlug.split('_').pop()!]: valorBase } : {})
+          }
+
+          console.log(`DEBUG: Tax step "${paso.descripcion_corta}" - stepSlug: ${stepSlug}, valorBase: ${valorBase}, filter keys: ${Object.keys(filteredVarContext).join(', ')}`)
+
+          // 2.2 Replace step references (s1, s2, etc.)
+          formula = formula.replace(/\bs([0-9]+)\b/g, (match, num) => {
+            return (results[num] || 0).toString()
+          })
+
+          // 2.3 Replace all variables from context
+          Object.keys(evalContext)
+            .sort((a, b) => b.length - a.length)
+            .forEach(vName => {
+              const regex = new RegExp(`\\b${vName}\\b`, 'gi')
+              formula = formula.replace(regex, evalContext[vName].toString())
+            })
+
+          console.log(`DEBUG: Tax step "${paso.descripcion_corta}" - Formula after replace: "${formula}", valorBase: ${valorBase}`)
+
+          // If required condition not found, set valorFinal to 0
+          if (paso.condicion_id && !condicionEncontrada) {
+            console.log(`DEBUG: Tax step "${paso.descripcion_corta}" - Required condition not found, using 0`)
+            valorFinal = 0
+          } else if (formula === '1' || formula === '') {
+            if (esporcentaje) {
+              valorFinal = baseCalculo * (valorBase / 100)
+            } else {
+              valorFinal = valorBase
+            }
+          } else {
+            // eslint-disable-next-line no-eval
+            valorFinal = eval(formula) || 0
+            console.log(`DEBUG: Tax step "${paso.descripcion_corta}" Formula: ${originalFormula} -> ${formula} = ${valorFinal}`)
+          }
+        } catch (e) {
+          console.error('DEBUG: Error evaluating formula for tax step:', paso.descripcion_corta, paso.formula, e)
+          valorFinal = 0
+        }
+
+        // Update tax total
+        if (paso.tipo === 'Impuesto') {
+          totalImpuesto += valorFinal
+          console.log(`DEBUG: Updated Total Tax: ${totalImpuesto}`)
+        }
+
+        // Store result for future steps (after all updates to valorFinal)
+        results[paso.secuencia_paso.toString()] = valorFinal
+
+        return {
+          condicion_id: paso.condicion_id,
+          esquema_id: paso.esquema_id,
+          valor: valorFinal,
+          codigo: paso.tipo,
+          descripcion: paso.descripcion_corta,
+          valor_original: paso.condicion_id && results[paso.secuencia_paso.toString()] !== undefined ? valorBase : undefined,
+          es_porcentaje: esporcentaje
+        }
+      })
+
+      console.log('DEBUG: After tax steps - subtotalBruto:', subtotalBruto, 'totalImpuesto:', totalImpuesto)
+      console.log('DEBUG: Tax pasosCalculados:', taxCalculados.map(p => ({ desc: p.descripcion, valor: p.valor })))
+
+      // Combine all calculated steps in original order
+      const pasosCalculados: VentaDetalleCondicion[] = [...nonTaxCalculados, ...taxCalculados].sort((a, b) => {
+        const aPaso = activePasos.find(p => p.descripcion_corta === a.descripcion)
+        const bPaso = activePasos.find(p => p.descripcion_corta === b.descripcion)
+        return (aPaso?.secuencia_paso || 0) - (bPaso?.secuencia_paso || 0)
+      })
+
       console.log('DEBUG: Calculation completed. Total Tax:', totalImpuesto, 'Final Subtotal:', subtotalBruto)
+      console.log('DEBUG: pasosCalculados summary:', pasosCalculados.map(p => ({ desc: p.descripcion, tipo: p.codigo, valor: p.valor })))
+
+      console.log('DEBUG: Final calculation values:')
+      console.log('  subtotalBruto:', subtotalBruto)
+      console.log('  descuentoPromocion:', descuentoPromocion)
+      console.log('  descuentoCupon:', descuentoCupon)
+      console.log('  totalDescuento:', totalDescuento)
+      console.log('  totalImpuesto:', totalImpuesto)
+      console.log('  Final descuento (commercial):', totalDescuento - descuentoPromocion - descuentoCupon)
+      console.log('  Final subtotal:', subtotalBruto - descuentoCupon)
 
       setLineas(prev => {
         const next = [...prev]
         if (next[index]) {
-          const l = next[index]
-          l.pasos_calculados = pasosCalculados
-          l.cantidad = cantidad
-          l.precio_unit = precioUnitBase
-          l.descuento = totalDescuento
-          l.impuesto = totalImpuesto
-          l.subtotal = subtotalBruto + totalImpuesto
+          // Merge existing line with promotion data from lineaData and calculated values
+          const l: VentaDetalle = {
+            ...next[index],
+            ...lineaData, // includes promotion fields (promocion_id, etc.)
+            pasos_calculados: pasosCalculados,
+            cantidad: cantidad,
+            precio_unit: precioUnitBase,
+            descuento: totalDescuento - descuentoPromocion - descuentoCupon, // Commercial discount
+            descuento_cupon: descuentoCupon,
+            descuento_cupon_unitario: descuentoCuponUnitario,
+            descuento_promocion: descuentoPromocion,
+            impuesto: totalImpuesto,
+            subtotal: subtotalBruto
+          }
+          console.log('DEBUG: Line updated:', {
+            cantidad: l.cantidad,
+            precio_unit: l.precio_unit,
+            descuento: l.descuento,
+            descuento_cupon: l.descuento_cupon,
+            descuento_promocion: l.descuento_promocion,
+            impuesto: l.impuesto,
+            subtotal: l.subtotal
+          })
+          next[index] = l
         }
         return next
       })
     } catch (error) {
       console.error('Error in calculateLineCalculations:', error)
+    }
+  }
+
+  // -----------------------------------------------------------
+  // Promotion validation
+  // Checks /api/pos/promociones for active promos on canal='pos'
+  // on the current sale date. Checks material first, then category.
+  // -----------------------------------------------------------
+  const checkPromocion = async (
+    index: number,
+    materialId: number,
+    categoriaId: number | null | undefined,
+    lineaData?: VentaDetalle
+  ) => {
+    if (!materialId) return
+    try {
+      // Pass sale date so server filters by the correct date range
+      const fechaParam = fechaVenta || new Date().toISOString().split('T')[0]
+      console.log(`DEBUG: Checking promotion for material ${materialId}, category ${categoriaId}, date ${fechaParam}`)
+      const res = await apiFetch(
+        `/api/pos/promociones?materialIds=${materialId}&fecha=${fechaParam}`
+      )
+      if (!res.ok) {
+        console.log(`DEBUG: API call failed for promotions`)
+        return
+      }
+      const json = await res.json()
+      const promos: Array<{
+        id: number
+        nombre: string
+        cantidad_compra: number
+        cantidad_regalo: number
+        material_ids: number[]
+        categoria_ids: number[]
+      }> = json.data || []
+      console.log(`DEBUG: Found ${promos.length} promotions for material ${materialId}`)
+
+      let encontrada: (typeof promos)[0] | undefined
+
+      // Check by material
+      encontrada = promos.find(p => p.material_ids.includes(materialId))
+      console.log(`DEBUG: Promotion found by material: ${encontrada ? encontrada.nombre : 'none'}`)
+
+      // Fallback: check by category
+      if (!encontrada && categoriaId) {
+        encontrada = promos.find(p => p.categoria_ids.includes(categoriaId))
+        console.log(`DEBUG: Promotion found by category: ${encontrada ? encontrada.nombre : 'none'}`)
+      }
+
+      const promoLabel = encontrada ? encontrada.nombre : null
+      const promoBadge = encontrada ? `${encontrada.cantidad_compra}x${encontrada.cantidad_regalo}` : null
+      console.log(`DEBUG: Final promotion - label: ${promoLabel}, badge: ${promoBadge}, id: ${encontrada?.id}, compra: ${encontrada?.cantidad_compra}, regalo: ${encontrada?.cantidad_regalo}`)
+
+      // Use provided lineaData or fallback to current state
+      const currentLinea = lineaData || lineas[index]
+      if (!currentLinea) return
+
+      const updatedLinea = {
+        ...currentLinea,
+        promocion_id: encontrada?.id ?? null,
+        promocion_label: promoLabel,
+        promocion_badge: promoBadge,
+        promocion_cantidad_compra: encontrada?.cantidad_compra ?? null,
+        promocion_cantidad_regalo: encontrada?.cantidad_regalo ?? null
+      }
+
+      // Recalculate with updated promotion data (calculateLineCalculations will update the line)
+      if (updatedLinea.material_id && pasosEsquema.length > 0) {
+        console.log(`DEBUG: Triggering recalculation for line ${index} with promotion data`)
+        calculateLineCalculations(index, updatedLinea.material_id, updatedLinea.cantidad, updatedLinea, undefined, undefined, cuponAplicadoGlobal)
+      } else {
+        console.log(`DEBUG: No schema or material, just updating line data`)
+        // If no schema, at least update the line with promotion data
+        setLineas(prev => {
+          const next = [...prev]
+          next[index] = updatedLinea
+          return next
+        })
+      }
+    } catch (err) {
+      console.error('Error checking promocion:', err)
     }
   }
 
@@ -498,8 +1089,28 @@ export default function VentaForm() {
       unidad_medida_id: umId,
       um: material.unidad_medida?.abreviatura || 'UND',
       precio_unit: precio,
-      stock: null // Reset stock to trigger re-fetch
+      stock: null,
+      categoria_id: material.categoria_id ?? null,
+      promocion_id: null,
+      promocion_label: null,
+      promocion_badge: null,
+      promocion_cantidad_compra: null,
+      promocion_cantidad_regalo: null,
+      descuento_cupon: 0,
+      descuento_cupon_unitario: 0,
+      descuento_promocion: 0,
+      aplica_cupon: false
     }
+
+    if (cuponAplicadoGlobal) {
+      const qualifies = await checkMaterialQualifiesForCupon(cuponAplicadoGlobal, material.id, material.categoria_id ?? null)
+      if (qualifies) {
+        // Mark that this material qualifies for the global coupon
+        newLineas[index].aplica_cupon = true
+        setMaterialesConCupon(prev => ({ ...prev, [newLineas[index].id]: true }))
+      }
+    }
+
     setLineas(newLineas)
 
     // Trigger stock fetch if other fields are present
@@ -507,8 +1118,8 @@ export default function VentaForm() {
       fetchStock(index, material.id, currentLinea.almacen_id, sucursal.id, umId, clasePedido.estado_stock_id)
     }
 
-    // Trigger calculations
-    calculateLineCalculations(index, material.id, currentLinea.cantidad || 1)
+    // Trigger promotion check (will also trigger calculations)
+    checkPromocion(index, material.id, material.categoria_id ?? null, newLineas[index])
   }
 
   const handleAlmacenSelect = (index: number, almacen: any) => {
@@ -552,8 +1163,8 @@ export default function VentaForm() {
     // If change is quantity or price_unit, we need to recalculate
     if (field === 'cantidad' || field === 'precio_unit' || field === 'descuento') {
       if (l.material_id && pasosEsquema.length > 0) {
-        // Let calculateLineCalculations handle ALL logic to avoid conflicts
-        calculateLineCalculations(index, l.material_id, field === 'cantidad' ? value : l.cantidad)
+        // Let calculateLineCalculations handle ALL logic including coupon recalculation
+        calculateLineCalculations(index, l.material_id, field === 'cantidad' ? value : l.cantidad, l, undefined, undefined, cuponAplicadoGlobal)
       } else {
         // Manual fallback if no schema
         const subtotalBruto = l.cantidad * l.precio_unit
@@ -678,6 +1289,8 @@ export default function VentaForm() {
         estado: 'procesada',
         subtotal: totals.subtotal,
         descuento: totals.descuento,
+        descuento_cupon: totals.descuento_cupon,
+        descuento_promocion: totals.descuento_promocion,
         impuesto: totals.impuesto,
         total: totals.total,
         observaciones,
@@ -692,8 +1305,11 @@ export default function VentaForm() {
           cantidad: l.cantidad,
           precio_unit: l.precio_unit,
           descuento: l.descuento,
+          descuento_cupon: l.descuento_cupon,
+          descuento_promocion: l.descuento_promocion,
           impuesto: l.impuesto,
           subtotal: l.subtotal,
+          promocion_id: l.promocion_id || null,
           condiciones: l.pasos_calculados?.map(p => ({
             condicion_id: p.condicion_id,
             esquema_id: p.esquema_id,
@@ -773,7 +1389,7 @@ export default function VentaForm() {
             <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Descuento</div>
               <div className="text-base font-black text-red-600 tracking-tight">
-                {mounted ? formatCurrency(totals.descuento, { symbol: monedaSimbolo }) : '...'}
+                {mounted ? formatCurrency(totals.descuento + totals.descuento_cupon + totals.descuento_promocion, { symbol: monedaSimbolo }) : '...'}
               </div>
             </div>
             <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
@@ -807,12 +1423,7 @@ export default function VentaForm() {
             </button>
             {expandedCards.generales && (
               <div className="p-4 pt-0 space-y-4 border-t border-slate-100 dark:border-slate-800 mt-2">
-                <div className="space-y-1">
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">SUCURSAL</label>
-                  <div className="h-10 px-4 flex items-center bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium text-slate-900 dark:text-white">
-                    {sucursal?.descripcion || 'Cargando...'}
-                  </div>
-                </div>
+
                 <div className="space-y-1">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">CLASE PEDIDO</label>
                   <ClasePedidoSelect
@@ -1085,14 +1696,51 @@ export default function VentaForm() {
                 <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-[0.2em]">Detalle de Productos</h3>
                 <p className="text-[11px] text-slate-400 mt-1 font-medium italic">Seleccione los artículos y cantidades para esta transacción.</p>
               </div>
-              <button
-                type="button"
-                onClick={addLinea}
-                className="h-10 px-6 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[18px]">add_shopping_cart</span>
-                Añadir Producto
-              </button>
+              <div className="flex items-center gap-3">
+                {cuponesActivos.length > 0 && !cuponAplicadoGlobal && lineas.filter(l => l.material_id).length > 0 && (
+                  <select
+                    value=""
+                    onChange={async (e) => {
+                      const cuponId = Number(e.target.value)
+                      if (cuponId) {
+                        const cupon = cuponesActivos.find(c => c.id === cuponId)
+                        if (cupon) {
+                          await aplicarCuponGlobal(cupon)
+                        }
+                      }
+                    }}
+                    className="h-12 px-4 w-52 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-[11px] font-black uppercase tracking-widest text-slate-700 dark:text-slate-300 outline-none focus:border-blue-500"
+                  >
+                    <option value="">+ Aplicar cupón</option>
+                    {cuponesActivos.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre} ({c.tipo === 'PORCENTAJE' ? `${c.valor}%` : `${monedaSimbolo}${c.valor}`})
+                      </option>
+                    ))}
+                  </select>
+                )}
+                {cuponAplicadoGlobal && (
+                  <span className="inline-flex items-center gap-1 px-3 py-2 rounded-full bg-green-100 dark:bg-green-500/15 border border-green-300 dark:border-green-500/30 text-[9px] font-black text-green-700 dark:text-green-400 uppercase tracking-wider">
+                    <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>local_offer</span>
+                    {cuponAplicadoGlobal.nombre} ({cuponAplicadoGlobal.tipo === 'PORCENTAJE' ? `${cuponAplicadoGlobal.valor}%` : `${monedaSimbolo}${cuponAplicadoGlobal.valor}`})
+                    <button
+                      type="button"
+                      onClick={() => eliminarCuponGlobal()}
+                      className="ml-1 hover:bg-green-200 dark:hover:bg-green-500/30 rounded-full p-0.5"
+                    >
+                      <span className="material-symbols-outlined text-[12px]">close</span>
+                    </button>
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={addLinea}
+                  className="h-10 px-6 bg-slate-900 dark:bg-white text-white dark:text-slate-900 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-xl flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px]">add_shopping_cart</span>
+                  Añadir Producto
+                </button>
+              </div>
             </div>
 
             <div className="space-y-4">
@@ -1114,11 +1762,19 @@ export default function VentaForm() {
                             placeholder="Buscar..."
                           />
                           {linea.precio_unit > 0 && (
-                            <div className="mt-2 flex items-center gap-1.5 ml-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
-                              <span className="text-[8px] text-slate-500 uppercase tracking-wider">
-                                Precio Unitario: <span className="text-blue-600 font-black tracking-tight">{mounted ? formatCurrency(linea.precio_unit, { symbol: monedaSimbolo }) : '...'}</span>
-                              </span>
+                            <div className="mt-1.5 flex items-center justify-between w-full pr-0.5">
+                              <div className="flex items-center gap-1.5 ml-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+                                <span className="text-[8px] text-slate-500 uppercase tracking-wider">
+                                  Precio Unitario: <span className="text-blue-600 font-black tracking-tight">{mounted ? formatCurrency(linea.precio_unit, { symbol: monedaSimbolo }) : '...'}</span>
+                                </span>
+                              </div>
+                              {linea.promocion_badge && (
+                                <span className="inline-flex items-center gap-0.5 px-1.5 py-px rounded-full bg-amber-100 dark:bg-amber-500/15 border border-amber-300 dark:border-amber-500/30 text-[7px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-wider animate-in fade-in duration-300">
+                                  <span className="material-symbols-outlined" style={{ fontSize: '8px' }}>local_offer</span>
+                                  {linea.promocion_badge}
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1156,6 +1812,17 @@ export default function VentaForm() {
                             onChange={(e) => handleLineaChange(index, 'cantidad', parseFloat(e.target.value) || 0)}
                             className="w-full h-8 px-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-right outline-none focus:border-blue-500 transition-all"
                           />
+                          <div className="mt-1 flex items-center justify-center gap-2">
+                            {linea.promocion_cantidad_compra && linea.promocion_label && linea.cantidad >= linea.promocion_cantidad_compra && (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-500/15 border border-green-300 dark:border-green-500/30 text-[7px] font-black text-green-700 dark:text-green-400 uppercase tracking-wider">
+                                <span className="material-symbols-outlined" style={{ fontSize: '8px' }}>local_offer</span>
+                                {linea.promocion_label}
+                                <span className="ml-1 px-1 py-0.5 rounded bg-slate-900 text-white text-[6px] font-bold">
+                                  {Math.floor(linea.cantidad / linea.promocion_cantidad_compra) * (linea.promocion_cantidad_regalo || 1)}
+                                </span>
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 

@@ -2,29 +2,11 @@
     "version": "1.0.0",
     "configurations": [
         {
-            "name": "Start App",
-            "runtimeVersion": "24.13.1",
-            "runtimeArgs": ["dev"],
-            "env": {
-                "BROWSER": "none"
-            },
-            "request": "launch",
-            "runtimeExecutable": "npm",
-            "type": "node",
-        },
-        {
             "type": "chrome",
             "request": "launch",
             "name": "Run Chrome",
             "url": "http://localhost:3000",
             "webRoot": "${workspaceFolder}"
-        }
-    ],
-    "compounds": [
-        {
-          "name": "Debug App",
-          "configurations": ["Start App", "Run Chrome"],
-          "stopAll": true
         }
     ]
 }

@@ -41,6 +41,10 @@ const ventaSchema = z.object({
     cantidad: z.number(),
     precio_unit: z.number(),
     descuento: z.number(),
+    descuento_cupon: z.number().optional(),
+    descuento_promocion: z.number().optional(),
+    cupon_id: z.number().optional().nullable(),
+    promocion_id: z.number().optional().nullable(),
     impuesto: z.number(),
     subtotal: z.number(),
     condiciones: z.array(z.object({
@@ -109,19 +113,15 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
-    // Enrich each venta with its FlujoDocumentos (Venta → CajaTransaccion, MovimientoAlmacen)
     const ventasEnriquecidas = await Promise.all(ventas.map(async (v) => {
-      // 1. Get the FlujoDocumentos entry for this venta (tipo_referencia = 'V')
       const flujoVenta = await prisma.flujoDocumentos.findFirst({
         where: { empresa_id: empresaId, referencia_id: v.id, tipo_referencia: 'V' }
       })
 
-      // 2. Get dependent flujos (tipo 'C' and 'I') that have referencia_anterior_id = v.id
       const flujosHijos = await prisma.flujoDocumentos.findMany({
         where: { empresa_id: empresaId, referencia_anterior_id: v.id, activo: true }
       })
 
-      // 3. Resolve Caja and Almacen data
       let flujoCaja: { id: number; created_at: Date } | null = null
       let flujoAlmacen: { id: number; numero_mov: string; created_at: Date } | null = null
 
@@ -181,7 +181,6 @@ export async function POST(req: NextRequest) {
     } = body
 
     const venta = await prisma.$transaction(async (tx: any) => {
-      // 1. Fetch ClasePedido configuration
       const clasePedido = await tx.clasePedido.findUnique({
         where: { id: clase_pedido_id },
         include: { tipo_operacion: true }
@@ -192,7 +191,6 @@ export async function POST(req: NextRequest) {
       const signoOrigen = clasePedido.tipo_operacion?.signo_origen
       if (!signoOrigen) throw new Error('Tipo de operación no tiene signo_origen definido')
 
-      // 1.1 Fetch DocumentoIdentificacion configuration
       const documentoIdentificacion = await tx.documentoIdentificacion.findUnique({
         where: { id: documento_identificacion_id },
         select: { tipo: true }
@@ -203,7 +201,6 @@ export async function POST(req: NextRequest) {
       const tipoEntidad = documentoIdentificacion.tipo
       if (!tipoEntidad) throw new Error('Tipo Entidad no definida en DOcumentoIdentificacion')
 
-      // 2. Manage Cliente
       let finalClienteId = cliente_id
       if (!finalClienteId && ventaData.numero_identificacion) {
         let existingCliente = await tx.cliente.findFirst({
@@ -233,49 +230,72 @@ export async function POST(req: NextRequest) {
         finalClienteId = existingCliente.id
       }
 
-      // 3. Create the Sale record
+      const testVenta = {
+        numero_pedido: ventaData.numero_pedido,
+        empresa_id: empresaId,
+        sucursal_id: sucursal_id,
+        clase_pedido_id: clase_pedido_id,
+        doc_identificacion_id: documento_identificacion_id,
+        numero_identificacion: ventaData.numero_identificacion || '',
+        nombre: ventaData.nombre || '',
+        nombres_completos: ventaData.nombres_completos || '',
+        apellidos_completos: ventaData.apellidos_completos || '',
+        direccion: ventaData.direccion || '',
+        ubigeo: ventaData.ubigeo || null,
+        departamento: ventaData.departamento || null,
+        provincia: ventaData.provincia || null,
+        distrito: ventaData.distrito || null,
+        estado: ventaData.estado || 'procesada',
+        moneda_id: moneda_id,
+        subtotal: Number(ventaData.subtotal) || 0,
+        impuesto: Number(ventaData.impuesto) || 0,
+        descuento: Number(ventaData.descuento) || 0,
+        descuento_cupon: Number(ventaData.descuento_cupon) || 0,
+        descuento_promocion: Number(ventaData.descuento_promocion) || 0,
+        total: Number(ventaData.total) || 0,
+        observaciones: ventaData.observaciones || null,
+        cliente_id: finalClienteId,
+        created_by: userId,
+      }
+
       const v = await tx.venta.create({
         data: {
-          ...ventaData,
-          empresa: { connect: { id: empresaId } },
-          sucursal: { connect: { id: sucursal_id } },
-          moneda: { connect: { id: moneda_id } },
-          clase_pedido: { connect: { id: clase_pedido_id } },
-          dcto_identificacion: { connect: { id: documento_identificacion_id } },
-          cliente: { connect: { id: finalClienteId } },
-          created_by: userId,
-detalles: {
-            create: detalles.map((d: any) => {
-              console.log('[POST /api/ventas] Detail:', JSON.stringify(d, null, 2))
-              return {
-                material_id: d.material_id,
-                almacen_id: d.almacen_id,
-                unidad_medida_id: d.unidad_medida_id,
-                cantidad: d.cantidad,
-                precio_unit: d.precio_unit,
-                descuento: d.descuento,
-                impuesto: d.impuesto,
-                subtotal: (d.cantidad * d.precio_unit) - d.descuento,
-                created_by: userId,
-                condiciones: d.condiciones ? {
-                  create: d.condiciones.filter((c: any) => c.condicion_id).map((c: any) => ({
-                    tipo_condicion: { connect: { id: c.condicion_id } },
-                    esquema_calculo: c.esquema_id ? { connect: { id: c.esquema_id } } : undefined,
-                    valor_condicion: c.valor_condicion,
-                    simbolo: c.simbolo,
-                    descripcion_corta: c.descripcion_corta,
-                    tipo: c.tipo,
-                    importe: c.importe,
-                    created_by: userId,
-                  }))
-                } : undefined
-              }
-            })
+          ...testVenta,
+          detalles: {
+            create: detalles.map((d: any) => ({
+              material_id: d.material_id,
+              almacen_id: d.almacen_id,
+              unidad_medida_id: d.unidad_medida_id,
+              cantidad: d.cantidad,
+              precio_unit: d.precio_unit,
+              descuento: d.descuento,
+              descuento_cupon: d.descuento_cupon || 0,
+              descuento_promocion: d.descuento_promocion || 0,
+              cupon_id: d.cupon_id || null,
+              promocion_id: d.promocion_id || null,
+              impuesto: d.impuesto,
+              subtotal: d.subtotal,
+              created_by: userId,
+              condiciones: d.condiciones ? {
+                create: d.condiciones.filter((c: any) => {
+                  const desc = c.descripcion_corta || c.descripcion || ''
+                  const tipoCodigo = c.codigo || c.tipo || ''
+                  return c.condicion_id || desc === 'Promocion' || desc === 'Cupon' || desc === 'IGV' || tipoCodigo === 'Descuento' || tipoCodigo === 'Impuesto'
+                }).map((c: any) => {
+                  let condicionIdValue = c.condicion_id
+                  if (!condicionIdValue && (c.descripcion_corta === 'Promocion' || c.descripcion_corta === 'Cupon')) {
+                    return { condicion_id: null, esquema_id: c.esquema_id || 1, valor_condicion: Number(c.valor_condicion) || Number(c.valor) || 0, simbolo: c.simbolo || '%', descripcion_corta: c.descripcion_corta || c.tipo || '', tipo: c.tipo || '', importe: Number(c.importe) || 0, created_by: userId }
+                  }
+                  return { condicion_id: condicionIdValue, esquema_id: c.esquema_id || 1, valor_condicion: Number(c.valor_condicion) || Number(c.valor) || 0, simbolo: c.simbolo || '%', descripcion_corta: c.descripcion_corta || c.tipo || '', tipo: c.tipo || '', importe: Number(c.importe) || 0, created_by: userId }
+                })
+              } : undefined
+            }))
           },
           medios_pago: medios_pago && medios_pago.length > 0 ? {
             create: medios_pago.map((mp: any) => ({
               medio_pago_id: mp.medio_pago_id,
-              importe: mp.importe
+              importe: mp.importe,
+              numero_operacion: mp.numero_operacion || null
             }))
           } : undefined
         },
@@ -292,7 +312,6 @@ detalles: {
         }
       })
 
-      // 1. FlujoDocumentos - Registro de Venta
       await tx.flujoDocumentos.create({
         data: {
           empresa_id: empresaId,
@@ -305,7 +324,6 @@ detalles: {
         }
       })
 
-      // 3. Generate Warehouse Movement if required
       if (ventaData.estado === 'procesada' && clasePedido.registro_almacen && clasePedido.tipo_operacion_id) {
         const movimiento = await tx.movimientoAlmacen.create({
           data: {
@@ -321,7 +339,6 @@ detalles: {
           }
         })
 
-        // 2. FlujoDocumentos - Registro de Inventario
         await tx.flujoDocumentos.create({
           data: {
             empresa_id: empresaId,
@@ -336,7 +353,6 @@ detalles: {
 
         let lineaDetalle = 1
         for (const d of v.detalles) {
-          // A. Find Unit Cost from MaterialCosto using Material's schema
           const material = await tx.material.findUnique({
             where: { id: d.material_id },
             select: { esquema_id: true }
@@ -361,7 +377,6 @@ detalles: {
             costoUnit = materialCosto ? Number(materialCosto.costo) : 0
           }
 
-          // B. Create MovimientoAlmacenDetalle
           const movDetalle = await tx.movimientoAlmacenDetalle.create({
             data: {
               movimiento_id: movimiento.id,
@@ -378,7 +393,6 @@ detalles: {
           })
           lineaDetalle++
 
-          // C. Stock Distribution
           let cantidadRestante = Number(d.cantidad)
           const estadoStockId = clasePedido.estado_stock_id || 0
           const today = new Date().toISOString().split('T')[0]
@@ -393,7 +407,7 @@ detalles: {
               unidad_medida_id: d.unidad_medida_id,
               ...(signoOrigen === '-' ? { cantidad: { gt: 0 } } : {})
             },
-            orderBy: { id: 'asc' } // Use ID as proxy for creation order
+            orderBy: { id: 'asc' }
           })
 
           for (const stockRec of stocks) {
@@ -401,7 +415,6 @@ detalles: {
 
             const aTomar = signoOrigen === '-' ? Math.min(Number(stockRec.cantidad), cantidadRestante) : cantidadRestante
 
-            // Create distribution record
             await tx.movimientoDetalleDistribucion.create({
               data: {
                 empresa_id: empresaId,
@@ -413,7 +426,6 @@ detalles: {
               }
             })
 
-            // Update individual stock record
             const adjustment = signoOrigen === '+' ? aTomar : -aTomar
             await tx.stockMaterial.update({
               where: { id: stockRec.id },
@@ -422,7 +434,6 @@ detalles: {
 
             const newCantidad = Number(stockRec.cantidad) + adjustment
 
-            // Handle StockMaterialHistorial
             const existingHistorial = await tx.stockMaterialHistorial.findFirst({
               where: {
                 empresa_id: empresaId,
@@ -481,7 +492,6 @@ detalles: {
           }
         }
       } else if (ventaData.estado === 'procesada') {
-        // When registro_almacen is false, get signo from tipo_operacion
         const tipoOp = await tx.tipoOperacion.findUnique({
           where: { id: clasePedido.tipo_operacion_id! },
           select: { signo_origen: true }
@@ -509,7 +519,6 @@ detalles: {
         }
       }
 
-      // 4. Register Cash Transaction if required
       if (v.estado === 'procesada' && clasePedido.registro_caja) {
         if (!moneda_id) throw new Error('Se requiere moneda_id para el registro en caja')
 
@@ -551,7 +560,6 @@ detalles: {
           }
         })
 
-        // 3. FlujoDocumentos - Registro de Caja
         await tx.flujoDocumentos.create({
           data: {
             empresa_id: empresaId,
@@ -566,7 +574,7 @@ detalles: {
       }
 
       return v
-    }, { timeout: 30000 }) // 30 segundos
+    }, { timeout: 30000 })
 
     return NextResponse.json(venta, { status: 201 })
   } catch (err: any) {

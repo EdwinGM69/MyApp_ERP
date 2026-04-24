@@ -20,7 +20,7 @@ export default function CajaDashboard({ session, onClosed }: Props) {
   const [loading, setLoading] = useState(true)
   const [showNewMov, setShowNewMov] = useState(false)
   const [showCierre, setShowCierre] = useState(false)
-  
+
   // Pagination State
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -74,10 +74,10 @@ export default function CajaDashboard({ session, onClosed }: Props) {
     try {
       const res = await apiFetch('/api/gestion-caja/transacciones', {
         method: 'POST',
-        body: JSON.stringify({ 
-          transaccion_anula_id: id, 
+        body: JSON.stringify({
+          transaccion_anula_id: id,
           motivo_anulacion: motivo,
-          sesion_caja_id: session.id 
+          sesion_caja_id: session.id
         })
       })
       if (res.ok) {
@@ -94,7 +94,7 @@ export default function CajaDashboard({ session, onClosed }: Props) {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      
+
       {/* Upper Status Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none">
         <div className="flex items-center gap-4">
@@ -115,14 +115,14 @@ export default function CajaDashboard({ session, onClosed }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => setShowNewMov(true)}
             className="h-14 px-6 bg-primary text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 active:scale-95"
           >
             <span className="material-symbols-outlined text-lg">add</span>
             Nuevo Movimiento
           </button>
-          <button 
+          <button
             onClick={() => setShowCierre(true)}
             className="h-14 px-6 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 hover:bg-black transition-all shadow-lg shadow-slate-900/10 active:scale-95"
           >
@@ -143,16 +143,17 @@ export default function CajaDashboard({ session, onClosed }: Props) {
       {/* Transactions Section */}
       <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-xl shadow-slate-200/50 dark:shadow-none overflow-hidden">
         <div className="p-6 border-b border-slate-50 dark:border-slate-800 flex items-center justify-between">
-           <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Historial de Movimientos</h3>
-           <button onClick={fetchTransactions} className="size-8 rounded-lg hover:bg-slate-50 flex items-center justify-center transition-colors">
-              <span className={cn("material-symbols-outlined text-slate-400 text-lg", loading && "animate-spin")}>refresh</span>
-           </button>
+          <h3 className="text-xs font-black uppercase tracking-widest text-slate-400">Historial de Movimientos</h3>
+          <button onClick={fetchTransactions} className="size-8 rounded-lg hover:bg-slate-50 flex items-center justify-center transition-colors">
+            <span className={cn("material-symbols-outlined text-slate-400 text-lg", loading && "animate-spin")}>refresh</span>
+          </button>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="bg-slate-50/50 dark:bg-slate-950/50">
+                <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">ID</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Fecha/Hora</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Concepto</th>
                 <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-slate-400">Importe</th>
@@ -164,6 +165,11 @@ export default function CajaDashboard({ session, onClosed }: Props) {
               {transactions.length > 0 ? (
                 transactions.map((t) => (
                   <tr key={t.id} className="hover:bg-slate-50/50 transition-colors group">
+                    <td className="px-6 py-4">
+                      <span className="text-xs font-mono font-bold text-slate-400">
+                        {t.id}
+                      </span>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
                         <span className="text-xs font-bold text-slate-900 dark:text-white tabular-nums">
@@ -178,11 +184,11 @@ export default function CajaDashboard({ session, onClosed }: Props) {
                       <div className="flex flex-col">
                         <span className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-tight">{t.concepto?.descripcion}</span>
                         <div className="flex items-center gap-1.5 mt-0.5">
-                           <span className="text-[10px] text-slate-500 font-bold uppercase truncate max-w-[150px]">
-                             {t.cliente?.nombre || t.proveedor?.nombre || t.persona || 'Operación General'}
-                           </span>
-                           <span className="text-slate-200 dark:text-slate-800">•</span>
-                           <span className="text-[10px] text-slate-400 font-medium truncate max-w-[150px]">{t.motivo || t.numero_documento || 'Sin detalle'}</span>
+                          <span className="text-[10px] text-slate-500 font-bold uppercase truncate max-w-[150px]">
+                            {t.cliente?.nombre || t.proveedor?.nombre || t.persona || 'Operación General'}
+                          </span>
+                          <span className="text-slate-200 dark:text-slate-800">•</span>
+                          <span className="text-[10px] text-slate-400 font-medium truncate max-w-[150px]">{t.motivo || t.numero_documento || 'Sin detalle'}</span>
                         </div>
                       </div>
                     </td>
@@ -204,7 +210,7 @@ export default function CajaDashboard({ session, onClosed }: Props) {
                     </td>
                     <td className="px-6 py-4 text-right">
                       {t.estado === 'P' && !t.transaccion_anula_id && (
-                        <button 
+                        <button
                           onClick={() => handleAnnul(t.id)}
                           className="size-8 rounded-lg hover:bg-red-50 hover:text-red-500 text-slate-300 transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center mx-auto -mr-1"
                           title="Anular Movimiento"
@@ -217,9 +223,9 @@ export default function CajaDashboard({ session, onClosed }: Props) {
                 ))
               ) : (
                 <tr>
-                   <td colSpan={5} className="px-6 py-16 text-center text-slate-400 font-medium italic text-xs">
-                     No se han registrado movimientos en esta sesión.
-                   </td>
+                  <td colSpan={6} className="px-6 py-16 text-center text-slate-400 font-medium italic text-xs">
+                    No se han registrado movimientos en esta sesión.
+                  </td>
                 </tr>
               )}
             </tbody>
@@ -229,22 +235,22 @@ export default function CajaDashboard({ session, onClosed }: Props) {
         {/* Pagination */}
         {total > 0 && (
           <div className="bg-slate-50/30 dark:bg-slate-950/20">
-            <Pagination 
-              page={page} 
-              totalPages={Math.ceil(total / pageSize)} 
+            <Pagination
+              page={page}
+              totalPages={Math.ceil(total / pageSize)}
               onPage={setPage}
-              pageSize={pageSize} 
-              onPageSize={(s) => { setPageSize(s); setPage(1) }} 
-              total={total} 
+              pageSize={pageSize}
+              onPageSize={(s) => { setPageSize(s); setPage(1) }}
+              total={total}
             />
           </div>
         )}
       </div>
 
       {showNewMov && (
-        <NuevoMovimientoDialog 
-          session={session} 
-          onClose={() => setShowNewMov(false)} 
+        <NuevoMovimientoDialog
+          session={session}
+          onClose={() => setShowNewMov(false)}
           onSaved={() => {
             setShowNewMov(false)
             fetchTransactions()
@@ -253,9 +259,9 @@ export default function CajaDashboard({ session, onClosed }: Props) {
       )}
 
       {showCierre && (
-        <CajaCierre 
-          session={{ ...session, saldoActual }} 
-          onClose={() => setShowCierre(false)} 
+        <CajaCierre
+          session={{ ...session, saldoActual }}
+          onClose={() => setShowCierre(false)}
           onSuccess={onClosed}
         />
       )}

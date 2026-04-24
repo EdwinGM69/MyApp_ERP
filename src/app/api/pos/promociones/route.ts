@@ -17,25 +17,26 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ data: [] })
     }
 
-    const now = new Date()
+    // Allow client to pass the sale date for accurate promo validation
+    const fechaParam = searchParams.get('fecha')
+    const now = fechaParam ? new Date(fechaParam) : new Date()
     console.log('[POS Promociones] empresaId:', empresaId, 'materialIds:', materialIds, 'now:', now)
 
-    const promociones = await prisma.promocionDetalle.findMany({
+    const promociones = await prisma.promocion.findMany({
       where: {
-        promocion: {
-          empresa_id: empresaId,
-          activo: true,
-          fecha_inicio: { lte: now },
-          fecha_fin: { gte: now },
-        },
-        material_id: { in: materialIds }
+        empresa_id: empresaId,
+        activo: true,
+        fecha_inicio: { lte: now },
+        fecha_fin: { gte: now },
+        canales: {
+          some: { canal: 'pos' }
+        }
       },
       include: {
-        promocion: {
+        detalles: true,
+        categorias: {
           include: {
-            canales: {
-              where: { canal: 'pos' }
-            }
+            categoria: true
           }
         }
       }
@@ -43,13 +44,19 @@ export async function GET(req: NextRequest) {
 
     console.log('[POS Promociones] raw result:', JSON.stringify(promociones))
 
-    const result = promociones
-      .filter(p => p.promocion.canales.length > 0)
-      .map(p => ({
-        material_id: p.material_id,
-        cantidad_compra: p.promocion.cantidad_compra,
-        cantidad_regalo: p.promocion.cantidad_regalo
-      }))
+    const result = promociones.map(promocion => {
+      const materialIdsInPromo = promocion.detalles.map(d => d.material_id)
+      const categoriaIdsInPromo = promocion.categorias.map(c => c.categoria_id)
+      
+      return {
+        id: promocion.id,
+        nombre: promocion.nombre,
+        cantidad_compra: promocion.cantidad_compra,
+        cantidad_regalo: promocion.cantidad_regalo,
+        material_ids: materialIdsInPromo,
+        categoria_ids: categoriaIdsInPromo
+      }
+    })
 
     console.log('[POS Promociones] filtered result:', JSON.stringify(result))
 

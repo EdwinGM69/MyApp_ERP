@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
         take: pageSize,
         orderBy: { created_at: 'desc' },
         include: {
-          tipo_operacion: { select: { descripcion: true, signo_origen: true } },
+          tipo_operacion: { select: { codigo: true, descripcion: true, signo_origen: true } },
           sucursal: { select: { descripcion: true } },
           _count: { select: { detalles: true } }
         }
