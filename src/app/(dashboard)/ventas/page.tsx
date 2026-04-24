@@ -403,7 +403,7 @@ function VentaCard({ venta, monedaSimbolo, onAnular }: {
                 ))}
               </div>
 
-              {/* Sucursal + observaciones */}
+              {/* Observaciones */}
               {(venta.sucursal || venta.observaciones) && (
                 <div className="rounded-xl border border-slate-100 dark:border-slate-800 p-3 bg-white dark:bg-slate-800/60 flex flex-col gap-1">
                   {venta.observaciones && (
