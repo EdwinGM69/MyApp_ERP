@@ -191,6 +191,17 @@ export async function POST(req: NextRequest) {
       const signoOrigen = clasePedido.tipo_operacion?.signo_origen
       if (!signoOrigen) throw new Error('Tipo de operación no tiene signo_origen definido')
 
+      // Obtener unidad_medida_id de cada material para búsqueda de stock
+      const materialIds = [...new Set(detalles.map((d: any) => d.material_id))]
+      const materialDataMap = new Map()
+      if (materialIds.length > 0) {
+        const materiales = await tx.material.findMany({
+          where: { id: { in: materialIds } },
+          select: { id: true, unidad_medida_id: true }
+        })
+        materiales.forEach((m: any) => materialDataMap.set(m.id, m.unidad_medida_id))
+      }
+
       const documentoIdentificacion = await tx.documentoIdentificacion.findUnique({
         where: { id: documento_identificacion_id },
         select: { tipo: true }
@@ -358,6 +369,13 @@ export async function POST(req: NextRequest) {
             select: { esquema_id: true }
           })
 
+          // Obtener unidad_multiplo de la unidad de medida de venta para convertir cantidad
+          const unidad = await tx.unidadMedida.findUnique({
+            where: { id: d.unidad_medida_id },
+            select: { unidad_multiplo: true }
+          })
+          const cantidadConvertida = Number(d.cantidad) * Number(unidad?.unidad_multiplo || 1)
+
           let costoUnit = 0
           if (material?.esquema_id) {
             const materialCosto = await tx.materialCosto.findFirst({
@@ -381,6 +399,7 @@ export async function POST(req: NextRequest) {
             data: {
               movimiento_id: movimiento.id,
               material_id: d.material_id,
+              unidad_medida_id: d.unidad_medida_id,
               cantidad: d.cantidad,
               costo_unit: costoUnit,
               almacen_id: d.almacen_id,
@@ -393,9 +412,12 @@ export async function POST(req: NextRequest) {
           })
           lineaDetalle++
 
-          let cantidadRestante = Number(d.cantidad)
+          let cantidadRestante = cantidadConvertida
           const estadoStockId = clasePedido.estado_stock_id || 0
           const today = new Date().toISOString().split('T')[0]
+
+          // Usar unidad_medida_id del material para buscar stock
+          const unidadStockMaterial = materialDataMap.get(d.material_id)
 
           const stocks = await tx.stockMaterial.findMany({
             where: {
@@ -404,7 +426,7 @@ export async function POST(req: NextRequest) {
               almacen_id: d.almacen_id,
               estado_stock_id: estadoStockId,
               material_id: d.material_id,
-              unidad_medida_id: d.unidad_medida_id,
+              unidad_medida_id: unidadStockMaterial,
               ...(signoOrigen === '-' ? { cantidad: { gt: 0 } } : {})
             },
             orderBy: { id: 'asc' }

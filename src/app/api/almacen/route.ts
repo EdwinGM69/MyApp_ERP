@@ -11,6 +11,7 @@ const movDetailSchema = z.object({
   numero_lote: z.string().nullable().optional(),
   material_id: z.number().nullable().optional(),
   material_codigo: z.string().nullable().optional(),
+  unidad_medida_id: z.number().nullable().optional(),
   cantidad: z.number(),
   costo_unit: z.number().nullable().optional(),
   sucursal_dst_id: z.number().nullable().optional(),
@@ -172,33 +173,38 @@ export async function POST(req: NextRequest) {
       // 2. Create Movement Header
       const mov = await tx.movimientoAlmacen.create({
         data: {
-          ...movData,
-          empresa_id: empresaId,
-          numero_mov: generateMovNumber(),
+          sucursal: { connect: { id: movData.sucursal_id } },
+          tipo_operacion: { connect: { id: movData.tipo_operacion_id } },
+          documento: movData.documento,
+          referencia: movData.referencia,
+          observaciones: movData.observaciones,
+          ...(movData.cliente_id ? { cliente: { connect: { id: movData.cliente_id } } } : {}),
+          ...(movData.proveedor_id ? { proveedor: { connect: { id: movData.proveedor_id } } } : {}),
           numero_pedido: movData.numero_pedido || null,
+          empresa: { connect: { id: empresaId } },
+          numero_mov: generateMovNumber(),
           created_by: userId,
           detalles: {
             create: resolvedDetalles.map((d) => ({
               linea: d.linea,
               sucursal_id: d.sucursal_id,
               almacen_id: d.almacen_id,
-              estado_stock_id: d.estado_stock_id,
+              estado_stock: { connect: { id: d.estado_stock_id } },
               numero_lote: d.numero_lote,
-              material_id: d.material_id!,
+              material: { connect: { id: d.material_id } },
+              unidad_medida: { connect: { id: d.material.unidad_medida_id } },
               cantidad: d.cantidad,
               costo_unit: d.costo_unit,
               sucursal_dst_id: d.sucursal_dst_id ?? null,
               almacen_dst_id: d.almacen_dst_id ?? null,
-              esquema_id: d.esquema_id_calculado,
+              ...(d.esquema_id_calculado ? { esquema: { connect: { id: d.esquema_id_calculado } } } : {}),
               created_by: userId,
               distribuciones: {
                 create: d.distribuciones.map(dist => ({
-                  empresa_id: empresaId,
+                  empresa: { connect: { id: empresaId } },
                   numero_lote: dist.numero_lote,
                   fecha_expiracion: dist.fecha_expiracion ? new Date(dist.fecha_expiracion) : null,
-                  ubicacion_id: dist.ubicacion_id && dist.ubicacion_id > 0
-                    ? dist.ubicacion_id
-                    : defaultUbicacion?.id,
+                  ubicacion: { connect: { id: dist.ubicacion_id && dist.ubicacion_id > 0 ? dist.ubicacion_id : defaultUbicacion?.id } },
                   cantidad: dist.cantidad,
                   created_by: userId
                 }))
@@ -208,13 +214,39 @@ export async function POST(req: NextRequest) {
         }
       });
 
-      // 3. Update stocks and costs
+// 3. Update stocks and costs
       const actualizaCosto = tipoOp.actualiza_costo;
       const signoEfectivo = tipoOp.signo_origen || tipoOp.signo_destino;
 
       for (const d of resolvedDetalles) {
         const material = d.material;
-        const unidadMedidaId = material.unidad_medida_id;
+        const unidadMedidaControl = material.unidad_medida_id;
+
+        let cantidadBase: number;
+
+        if (d.unidad_medida_id && d.unidad_medida_id !== unidadMedidaControl) {
+          const presentacion = await tx.materialPresentacion.findFirst({
+            where: {
+              material_id: d.material_id,
+              unidad_medida_id: d.unidad_medida_id,
+              activo: true
+            }
+          });
+          if (presentacion) {
+            const um = await tx.unidadMedida.findUnique({
+              where: { id: d.unidad_medida_id }
+            });
+            if (um) {
+              cantidadBase = Number(d.cantidad) * Number(um.unidad_multiplo || 1);
+            } else {
+              cantidadBase = Number(d.cantidad);
+            }
+          } else {
+            cantidadBase = Number(d.cantidad);
+          }
+        } else {
+          cantidadBase = Number(d.cantidad);
+        }
 
         const currentStockTotal = await tx.stockMaterial.aggregate({
           where: {
@@ -223,8 +255,7 @@ export async function POST(req: NextRequest) {
             almacen_id: d.almacen_id,
             estado_stock_id: d.estado_stock_id,
             material_id: d.material_id!,
-            unidad_medida_id: unidadMedidaId,
-            // numero_lote is specifically excluded to aggregate across all lots
+            unidad_medida_id: unidadMedidaControl,
           },
           _sum: { cantidad: true }
         });
@@ -247,7 +278,7 @@ export async function POST(req: NextRequest) {
           }];
 
         for (const item of itemsToUpdate) {
-          const balanceQty = signoEfectivo === '+' ? item.cantidad : signoEfectivo === '-' ? -item.cantidad : 0;
+          const balanceQty = signoEfectivo === '+' ? cantidadBase : signoEfectivo === '-' ? -cantidadBase : 0;
 
           if (item.numero_lote) {
             await tx.lote.upsert({
@@ -283,7 +314,7 @@ export async function POST(req: NextRequest) {
                 estado_stock_id: d.estado_stock_id,
                 material_id: d.material_id!,
                 numero_lote: item.numero_lote ?? null,
-                unidad_medida_id: unidadMedidaId
+                unidad_medida_id: unidadMedidaControl
               }
             },
             update: { cantidad: { increment: balanceQty } },
@@ -296,11 +327,10 @@ export async function POST(req: NextRequest) {
               material_id: d.material_id!,
               numero_lote: item.numero_lote ?? null,
               cantidad: balanceQty,
-              unidad_medida_id: unidadMedidaId,
+              unidad_medida_id: unidadMedidaControl,
             }
           });
 
-          // 3.2 Daily Stock History Consolidation
           const now = new Date();
           const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
           const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
@@ -314,7 +344,7 @@ export async function POST(req: NextRequest) {
               estado_stock_id: d.estado_stock_id,
               material_id: d.material_id!,
               numero_lote: item.numero_lote ?? null,
-              unidad_medida_id: unidadMedidaId,
+              unidad_medida_id: unidadMedidaControl,
               updated_at: {
                 gte: startOfDay,
                 lte: endOfDay
@@ -341,7 +371,7 @@ export async function POST(req: NextRequest) {
                 material_id: d.material_id!,
                 numero_lote: item.numero_lote ?? null,
                 cantidad: balanceQty,
-                unidad_medida_id: unidadMedidaId,
+                unidad_medida_id: unidadMedidaControl,
                 updated_at: now
               }
             });
@@ -383,7 +413,7 @@ export async function POST(req: NextRequest) {
               });
 
               const promAnt = currentCostRec ? Number(currentCostRec.costo) : Number(material.costo_promedio || 0);
-              const movementQty = signoEfectivo === '+' ? d.cantidad : signoEfectivo === '-' ? -d.cantidad : 0;
+              const movementQty = signoEfectivo === '+' ? cantidadBase : signoEfectivo === '-' ? -cantidadBase : 0;
               const stockDespues = stockAnt + movementQty;
               const costoIngresado = Number(d.costo_unit || 0);
 

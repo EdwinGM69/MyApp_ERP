@@ -35,11 +35,11 @@ interface Componente {
 
 interface Presentacion {
   id?: number
-  codigo: string
-  descripcion: string
-  unidad: string
-  factor_conversion?: number
+  unidad_medida_id: number
+  unidad_control: boolean
   activo: boolean
+  // For display purposes
+  unidad_medida?: { id: number, descripcion: string, abreviatura: string }
 }
 
 interface Material {
@@ -191,7 +191,13 @@ export default function MaterialForm({ materialToEdit }: MaterialFormProps) {
       setProveedorId(materialToEdit.proveedor_id || '')
       setActivo(materialToEdit.activo)
 
-      setPresentaciones(materialToEdit.presentaciones || [])
+      setPresentaciones(materialToEdit.presentaciones?.map(p => ({
+        id: p.id,
+        unidad_medida_id: p.unidad_medida_id,
+        unidad_control: p.unidad_control,
+        activo: p.activo,
+        unidad_medida: p.unidad_medida
+      })) || [])
       if (materialToEdit.sustitutos) {
         setSustitutos(materialToEdit.sustitutos.map(s => ({
           sustituto_id: s.sustituto.id,
@@ -219,16 +225,22 @@ export default function MaterialForm({ materialToEdit }: MaterialFormProps) {
 
     let finalPresentaciones = [...presentaciones]
     if (unidadMedidaId) {
-      const selectedUnit = unidades.find(u => u.id === unidadMedidaId)
-      if (selectedUnit && !finalPresentaciones.some(p => p.unidad === selectedUnit.abreviatura)) {
+      // Ensure the main unidad_medida_id has a presentation with unidad_control = true
+      const mainUnitExists = finalPresentaciones.some(p => p.unidad_medida_id === unidadMedidaId)
+      if (!mainUnitExists) {
         finalPresentaciones.push({
-          codigo: `PRES-${finalPresentaciones.length + 1}`,
-          descripcion: selectedUnit.descripcion,
-          unidad: selectedUnit.abreviatura,
+          unidad_medida_id: unidadMedidaId,
+          unidad_control: true,
           activo: true
         })
       }
     }
+
+    // Set unidad_control based on whether this is the main unidad_medida_id
+    finalPresentaciones = finalPresentaciones.map(p => ({
+      ...p,
+      unidad_control: p.unidad_medida_id === unidadMedidaId
+    }))
 
     const payload = {
       id: materialToEdit?.id,
@@ -258,7 +270,7 @@ export default function MaterialForm({ materialToEdit }: MaterialFormProps) {
       moneda_costo_promedio_id: monedaCostoPromedioId,
       proveedor_id: proveedorId === '' ? null : proveedorId,
       activo,
-      presentaciones: finalPresentaciones.map(p => ({ ...p, id: undefined })),
+      presentaciones: finalPresentaciones.map(p => ({ id: p.id, unidad_medida_id: p.unidad_medida_id, unidad_control: p.unidad_control, activo: p.activo })),
       sustitutos: sustitutos.map(s => ({ sustituto_id: s.sustituto_id })),
       componentes: componentes.map(c => ({ componente_id: c.componente_id, cantidad: c.cantidad, unidad_medida_id: c.unidad_medida_id }))
     }
@@ -688,18 +700,17 @@ export default function MaterialForm({ materialToEdit }: MaterialFormProps) {
                         const uni = unidades.find(u => u.id === Number(val))
                         if (uni) {
                           // Validation for duplicate unit
-                          if (presentaciones.some(p => p.unidad === uni.abreviatura)) {
+                          if (presentaciones.some(p => p.unidad_medida_id === uni.id)) {
                             toast.error(`La unidad ${uni.abreviatura} ya ha sido agregada como presentación.`)
                             e.target.value = "" // Reset select
                             return
                           }
 
-                          const nextNumber = presentaciones.length + 1
                           setPresentaciones([...presentaciones, {
-                            codigo: `PRES-${nextNumber}`,
-                            descripcion: uni.descripcion,
-                            unidad: uni.abreviatura,
-                            activo: true
+                            unidad_medida_id: uni.id,
+                            unidad_control: false,
+                            activo: true,
+                            unidad_medida: uni
                           }])
                           e.target.value = "" // Reset select after adding
                         }
@@ -715,13 +726,20 @@ export default function MaterialForm({ materialToEdit }: MaterialFormProps) {
 
                 <DataTable
                   columns={[
-                    { key: 'codigo', header: 'Código' },
-                    { key: 'descripcion', header: 'Descripción' },
-                    { key: 'unidad', header: 'Abreviatura' },
+                    {
+                      key: 'unidad_medida',
+                      header: 'Unidad de Medida',
+                      render: (p: Presentacion) => `${p.unidad_medida?.descripcion || 'N/A'} (${p.unidad_medida?.abreviatura || 'N/A'})`
+                    },
+                    {
+                      key: 'unidad_control',
+                      header: 'Control de Unidad',
+                      render: (p: Presentacion) => p.unidad_control ? 'Sí' : 'No'
+                    },
                     {
                       key: 'actions', header: 'Acciones',
                       render: (p: Presentacion) => (
-                        <button type="button" onClick={() => setPresentaciones(presentaciones.filter(x => x !== p))} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-all">
+                        <button type="button" onClick={() => setPresentaciones(presentaciones.filter(x => x.id !== p.id))} className="text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded-lg transition-all">
                           <span className="material-symbols-outlined text-[20px]">delete</span>
                         </button>
                       )

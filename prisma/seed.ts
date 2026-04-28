@@ -41,12 +41,36 @@ async function main() {
     create: {
       nombre: 'Empresa Demo SA',
       nif: 'RUC-20123456789',
-      industria: 'Comercio',
       email: 'admin@empresademo.com',
       telefono: '+51 1 234-5678',
       direccion_fiscal: 'Av. Principal 123, Lima, Perú',
       moneda_default: 'PEN',
       zona_horaria: 'America/Lima',
+    },
+  })
+
+  // Create monedas
+  const pen = await prisma.moneda.upsert({
+    where: { empresa_id_abreviatura: { empresa_id: empresa.id, abreviatura: 'PEN' } },
+    update: {},
+    create: {
+      empresa_id: empresa.id,
+      descripcion: 'Sol Peruano',
+      abreviatura: 'PEN',
+      simbolo: 'S/',
+      activo: true,
+    },
+  })
+
+  const usd = await prisma.moneda.upsert({
+    where: { empresa_id_abreviatura: { empresa_id: empresa.id, abreviatura: 'USD' } },
+    update: {},
+    create: {
+      empresa_id: empresa.id,
+      descripcion: 'Dólar Americano',
+      abreviatura: 'USD',
+      simbolo: '$',
+      activo: true,
     },
   })
 
@@ -138,6 +162,41 @@ async function main() {
       create: { empresa_id: empresa.id, modulo_id: modulo.id, activo: true, created_by: null },
     })
   }
+
+  // Clase de pedido
+  const clasesPedido = await Promise.all([
+    prisma.clasePedido.upsert({
+      where: { empresa_id_codigo: { empresa_id: empresa.id, codigo: 'VTALOC' } },
+      update: {},
+      create: {
+        codigo: 'VTALOC',
+        descripcion: 'Venta Local',
+        registro_almacen: false,
+        registro_caja: false,
+        activo: true,
+        empresa: { connect: { id: empresa.id } }
+      },
+    }),
+  ])
+
+  // Create Parametros de Sistema
+  const parametros = await Promise.all([
+    prisma.parametroSistema.upsert({
+      where: { empresa_id_nivel_modulo_id_codigo: { empresa_id: empresa.id, modulo_id: 1, codigo: 'POS.PEDVTA', nivel: 'EMPRESA' } },
+      update: {},
+      create: {
+        nivel: 'EMPRESA',
+        codigo: 'POS.PEDVTA',
+        descripcion: 'Clase pedido para punto de venta',
+        tipo_dato: 'STRING',
+        valor_string: 'VTALOC',
+        etiqueta: 'PEDVTA',
+        activo: true,
+        empresa: { connect: { id: empresa.id } },
+        modulo: { connect: { id: 1 } }
+      },
+    }),
+  ])
 
   console.log('✅ Seed completed successfully!')
   console.log('')

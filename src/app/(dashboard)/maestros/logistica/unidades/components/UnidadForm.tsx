@@ -143,7 +143,8 @@ export default function UnidadForm({ unidadToEdit }: UnidadFormProps) {
                     type="number" required value={unidadMultiplo} onChange={e => setUnidadMultiplo(Number(e.target.value))}
                     className="w-full px-6 py-2 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
                     placeholder="1"
-                    min="1"
+                    min="0.01"
+                    step="0.01"
                   />
                 </div>
               </div>

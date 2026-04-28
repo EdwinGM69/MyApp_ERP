@@ -6,13 +6,14 @@ import { apiFetch, useAuthStore } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 import MonedaSelect from '@/components/ui/MonedaSelect'
+import IndustriaSelect from '@/components/ui/IndustriaSelect'
 import SucursalesAlmacenesSection from './SucursalesAlmacenesSection'
 
 interface Empresa {
   id?: number
   nombre: string
   nif: string
-  industria?: string | null
+  industria_id?: number
   representante?: string | null
   email?: string | null
   telefono?: string | null
@@ -33,7 +34,7 @@ export default function EmpresaForm() {
   const [formData, setFormData] = useState<Empresa>({
     nombre: '',
     nif: '',
-    industria: '',
+    industria_id: undefined,
     representante: '',
     email: '',
     telefono: '',
@@ -53,7 +54,7 @@ export default function EmpresaForm() {
         const data = await res.json()
         setFormData({
           ...data,
-          industria: data.industria || '',
+          industria_id: data.industria_id || undefined,
           representante: data.representante || '',
           email: data.email || '',
           telefono: data.telefono || '',
@@ -168,18 +169,10 @@ export default function EmpresaForm() {
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Industria</label>
-                    <select
-                      name="industria" value={formData.industria || ''} onChange={handleChange}
-                      className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="">Seleccione una industria</option>
-                      <option value="Tecnología y Software">Tecnología y Software</option>
-                      <option value="Manufactura">Manufactura</option>
-                      <option value="Servicios Financieros">Servicios Financieros</option>
-                      <option value="Retail / Comercio">Retail / Comercio</option>
-                      <option value="Salud">Salud</option>
-                      <option value="Educación">Educación</option>
-                    </select>
+                    <IndustriaSelect 
+                      value={formData.industria_id} 
+                      onSelect={(industria) => setFormData(prev => ({ ...prev, industria_id: industria.id }))}
+                    />
                   </div>
                 </div>
                 <div>
@@ -218,15 +211,15 @@ export default function EmpresaForm() {
                     />
                   </div>
                 </div>
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Dirección Principal</label>
-                  <input
-                    type="text" name="direccion_fiscal" value={formData.direccion_fiscal || ''} onChange={handleChange}
-                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-300"
-                    placeholder="Calle 123 # 45-67, Ciudad"
-                  />
-                </div>
-                <div className="flex bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 group focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all overflow-hidden items-center">
+<div>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Dirección Principal</label>
+                    <input
+                      type="text" name="direccion_fiscal" value={formData.direccion_fiscal || ''} onChange={handleChange}
+                      className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-300"
+                      placeholder="Calle 123 # 45-67, Ciudad"
+                    />
+                  </div>
+                  <div className="flex bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 group focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all overflow-hidden items-center">
                   <div className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 tracking-tighter shrink-0 select-none">
                     https://
                   </div>

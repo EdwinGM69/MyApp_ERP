@@ -121,9 +121,8 @@ const materialSchema = z.object({
   // Relations
   presentaciones: z.array(z.object({
     id: z.number().optional(),
-    codigo: z.string(),
-    descripcion: z.string(),
-    unidad: z.string(),
+    unidad_medida_id: z.number(),
+    unidad_control: z.boolean().optional(),
     activo: z.boolean().optional(),
   })).optional(),
   componentes: z.array(z.object({
@@ -259,29 +258,41 @@ export async function GET(req: NextRequest) {
           marca: { select: { id: true, descripcion: true } },
           categoria_rel: { select: { id: true, descripcion: true } },
           tipo_rel: { select: { id: true, descripcion: true } },
-          unidad_medida_rel: { select: { id: true, descripcion: true } },
+          unidad_medida_rel: { select: { id: true, descripcion: true, abreviatura: true } },
           moneda_precio_compra_rel: { select: { id: true, descripcion: true, abreviatura: true, simbolo: true } },
           moneda_costo_promedio_rel: { select: { id: true, descripcion: true, abreviatura: true, simbolo: true } }
         },
       }),
     ])
 
-// Augment with optional IDs and real-time stock via raw SQL since Prisma client is out of sync
+    // Augment with optional IDs and real-time stock via raw SQL since Prisma client is out of sync
     const ids = materiales.map((m: any) => m.id)
     const sucursalIdNum = sucursalId ? parseInt(sucursalId) : null
     console.log('[materiales API] Fetching stock - empresaId:', empresaId, 'sucursalId:', sucursalId, 'parsed:', sucursalIdNum, 'estadoStockId:', estadoStockId)
-    if (ids.length > 0 && estadoStockId && sucursalIdNum) {
+    
+    if (ids.length > 0 && sucursalIdNum) {
       try {
-        const rawStock = await prisma.$queryRawUnsafe<any[]>(
-          `SELECT material_id, SUM(cantidad)::float as total_stock 
-           FROM "StockMaterial" 
-           WHERE empresa_id = $1 AND material_id = ANY($2::int[]) AND sucursal_id = $3 AND estado_stock_id = $4
-           GROUP BY material_id`,
-          empresaId,
-          ids,
-          sucursalIdNum,
-          estadoStockId
-        )
+        let stockQuery: string
+        const queryParams: any[] = [empresaId, ids, sucursalIdNum]
+        
+        if (estadoStockId) {
+          // Consulta por estado específico
+          stockQuery = `
+            SELECT material_id, SUM(cantidad)::float as total_stock 
+            FROM "StockMaterial" 
+            WHERE empresa_id = $1 AND material_id = ANY($2::int[]) AND sucursal_id = $3 AND estado_stock_id = $4
+            GROUP BY material_id`
+          queryParams.push(estadoStockId)
+        } else {
+          // Consulta por todos los estados (catálogo de materiales y POS)
+          stockQuery = `
+            SELECT material_id, SUM(cantidad)::float as total_stock 
+            FROM "StockMaterial" 
+            WHERE empresa_id = $1 AND material_id = ANY($2::int[]) AND sucursal_id = $3
+            GROUP BY material_id`
+        }
+        
+        const rawStock = await prisma.$queryRawUnsafe<any[]>(stockQuery, ...queryParams)
         console.log('[materiales API] Stock query result for sucursal', sucursalIdNum, ':', rawStock)
 
         const stockMap = new Map(rawStock.map((s: any) => [s.material_id, s.total_stock]))
@@ -293,10 +304,15 @@ export async function GET(req: NextRequest) {
         })
       } catch (e) {
         console.error('Error fetching raw data:', e)
+        materiales.forEach((m: any) => {
+          m.stock_actual = 0
+          m.unidad_medida = m.unidad_medida_rel?.descripcion || 'und'
+          m.unidad_medida_id = m.unidad_medida_rel?.id || 1
+        })
       }
     } else {
-      // No estadoStockId or sucursalId configured, set stock to 0
-      console.log('[materiales API] No stock query - estadoStockId:', estadoStockId, 'sucursalIdNum:', sucursalIdNum)
+      // No sucursalId configured, set stock to 0
+      console.log('[materiales API] No stock query - sucursalIdNum:', sucursalIdNum)
       materiales.forEach((m: any) => {
         m.stock_actual = 0
         m.unidad_medida = m.unidad_medida_rel?.descripcion || 'und'

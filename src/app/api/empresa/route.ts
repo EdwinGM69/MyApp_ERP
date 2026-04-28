@@ -6,7 +6,7 @@ import { z } from 'zod'
 const empresaSchema = z.object({
   nombre: z.string().min(1, 'El nombre es requerido'),
   nif: z.string().min(1, 'El NIT/Tax ID es requerido'),
-  industria: z.string().optional().nullable(),
+  industria_id: z.number().optional().nullable(),
   representante: z.string().optional().nullable(),
   email: z.string().email('Email inválido').optional().nullable(),
   telefono: z.string().optional().nullable(),
@@ -58,6 +58,9 @@ export async function GET(req: NextRequest) {
 
     const empresa = await prisma.empresa.findUnique({
       where: { id: empresaId },
+      include: {
+        industria: true,
+      }
     })
 
     if (!empresa) {
@@ -77,6 +80,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ...empresa,
+      industria_id: empresa.industria_id || null,
       moneda_id: moneda?.id || null,
       moneda_simbolo: moneda?.simbolo || '$'
     })
@@ -92,14 +96,24 @@ export async function PUT(req: NextRequest) {
     const body = await req.json()
     
     // Validate data
-    const validatedData = empresaSchema.parse(body)
+    const { industria_id, ...restData } = empresaSchema.parse(body)
+
+    // Build update data
+    const updateData: any = {
+      ...restData,
+      updated_by: userId,
+    }
+
+    // Handle industria relation
+    if (industria_id) {
+      updateData.industria = { connect: { id: industria_id } }
+    } else {
+      updateData.industria = { disconnect: true }
+    }
 
     const empresa = await prisma.empresa.update({
       where: { id: empresaId },
-      data: {
-        ...validatedData,
-        updated_by: userId,
-      },
+      data: updateData,
     })
 
     return NextResponse.json(empresa)

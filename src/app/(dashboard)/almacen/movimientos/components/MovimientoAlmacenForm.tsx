@@ -23,6 +23,7 @@ interface ProductoLinea {
   material_descripcion: string
   um: string
   unidad_medida_id?: number
+  unidad_medida_control_id?: number
   lote: string
   vencimiento: string
   cantidad: number
@@ -40,6 +41,9 @@ interface ProductoLinea {
   expandido?: boolean
   distribuciones: Distribucion[]
   stock_actual?: number | null
+  presentaciones: any[]
+  unidad_multiplo?: number
+  ubicaciones_disponibles?: any[]
 }
 
 export default function MovimientoAlmacenForm() {
@@ -57,6 +61,7 @@ export default function MovimientoAlmacenForm() {
   const [clientes, setClientes] = useState<any[]>([])
   const [proveedores, setProveedores] = useState<any[]>([])
   const [ubicaciones, setUbicaciones] = useState<any[]>([])
+  const [unidadesMedida, setUnidadesMedida] = useState<any[]>([])
 
   // Header state
   const [sucursalId, setSucursalId] = useState<number>(currentSucursal?.id || 1)
@@ -84,13 +89,14 @@ export default function MovimientoAlmacenForm() {
     const merged = { ...linea, ...overrides }
     if (!merged.material_id) return
     try {
+      const unidadMedidaControlId = merged.unidad_medida_control_id || merged.unidad_medida_id
       const params = new URLSearchParams({
         summary: 'true',
         sucursalId: String(sucursalId),
         almacenId: String(merged.almacen_id),
         estadoStockId: String(merged.estado_stock_id),
         materialId: String(merged.material_id),
-        ...(merged.unidad_medida_id ? { unidadMedidaId: String(merged.unidad_medida_id) } : {}),
+        ...(unidadMedidaControlId ? { unidadMedidaId: String(unidadMedidaControlId) } : {}),
       })
       const res = await apiFetch(`/api/stock?${params}`)
       if (!res.ok) return
@@ -102,6 +108,43 @@ export default function MovimientoAlmacenForm() {
       })
     } catch { /* swallow */ }
   }, [sucursalId])
+
+  // Fetch available locations for subtraction operations
+  const fetchUbicacionesDisponibles = useCallback(async (
+    index: number,
+    linea: ProductoLinea,
+    overrides?: Partial<ProductoLinea>
+  ) => {
+    const merged = { ...linea, ...overrides }
+    if (!merged.material_id || selectedTipo?.signo_origen !== '-') return
+    try {
+      const unidadMedidaControlId = merged.unidad_medida_control_id || merged.unidad_medida_id
+      const params = new URLSearchParams({
+        summary: 'false',
+        sucursalId: String(sucursalId),
+        almacenId: String(merged.almacen_id),
+        estadoStockId: String(merged.estado_stock_id),
+        materialId: String(merged.material_id),
+        ...(unidadMedidaControlId ? { unidadMedidaId: String(unidadMedidaControlId) } : {}),
+      })
+      const res = await apiFetch(`/api/stock?${params}`)
+      if (!res.ok) return
+      const json = await res.json()
+      const stockData = Array.isArray(json) ? json : (json.data || [])
+      // Filter locations with quantity > 0
+      const ubicacionIdsConStock = (stockData as any[])
+        .filter((item: any) => (item.cantidad || 0) > 0)
+        .map((item: any) => item.ubicacion_id)
+        .filter((id, idx, arr) => arr.indexOf(id) === idx) // unique
+      // Filter master ubicaciones list
+      const ubicacionesDisponibles = ubicaciones.filter(u => ubicacionIdsConStock.includes(u.id))
+      setLineas(prev => {
+        const updated = [...prev]
+        if (updated[index]) updated[index] = { ...updated[index], ubicaciones_disponibles: ubicacionesDisponibles }
+        return updated
+      })
+    } catch { /* swallow */ }
+  }, [sucursalId, selectedTipo?.signo_origen, ubicaciones])
 
   // Reset fields when tipo changes
   useEffect(() => {
@@ -120,13 +163,14 @@ export default function MovimientoAlmacenForm() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [resSuc, resTip, resEst, resCli, resPro, resUbi] = await Promise.all([
+        const [resSuc, resTip, resEst, resCli, resPro, resUbi, resUnidades] = await Promise.all([
           apiFetch('/api/empresa/sucursales'),
           apiFetch('/api/logistica/tipos-operacion?pageSize=100'),
           apiFetch('/api/estados-stock?pageSize=100'),
           apiFetch('/api/clientes?pageSize=100'),
           apiFetch('/api/proveedores?pageSize=100'),
-          apiFetch('/api/logistica/ubicaciones?pageSize=100')
+          apiFetch('/api/logistica/ubicaciones?pageSize=100'),
+          apiFetch('/api/unidades-medida?pageSize=100')
         ])
 
         const extract = async (res: Response) => {
@@ -135,13 +179,14 @@ export default function MovimientoAlmacenForm() {
           return Array.isArray(json) ? json : (json.data || [])
         }
 
-        const [suc, tip, est, cli, pro, ubi] = await Promise.all([
+        const [suc, tip, est, cli, pro, ubi, unidades] = await Promise.all([
           extract(resSuc),
           extract(resTip),
           extract(resEst),
           extract(resCli),
           extract(resPro),
-          extract(resUbi)
+          extract(resUbi),
+          extract(resUnidades)
         ])
 
         setSucursales(suc)
@@ -150,6 +195,7 @@ export default function MovimientoAlmacenForm() {
         setClientes(cli)
         setProveedores(pro)
         setUbicaciones(ubi)
+        setUnidadesMedida(unidades)
 
         setIsReady(true)
       } catch (error) {
@@ -205,7 +251,8 @@ export default function MovimientoAlmacenForm() {
       almacen_id: 1,
       estado_stock_id: defaultEstadoId,
       distribuciones: [],
-      expandido: false
+      expandido: false,
+      presentaciones: []
     }
     setLineas([...lineas, newLinea])
   }
@@ -236,13 +283,28 @@ export default function MovimientoAlmacenForm() {
     })
   }
 
-  const handleLineaChange = (index: number, field: keyof ProductoLinea, value: any) => {
+  const handleLineaChange = async (index: number, field: keyof ProductoLinea, value: any) => {
     const newLineas = [...lineas]
     newLineas[index] = { ...newLineas[index], [field]: value }
     setLineas(newLineas)
-    // Re-fetch stock if relevant fields change
+
     if (field === 'almacen_id' || field === 'estado_stock_id') {
       fetchStockLinea(index, newLineas[index])
+      fetchUbicacionesDisponibles(index, newLineas[index])
+    } else if (field === 'unidad_medida_id') {
+      // Fetch new multiplier when unit changes
+      try {
+        const umRes = await apiFetch(`/api/logistica/unidades?id=${value}`)
+        if (umRes.ok) {
+          const umJson = await umRes.json()
+          const newMultiplo = Number(umJson.data?.unidad_multiplo) || 1
+          setLineas(prev => {
+            const updated = [...prev]
+            updated[index] = { ...updated[index], unidad_multiplo: newMultiplo }
+            return updated
+          })
+        }
+      } catch { /* swallow */ }
     }
   }
 
@@ -259,13 +321,33 @@ export default function MovimientoAlmacenForm() {
         const costJson = await costRes.json()
         costoValue = Number(costJson.costo ?? 0).toFixed(2)
       }
-    } catch { /* swallow, fallback to 0 */ }
+    } catch { /* swallow */ }
+
+    // Fetch presentaciones for the material
+    let presentaciones = []
+    try {
+      const presRes = await apiFetch(`/api/materiales/presentaciones?materialId=${material.id}`)
+      if (presRes.ok) {
+        const presJson = await presRes.json()
+        presentaciones = Array.isArray(presJson) ? presJson : (presJson.data || [])
+      }
+    } catch { /* swallow */ }
+
+    // Fetch unidad_multiplo for the material's unit
+    let unidadMultiplo = 1
+    try {
+      const umRes = await apiFetch(`/api/logistica/unidades?id=${material.unidad_medida_id}`)
+      if (umRes.ok) {
+        const umJson = await umRes.json()
+        unidadMultiplo = Number(umJson.data?.unidad_multiplo) || 1
+      }
+    } catch { /* swallow */ }
 
     // Set defaults for distribuciones based on material flags and operation type
-    const initialDist: Distribucion = { 
-      id: Math.random().toString(36).substring(2, 11), 
-      ubicacion_id: material.ubicacion_default_id || 0, 
-      cantidad: currentLinea.cantidad 
+    const initialDist: Distribucion = {
+      id: Math.random().toString(36).substring(2, 11),
+      ubicacion_id: material.ubicacion_default_id || 0,
+      cantidad: currentLinea.cantidad * unidadMultiplo
     }
     const updatedDists = (currentLinea.distribuciones.length > 0
       ? currentLinea.distribuciones
@@ -283,6 +365,7 @@ export default function MovimientoAlmacenForm() {
       material_descripcion: material.descripcion,
       um: material.unidad_medida?.descripcion || 'UND',
       unidad_medida_id: material.unidad_medida_id,
+      unidad_medida_control_id: material.unidad_medida_id,
       valor: costoValue,
       stock_lote: material.stock_lote,
       perecible: material.perecible,
@@ -290,10 +373,14 @@ export default function MovimientoAlmacenForm() {
       ubicacion_default_id: material.ubicacion_default_id,
       lote: (estaIngreso && material.stock_lote) ? currentLinea.lote : '',
       distribuciones: updatedDists,
+      presentaciones,
+      unidad_multiplo: unidadMultiplo,
     }
     setLineas(newLineas)
     // Fetch stock for selected material
     fetchStockLinea(index, newLineas[index])
+    // Fetch available locations for subtraction operations
+    fetchUbicacionesDisponibles(index, newLineas[index])
   }
 
   const handleSave = async (e?: React.FormEvent) => {
@@ -327,6 +414,7 @@ export default function MovimientoAlmacenForm() {
           numero_lote: l.lote || null,
           material_id: l.material_id,
           material_codigo: l.material_codigo,
+          unidad_medida_id: l.unidad_medida_id,
           cantidad: Number(l.cantidad),
           costo_unit: Number(l.valor),
           esquema_id: l.esquema_id,
@@ -346,8 +434,8 @@ export default function MovimientoAlmacenForm() {
 
       if (!res.ok) {
         const json = await res.json()
-        const errMsg = Array.isArray(json.error) 
-          ? json.error.map((e: any) => `${e.path?.join('.')}: ${e.message}`).join(', ') 
+        const errMsg = Array.isArray(json.error)
+          ? json.error.map((e: any) => `${e.path?.join('.')}: ${e.message}`).join(', ')
           : (json.error || 'Error al guardar el movimiento')
         throw new Error(errMsg)
       }
@@ -492,31 +580,6 @@ export default function MovimientoAlmacenForm() {
         {/* Área Principal: Detalle de Movimiento */}
         <main className="flex-1 h-full overflow-y-auto px-8 py-6 flex flex-col gap-8 custom-scrollbar bg-white dark:bg-slate-950">
 
-          {/* Totals Summary Bar - Refined Unified Dark Card */}
-          <div className="bg-slate-900 dark:bg-slate-900/60 backdrop-blur-md rounded-[20px] p-4 flex items-center shadow-xl shadow-slate-900/10 border border-slate-800/50">
-            {/* Section 1: Items */}
-            <div className="flex-1 flex flex-col items-center px-6 border-r border-slate-700/50">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Ítems</span>
-              <span className="text-xl font-black text-white leading-none">{lineas.length}</span>
-            </div>
-
-            {/* Section 2: Unidades */}
-            <div className="flex-1 flex flex-col items-center px-6 border-r border-slate-700/50">
-              <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Unidades</span>
-              <span className="text-xl font-black text-white leading-none">
-                {lineas.reduce((acc, l) => acc + (parseFloat(l.cantidad.toString()) || 0), 0)}
-              </span>
-            </div>
-
-            {/* Section 3: Valor Total */}
-            <div className="flex-1 flex flex-col items-center px-6">
-              <span className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Valor Total (PEN)</span>
-              <span className="text-xl font-black text-blue-400 leading-none">
-                {lineas.reduce((acc, l) => acc + ((parseFloat(l.cantidad.toString()) || 0) * (parseFloat(l.valor.toString()) || 0)), 0).toLocaleString('es-PE', { minimumFractionDigits: 2 })}
-              </span>
-            </div>
-          </div>
-
           {/* Lines Table Section - Transparent Layout */}
           <div className="flex flex-col flex-1">
             <div className="pb-6 flex items-center justify-between">
@@ -524,11 +587,11 @@ export default function MovimientoAlmacenForm() {
                 <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-[0.2em] leading-none mb-1">Materiales Seleccionados</h3>
                 <p className="text-[10px] text-slate-400 font-medium tracking-tight">Registre los materiales y productos para este movimiento.</p>
               </div>
-              <button type="button" onClick={addLinea}
-                className="px-6 h-11 rounded-2xl bg-blue-600 text-white font-black text-[11px] hover:bg-blue-700 transition-all flex items-center gap-2 shadow-lg shadow-blue-600/20 uppercase tracking-widest">
-                <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                Añadir Línea
-              </button>
+               <button type="button" onClick={addLinea}
+                 className="px-6 h-11 rounded-2xl bg-slate-800 text-white font-black text-[11px] hover:bg-slate-700 transition-all flex items-center gap-2 shadow-lg shadow-slate-800/20 uppercase tracking-widest">
+                 <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                 Añadir Línea
+               </button>
             </div>
 
             <div className="flex-1 overflow-auto space-y-4 pb-12 pr-1 custom-scrollbar">
@@ -594,23 +657,25 @@ export default function MovimientoAlmacenForm() {
                       </div>
 
                       {/* Numeric Inputs */}
-                      <div className={cn("grid gap-2", selectedTipo?.requiere_suc_destino ? "col-span-3 grid-cols-2" : "col-span-6 grid-cols-4")}>
+                      <div className={cn("grid gap-2", selectedTipo?.requiere_suc_destino ? "col-span-3 grid-cols-3" : "col-span-6 grid-cols-5")}>
                         <div className="space-y-0">
                           <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Cantidad</label>
                           <input
                             type="text"
                             inputMode="decimal"
                             value={linea.cantidad}
-                            onBlur={e => {
-                              // Parse final value and redistribute proportionally
-                              const totalNuevo = isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value)
-                              setLineas(prev => {
-                                const updated = [...prev]
-                                const nuevosDists = distribuirProporcional(updated[index].distribuciones, totalNuevo)
-                                updated[index] = { ...updated[index], cantidad: totalNuevo, distribuciones: nuevosDists }
-                                return updated
-                              })
-                            }}
+                             onBlur={e => {
+                               // Parse final value and redistribute proportionally in base units
+                               const totalNuevo = isNaN(parseFloat(e.target.value)) ? 0 : parseFloat(e.target.value)
+                               setLineas(prev => {
+                                 const updated = [...prev]
+                                 const multiplo = updated[index].unidad_multiplo || 1
+                                 const baseTotal = totalNuevo * multiplo
+                                 const nuevosDists = distribuirProporcional(updated[index].distribuciones, baseTotal)
+                                 updated[index] = { ...updated[index], cantidad: totalNuevo, distribuciones: nuevosDists }
+                                 return updated
+                               })
+                             }}
                             onChange={e => {
                               const v = e.target.value
                               if (/^[0-9]*[.,]?[0-9]*$/.test(v)) {
@@ -623,6 +688,18 @@ export default function MovimientoAlmacenForm() {
                               }
                             }}
                             className="w-full max-w-[70px] bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-1.5 py-1 rounded-xl text-[10px] font-bold outline-none text-right transition-all focus:border-blue-500" />
+                        </div>
+                        <div className="space-y-0">
+                          <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Und. Medida</label>
+                          <select value={linea.unidad_medida_id || ''} onChange={e => handleLineaChange(index, 'unidad_medida_id', Number(e.target.value) || null)}
+                            className="w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 px-1.5 py-1 rounded-xl text-[9px] font-bold outline-none transition-all focus:border-blue-500">
+                            <option value="">- PRESENTACIÓN -</option>
+                            {linea.presentaciones.map(pres => (
+                              <option key={pres.id} value={pres.unidad_medida_id}>
+                                {pres.unidad_medida?.descripcion || `UM ${pres.unidad_medida_id}`}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div className="space-y-0">
                           <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Costo Unit.</label>
@@ -734,35 +811,36 @@ export default function MovimientoAlmacenForm() {
                                 }}
                                   className="w-full bg-slate-50 dark:bg-slate-900 border-none px-3 py-1.5 rounded-lg text-[12px] font-bold outline-none uppercase focus:ring-1 focus:ring-blue-500">
                                   <option value="0">- SELECCIONAR -</option>
-                                  {ubicaciones.map(u => <option key={u.id} value={u.id}>{u.descripcion}</option>)}
+                                  {(selectedTipo?.signo_origen === '-' ? (linea.ubicaciones_disponibles || []) : ubicaciones).map(u => <option key={u.id} value={u.id}>{u.descripcion}</option>)}
                                 </select>
                               </div>
                               <div className="space-y-1">
                                 <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest ml-1">Cantidad</label>
-                                <input
-                                  type="text"
-                                  inputMode="decimal"
-                                  value={dist.cantidad}
-                                  onBlur={e => {
-                                    const raw = isNaN(parseFloat(String(e.target.value))) ? 0 : parseFloat(String(e.target.value))
-                                    const lineaCantidad = parseFloat(String(linea.cantidad)) || 0
-                                    // Sum all OTHER distributions
-                                    const sumOtros = linea.distribuciones.reduce((s, d, i) =>
-                                      i === dIdx ? s : s + (parseFloat(String(d.cantidad)) || 0), 0)
-                                    // Cap so total doesn't exceed linea.cantidad
-                                    const maxPermitido = Math.max(0, lineaCantidad - sumOtros)
-                                    const newDists = [...linea.distribuciones]
-                                    newDists[dIdx] = { ...newDists[dIdx], cantidad: Math.min(raw, maxPermitido) }
-                                    handleLineaChange(index, 'distribuciones', newDists)
-                                  }}
-                                  onChange={e => {
-                                    const v = e.target.value
-                                    if (/^[0-9]*[.,]?[0-9]*$/.test(v)) {
-                                      const newDists = [...linea.distribuciones];
-                                      newDists[dIdx].cantidad = v.replace(',', '.') as any;
-                                      handleLineaChange(index, 'distribuciones', newDists);
-                                    }
-                                  }}
+                                 <input
+                                   type="text"
+                                   inputMode="decimal"
+                                   value={dist.cantidad}
+                                   onBlur={e => {
+                                     const raw = isNaN(parseFloat(String(e.target.value))) ? 0 : parseFloat(String(e.target.value))
+                                     const multiplo = linea.unidad_multiplo || 1
+                                     const baseTotal = (parseFloat(String(linea.cantidad)) || 0) * multiplo
+                                     // Sum all OTHER distributions (in base)
+                                     const sumOtros = linea.distribuciones.reduce((s, d, i) =>
+                                       i === dIdx ? s : s + (parseFloat(String(d.cantidad)) || 0), 0)
+                                     // Cap so total base doesn't exceed baseTotal
+                                     const maxPermitido = Math.max(0, baseTotal - sumOtros)
+                                     const newDists = [...linea.distribuciones]
+                                     newDists[dIdx] = { ...newDists[dIdx], cantidad: Math.min(raw, maxPermitido) }
+                                     handleLineaChange(index, 'distribuciones', newDists)
+                                   }}
+                                   onChange={e => {
+                                     const v = e.target.value
+                                     if (/^[0-9]*[.,]?[0-9]*$/.test(v)) {
+                                       const newDists = [...linea.distribuciones];
+                                       newDists[dIdx].cantidad = parseFloat(v.replace(',', '.')) || 0;
+                                       handleLineaChange(index, 'distribuciones', newDists);
+                                     }
+                                   }}
                                   className="w-full bg-slate-50 dark:bg-slate-900 border-none px-3 py-1.5 rounded-lg text-[12px] font-black outline-none text-right focus:ring-1 focus:ring-blue-500" />
                               </div>
                             </div>
@@ -782,10 +860,12 @@ export default function MovimientoAlmacenForm() {
                             const loteDisabled = selectedTipo?.signo_origen !== '+' || !linea.stock_lote
                             const expDisabled = selectedTipo?.signo_origen !== '+' || !linea.perecible
                             const isFirst = linea.distribuciones.length === 0
-                            const sumExistente = isFirst ? 0 : linea.distribuciones.reduce((acc, d) => acc + (parseFloat(String(d.cantidad)) || 0), 0)
-                            const nuevaCantidad = isFirst
-                              ? (parseFloat(String(linea.cantidad)) || 0)
-                              : Math.max(0, (parseFloat(String(linea.cantidad)) || 0) - sumExistente)
+                             const sumExistente = isFirst ? 0 : linea.distribuciones.reduce((acc, d) => acc + (parseFloat(String(d.cantidad)) || 0), 0)
+                             const multiplo = linea.unidad_multiplo || 1
+                             const baseTotal = (parseFloat(String(linea.cantidad)) || 0) * multiplo
+                             const nuevaCantidad = isFirst
+                               ? baseTotal
+                               : Math.max(0, baseTotal - sumExistente)
                             const newDist: Distribucion = {
                               id: Math.random().toString(36).substring(2, 11),
                               ubicacion_id: linea.ubicacion_default_id || 0,

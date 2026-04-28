@@ -7,7 +7,7 @@ const unidadSchema = z.object({
   id: z.number().optional(),
   descripcion: z.string().min(1),
   abreviatura: z.string().min(1),
-  unidad_multiplo: z.number().int().min(1),
+  unidad_multiplo: z.number().min(0.01),
   activo: z.boolean().optional(),
 })
 
@@ -20,7 +20,14 @@ export async function GET(req: NextRequest) {
     if (id) {
       const unidad = await prisma.unidadMedida.findUnique({
         where: { id: Number(id), empresa_id: empresaId },
-        include: {
+        select: {
+          id: true,
+          descripcion: true,
+          abreviatura: true,
+          unidad_multiplo: true,
+          activo: true,
+          created_at: true,
+          updated_at: true,
           usuario_creador: { select: { nombre: true } },
           usuario_modificador: { select: { nombre: true } },
         }
@@ -49,6 +56,15 @@ export async function GET(req: NextRequest) {
         skip: (page - 1) * pageSize,
         take: pageSize,
         orderBy: { descripcion: 'asc' },
+        select: {
+          id: true,
+          descripcion: true,
+          abreviatura: true,
+          unidad_multiplo: true,
+          activo: true,
+          created_at: true,
+          updated_at: true,
+        }
       }),
     ])
 

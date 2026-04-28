@@ -46,7 +46,10 @@ interface VentaDetalle {
   almacen_id: number
   almacen_descripcion: string
   unidad_medida_id: number
+  unidad_medida_stock_id: number // unidad del material para stock
   um: string
+  um_stock: string // abreviatura de la unidad de medida del material para stock
+  unidad_multiplo: number // multiplicador de la unidad de medida (para calculos en esquema)
   cantidad: number
   precio_unit: number
   descuento: number
@@ -167,12 +170,12 @@ export default function VentaForm() {
               setPasosEsquema(sortedPasos)
 
               // Recalculate all lines with new schema
-               lineas.forEach((l, idx) => {
-                 if (l.material_id) {
-                   // We use the local sortedPasos to avoid waiting for state update
-                   calculateLineCalculations(idx, l.material_id, l.cantidad, l, sortedPasos, esJson.data.variables || [], cuponAplicadoGlobal)
-                 }
-               })
+              lineas.forEach((l, idx) => {
+                if (l.material_id) {
+                  // We use the local sortedPasos to avoid waiting for state update
+                  calculateLineCalculations(idx, l.material_id, l.cantidad, l, sortedPasos, esJson.data.variables || [], cuponAplicadoGlobal)
+                }
+              })
             }
             if (esJson.data?.variables) {
               setVariablesEsquema(esJson.data.variables)
@@ -198,7 +201,7 @@ export default function VentaForm() {
 
   // Totals calculation (Keep for UI display)
   const totals = useMemo(() => {
-    const subtotal = lineas.reduce((acc, l) => acc + (l.cantidad * l.precio_unit), 0)
+    const subtotal = lineas.reduce((acc, l) => acc + (l.precio_unit * l.cantidad * (l.unidad_multiplo || 1)), 0)
     const descuento = lineas.reduce((acc, l) => acc + (l.descuento || 0), 0)
     const descuento_cupon = lineas.reduce((acc, l) => acc + (l.descuento_cupon || 0), 0)
     const descuento_promocion = lineas.reduce((acc, l) => acc + (l.descuento_promocion || 0), 0)
@@ -217,7 +220,10 @@ export default function VentaForm() {
       almacen_id: 0,
       almacen_descripcion: '',
       unidad_medida_id: 0,
+      unidad_medida_stock_id: 0,
       um: 'UND',
+      um_stock: 'UND',
+      unidad_multiplo: 1,
       cantidad: 1,
       precio_unit: 0,
       descuento: 0,
@@ -330,12 +336,12 @@ export default function VentaForm() {
             ? linea.precio_unit * (cupon.valor / 100)
             : cupon.valor
           const cuponValorTotal = cuponValorUnitario * linea.cantidad
-    return {
-      ...linea,
-      descuento_cupon_unitario: cuponValorUnitario,
-      descuento_cupon: cuponValorTotal,
-      aplica_cupon: true
-    }
+          return {
+            ...linea,
+            descuento_cupon_unitario: cuponValorUnitario,
+            descuento_cupon: cuponValorTotal,
+            aplica_cupon: true
+          }
         }
         return linea
       })
@@ -462,6 +468,10 @@ export default function VentaForm() {
     const activePasos = overridePasos || pasosEsquema
     const activeVariables = overrideVariables || variablesEsquema
 
+    // Convert cantidad using unidad_multiplo for scheme calculations (internal use only)
+    const unidadMultiplo = lineaData.unidad_multiplo || 1
+    const cantidadConvertida = cantidad * unidadMultiplo
+
     // Promotion data from line
     const promocionId = lineaData?.promocion_id
     const promocionCantidadCompra = lineaData?.promocion_cantidad_compra
@@ -506,7 +516,7 @@ export default function VentaForm() {
       }
 
       let precioUnitBase = lineaData?.precio_unit || 0 // Use current price as base, overridden by Precio steps
-      let subtotalBruto = (lineaData?.cantidad || 0) * precioUnitBase // Default subtotal
+      let subtotalBruto = cantidadConvertida * precioUnitBase // Default subtotal (using converted qty)
       let totalImpuesto = 0
       let totalDescuento = 0
       let descuentosUnitarios = 0
@@ -516,7 +526,7 @@ export default function VentaForm() {
 
       console.log('DEBUG: Initial calculation values:')
       console.log('  precioUnitBase:', precioUnitBase)
-      console.log('  cantidad:', cantidad)
+      console.log('  cantidad:', cantidad, '-> convertida:', cantidadConvertida)
       console.log('  initial subtotalBruto:', subtotalBruto)
       console.log('  lineaData:', {
         promocion_id: lineaData?.promocion_id,
@@ -542,7 +552,7 @@ export default function VentaForm() {
 
       console.log('DEBUG: Starting calculation with', activePasos.length, 'total steps:', activePasos.map(p => `${p.tipo}: ${p.descripcion_corta}`))
       console.log('DEBUG: Tax steps:', taxPasos.length, 'Non-tax steps:', nonTaxPasos.length)
-      console.log('DEBUG: Initial values - precioUnitBase:', precioUnitBase, 'subtotalBruto:', subtotalBruto, 'cantidad:', cantidad)
+      console.log('DEBUG: Initial values - precioUnitBase:', precioUnitBase, 'subtotalBruto:', subtotalBruto, 'cantidad:', cantidad, '-> convertida:', cantidadConvertida)
 
       // Process non-tax steps first
       const nonTaxCalculados: VentaDetalleCondicion[] = nonTaxPasos.map(paso => {
@@ -626,7 +636,7 @@ export default function VentaForm() {
 
           const evalContext: Record<string, number> = {
             ...filteredVarContext,
-            cantidad: cantidad,
+            cantidad: cantidadConvertida,
             precio_unit: precioUnitBase,
             subtotal: baseCalculo,
             valor_condicion: valorBase,
@@ -679,12 +689,12 @@ export default function VentaForm() {
           const formulaString = (paso.formula || '').toLowerCase()
           const isMultipliedByQty = formulaString.includes('cantidad')
 
-          if (isMultipliedByQty && cantidad > 0) {
-            precioUnitBase = valorFinal / cantidad
+          if (isMultipliedByQty && cantidadConvertida > 0) {
+            precioUnitBase = valorFinal / cantidadConvertida
             subtotalBruto = valorFinal
           } else {
             precioUnitBase = valorFinal
-            subtotalBruto = cantidad * precioUnitBase
+            subtotalBruto = cantidadConvertida * precioUnitBase
           }
           console.log(`DEBUG: Updated Price Base: ${precioUnitBase}, Subtotal: ${subtotalBruto}`)
         } else if (paso.tipo === 'Impuesto') {
@@ -702,17 +712,17 @@ export default function VentaForm() {
           console.log(`DEBUG: Step "${paso.descripcion_corta}" - descripcionLower: "${descripcionLower}", isPromocion: ${isPromocion}, isCupon: ${isCupon}`)
           if (isPromocion) {
             // Promotion step: calculate discount from free units
-            console.log(`DEBUG: Promotion Step - promocionId: ${promocionId}, promocionCantidadCompra: ${promocionCantidadCompra}, promocionCantidadRegalo: ${promocionCantidadRegalo}, cantidad: ${cantidad}`)
+            console.log(`DEBUG: Promotion Step - promocionId: ${promocionId}, promocionCantidadCompra: ${promocionCantidadCompra}, promocionCantidadRegalo: ${promocionCantidadRegalo}, cantidad: ${cantidad} -> convertida: ${cantidadConvertida}`)
             console.log(`DEBUG: Promotion data from lineaData:`, {
               promocion_id: lineaData?.promocion_id,
               promocion_cantidad_compra: lineaData?.promocion_cantidad_compra,
               promocion_cantidad_regalo: lineaData?.promocion_cantidad_regalo
             })
-            if (promocionId && promocionCantidadCompra && promocionCantidadRegalo && cantidad >= promocionCantidadCompra) {
+            if (promocionId && promocionCantidadCompra && promocionCantidadRegalo && cantidadConvertida >= promocionCantidadCompra) {
               // Effective unit price after commercial AND coupon discounts
               const precioEfectivo = precioUnitBase - descuentosUnitarios - descuentoCuponUnitarioAcumulado
-              // Number of free units
-              const unidadesGratis = Math.floor(cantidad / promocionCantidadCompra) * promocionCantidadRegalo
+              // Number of free units (using converted quantity)
+              const unidadesGratis = Math.floor(cantidadConvertida / promocionCantidadCompra) * promocionCantidadRegalo
               valorFinal = precioEfectivo * unidadesGratis
               console.log(`DEBUG: Promotion Calculation - precioUnitBase: ${precioUnitBase}, descuentosUnitarios: ${descuentosUnitarios}, descuentoCuponUnitarioAcumulado: ${descuentoCuponUnitarioAcumulado}, precioEfectivo: ${precioEfectivo}, unidadesGratis: ${unidadesGratis}, valorFinal: ${valorFinal}`)
               console.log(`DEBUG: Before applying promotion - subtotalBruto: ${subtotalBruto}, descuentoPromocion: ${descuentoPromocion}, totalDescuento: ${totalDescuento}`)
@@ -730,12 +740,12 @@ export default function VentaForm() {
           else if (isCupon) {
             // Only apply coupon if the line qualifies
             if (lineaData.aplica_cupon) {
-              // Coupon step: Calculate based on condition (global coupon)
+// Coupon step: Calculate based on condition (global coupon)
               if (condicionEncontrada && valorBase > 0) {
                 const descuentoUnitario = esporcentaje
                   ? precioUnitBase * (valorBase / 100)
                   : valorBase
-                descuentoCupon = descuentoUnitario * cantidad
+                descuentoCupon = descuentoUnitario * cantidadConvertida
                 totalDescuento += descuentoCupon
                 subtotalBruto -= descuentoCupon
                 // Update accumulated coupon unit discount
@@ -748,7 +758,7 @@ export default function VentaForm() {
               } else {
                 // Fallback to pre-calculated if no condition
                 console.log(`DEBUG: Coupon Step - using pre-calculated: descuentoCuponUnitario: ${descuentoCuponUnitario}, descuentoCupon: ${descuentoCupon}`)
-                descuentoCupon = descuentoCuponUnitario * cantidad
+                descuentoCupon = descuentoCuponUnitario * cantidadConvertida
                 totalDescuento += descuentoCupon
                 subtotalBruto -= descuentoCupon
                 descuentoCuponUnitarioAcumulado = descuentoCuponUnitario
@@ -765,8 +775,8 @@ export default function VentaForm() {
           // Commercial discount
           else {
             totalDescuento += valorFinal
-            if (cantidad > 0) {
-              descuentosUnitarios += valorFinal / cantidad
+            if (cantidadConvertida > 0) {
+              descuentosUnitarios += valorFinal / cantidadConvertida
             }
             subtotalBruto = subtotalBruto - valorFinal
             console.log(`DEBUG: Step Descuento (comercial): valorFinal=${valorFinal}, totalDescuento=${totalDescuento}, subtotalBruto=${subtotalBruto}`)
@@ -870,7 +880,7 @@ export default function VentaForm() {
 
           const evalContext: Record<string, number> = {
             ...filteredVarContext,
-            cantidad: cantidad,
+            cantidad: cantidadConvertida,
             precio_unit: precioUnitBase,
             subtotal: baseCalculo,
             valor_condicion: valorBase,
@@ -1081,13 +1091,30 @@ export default function VentaForm() {
     const currentLinea = newLineas[index]
     const umId = material.unidad_medida_id || 0
 
+    // Fetch unidad_multiplo for the material's unit
+    let unidadMultiplo = 1
+    if (umId) {
+      try {
+        const umRes = await apiFetch(`/api/logistica/unidades?id=${umId}`)
+        const umJson = await umRes.json()
+        if (umJson.data?.unidad_multiplo) {
+          unidadMultiplo = Number(umJson.data.unidad_multiplo) || 1
+        }
+      } catch (e) {
+        console.error('Error fetching unidad_multiplo:', e)
+      }
+    }
+
     newLineas[index] = {
       ...currentLinea,
       material_id: material.id,
       material_codigo: material.codigo,
       material_descripcion: material.descripcion,
       unidad_medida_id: umId,
+      unidad_medida_stock_id: material.unidad_medida_id || 0,
       um: material.unidad_medida?.abreviatura || 'UND',
+      um_stock: material.unidad_medida_rel?.abreviatura || 'UND',
+      unidad_multiplo: unidadMultiplo,
       precio_unit: precio,
       stock: null,
       categoria_id: material.categoria_id ?? null,
@@ -1115,7 +1142,7 @@ export default function VentaForm() {
 
     // Trigger stock fetch if other fields are present
     if (sucursal?.id && currentLinea.almacen_id && umId && clasePedido?.estado_stock_id) {
-      fetchStock(index, material.id, currentLinea.almacen_id, sucursal.id, umId, clasePedido.estado_stock_id)
+      fetchStock(index, material.id, currentLinea.almacen_id, sucursal.id, material.unidad_medida_id || umId, clasePedido.estado_stock_id)
     }
 
     // Trigger promotion check (will also trigger calculations)
@@ -1134,25 +1161,39 @@ export default function VentaForm() {
     }
     setLineas(newLineas)
 
-    if (sucursal?.id && currentLinea.material_id && currentLinea.unidad_medida_id && clasePedido?.estado_stock_id) {
-      fetchStock(index, currentLinea.material_id, almacen.id, sucursal.id, currentLinea.unidad_medida_id, clasePedido.estado_stock_id)
+    if (sucursal?.id && currentLinea.material_id && currentLinea.unidad_medida_stock_id && clasePedido?.estado_stock_id) {
+      fetchStock(index, currentLinea.material_id, almacen.id, sucursal.id, currentLinea.unidad_medida_stock_id, clasePedido.estado_stock_id)
     }
   }
 
-  const handleUnidadChange = (index: number, umId: number | undefined) => {
+  const handleUnidadChange = async (index: number, umId: number | undefined, abreviatura?: string) => {
     if (!umId) return
     const newLineas = [...lineas]
     const currentLinea = newLineas[index]
 
+    // Fetch unidad_multiplo for the selected unit
+    let unidadMultiplo = 1
+    try {
+      const umRes = await apiFetch(`/api/logistica/unidades?id=${umId}`)
+      const umJson = await umRes.json()
+      if (umJson.data?.unidad_multiplo) {
+        unidadMultiplo = Number(umJson.data.unidad_multiplo) || 1
+      }
+    } catch (e) {
+      console.error('Error fetching unidad_multiplo:', e)
+    }
+
     newLineas[index] = {
       ...currentLinea,
       unidad_medida_id: umId,
+      um: abreviatura || currentLinea.um,
+      unidad_multiplo: unidadMultiplo,
       stock: null
     }
     setLineas(newLineas)
 
     if (sucursal?.id && currentLinea.material_id && currentLinea.almacen_id && clasePedido?.estado_stock_id) {
-      fetchStock(index, currentLinea.material_id, currentLinea.almacen_id, sucursal.id, umId, clasePedido.estado_stock_id)
+      fetchStock(index, currentLinea.material_id, currentLinea.almacen_id, sucursal.id, currentLinea.unidad_medida_stock_id, clasePedido.estado_stock_id)
     }
   }
 
@@ -1164,7 +1205,7 @@ export default function VentaForm() {
     if (field === 'cantidad' || field === 'precio_unit' || field === 'descuento') {
       if (l.material_id && pasosEsquema.length > 0) {
         // Let calculateLineCalculations handle ALL logic including coupon recalculation
-        calculateLineCalculations(index, l.material_id, field === 'cantidad' ? value : l.cantidad, l, undefined, undefined, cuponAplicadoGlobal)
+        calculateLineCalculations(index, l.material_id, l.cantidad, l, undefined, undefined, cuponAplicadoGlobal)
       } else {
         // Manual fallback if no schema
         const subtotalBruto = l.cantidad * l.precio_unit
@@ -1790,7 +1831,7 @@ export default function VentaForm() {
                             <div className="mt-2 flex items-center gap-1.5 ml-1">
                               <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                               <span className="text-[8px] text-slate-500 uppercase tracking-wider">
-                                Stock: <span className={cn(linea.stock <= 0 ? "text-red-500" : "text-blue-600 font-black tracking-tight")}>{linea.stock}</span> {linea.um}
+                                Stock: <span className={cn(linea.stock <= 0 ? "text-red-500" : "text-blue-600 font-black tracking-tight")}>{linea.stock}</span> {linea.um_stock}
                               </span>
                             </div>
                           )}
@@ -1801,6 +1842,8 @@ export default function VentaForm() {
                           <UnidadSelect
                             value={linea.unidad_medida_id}
                             onChange={(id) => handleUnidadChange(index, id)}
+                            materialId={linea.material_id || undefined}
+                            enabled={!!linea.material_id}
                           />
                         </div>
 

@@ -53,7 +53,9 @@ export async function GET(req: NextRequest) {
           roles_adicionales: {
             include: { rol: true }
           },
-          usuario_sucursales: true
+          usuario_sucursales: {
+            include: { sucursal: true }
+          }
         },
       }),
     ])
@@ -96,7 +98,7 @@ export async function POST(req: NextRequest) {
 
     const hashedPassword = await bcrypt.hash(data.password, 10)
 
-    const { roles_adicionales, sucursales_asignadas, ...restData } = data
+    const { roles_adicionales, sucursales_asignadas, password, ...restData } = data
 
     const usuario = await prisma.usuario.create({
       data: {
@@ -127,7 +129,9 @@ export async function POST(req: NextRequest) {
         roles_adicionales: {
           include: { rol: true }
         },
-        usuario_sucursales: true
+        usuario_sucursales: {
+          include: { sucursal: true }
+        }
       }
     })
 
@@ -135,6 +139,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(safeUsuario, { status: 201 })
   } catch (err) {
+    console.error('Error al crear usuario:', err)
     if (err instanceof z.ZodError) {
       const errorMessage = err.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`).join(', ')
       return NextResponse.json({ error: errorMessage }, { status: 400 })

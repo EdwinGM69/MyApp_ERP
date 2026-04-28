@@ -7,6 +7,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const { empresaId } = await requireAuth(req)
     const { id: idParam } = await params
     const id = parseInt(idParam)
+    if (isNaN(id)) {
+      return NextResponse.json({ error: 'ID inválido' }, { status: 400 })
+    }
 
     const material = await prisma.material.findUnique({
       where: { id, empresa_id: empresaId },
@@ -15,7 +18,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         proveedor: {
           select: { id: true, nombre: true }
         },
-        presentaciones: true,
+        presentaciones: {
+          include: {
+            unidad_medida: true
+          }
+        },
         componentes: {
           include: {
             componente: {

@@ -25,7 +25,7 @@ model Empresa {
   id                       Int                             @id @default(autoincrement())
   nombre                   String
   nif                      String                          @unique
-  industria                String?
+  industria_id             Int?
   representante            String?
   logo_url                 String?
   email                    String?
@@ -39,6 +39,7 @@ model Empresa {
   updated_at               DateTime                        @updatedAt
   created_by               Int?
   updated_by               Int?
+  industria                Industria?                      @relation("EmpresaIndustria", fields: [industria_id], references: [id])
   almacenes                Almacen[]
   bancos                   Banco[]
   cajas                    Caja[]
@@ -52,7 +53,7 @@ model Empresa {
   esquemasValoracion       EsquemaValoracion[]
   esquemaValoracionLog     EsquemaValoracionLog[]
   impuestos                Impuesto[]
-  industrias               Industria[]
+  industrias               Industria[]                    @relation("EmpresaIndustrias")
   marcas                   Marca[]
   materiales               Material[]
   materialCategorias       MaterialCategoria[]
@@ -340,9 +341,8 @@ model MaterialSustituto {
 model MaterialPresentacion {
   id                  Int      @id @default(autoincrement())
   material_id         Int
-  codigo              String
-  descripcion         String
-  unidad              String
+  unidad_medida_id    Int
+  unidad_control      Boolean  @default(false)
   activo              Boolean  @default(true)
   created_at          DateTime @default(now())
   updated_at          DateTime @updatedAt
@@ -351,8 +351,9 @@ model MaterialPresentacion {
   usuario_creador     Usuario? @relation("PresentacionCreador", fields: [created_by], references: [id])
   material            Material @relation(fields: [material_id], references: [id], onDelete: Cascade)
   usuario_modificador Usuario? @relation("PresentacionModificador", fields: [updated_by], references: [id])
+  unidad_medida       UnidadMedida @relation(fields: [unidad_medida_id], references: [id])
 
-  @@unique([material_id, codigo])
+  @@unique([material_id, unidad_medida_id])
 }
 
 model MaterialComponente {
@@ -956,31 +957,33 @@ model MovimientoAlmacen {
 }
 
 model MovimientoAlmacenDetalle {
-  id              Int                             @id @default(autoincrement())
-  movimiento_id   Int
-  material_id     Int
-  cantidad        Decimal                         @db.Decimal(12, 3)
-  costo_unit      Decimal?                        @db.Decimal(12, 2)
-  created_at      DateTime                        @default(now())
-  updated_at      DateTime                        @updatedAt
-  created_by      Int?
-  updated_by      Int?
-  almacen_dst_id  Int?
-  almacen_id      Int                             @default(1)
-  linea           String
-  numero_lote     String?
-  sucursal_dst_id Int?
-  sucursal_id     Int                             @default(1)
-  esquema_id      Int?
-  estado_stock_id Int?
-  lote_id         Int?
-  lote            Lote?                           @relation(fields: [lote_id], references: [id])
-  estado_stock    EstadoStock?                    @relation(fields: [estado_stock_id], references: [id])
-  esquema         EsquemaValoracion?              @relation("EsquemaMovimientos", fields: [esquema_id], references: [id])
-  material        Material                        @relation(fields: [material_id], references: [id])
-  movimiento      MovimientoAlmacen               @relation(fields: [movimiento_id], references: [id])
-  distribuciones  MovimientoDetalleDistribucion[]
-
+  id                Int                             @id @default(autoincrement())
+  movimiento_id     Int
+  material_id       Int
+  unidad_medida_id  Int
+  cantidad          Decimal                         @db.Decimal(12, 3)
+  costo_unit        Decimal?                        @db.Decimal(12, 2)
+  created_at        DateTime                        @default(now())
+  updated_at        DateTime                        @updatedAt
+  created_by        Int?
+  updated_by        Int?
+  almacen_dst_id    Int?
+  almacen_id        Int                             @default(1)
+  linea             String
+  numero_lote       String?
+  sucursal_dst_id   Int?
+  sucursal_id       Int                             @default(1)
+  esquema_id        Int?
+  estado_stock_id   Int?
+  lote_id           Int?
+  lote              Lote?                           @relation(fields: [lote_id], references: [id])
+  estado_stock      EstadoStock?                    @relation(fields: [estado_stock_id], references: [id])
+  esquema           EsquemaValoracion?              @relation("EsquemaMovimientos", fields: [esquema_id], references: [id])
+  material          Material                        @relation(fields: [material_id], references: [id])
+  movimiento        MovimientoAlmacen               @relation(fields: [movimiento_id], references: [id])
+  unidad_medida     UnidadMedida                    @relation(fields: [unidad_medida_id], references: [id])
+  distribuciones    MovimientoDetalleDistribucion[]
+  
   @@index([esquema_id])
 }
 
@@ -1064,24 +1067,26 @@ model MaterialTipo {
 }
 
 model UnidadMedida {
-  id                  Int             @id @default(autoincrement())
-  empresa_id          Int
-  descripcion         String
-  abreviatura         String
-  unidad_multiplo     Int             @default(1)
-  activo              Boolean         @default(true)
-  created_at          DateTime        @default(now())
-  updated_at          DateTime        @updatedAt
-  created_by          Int?
-  updated_by          Int?
-  materiales          Material[]
-  stock_materiales    StockMaterial[]
-  stock_historial     StockMaterialHistorial[]
-  componentes         MaterialComponente[]
-  usuario_creador     Usuario?        @relation("UnidadCreador", fields: [created_by], references: [id])
-  empresa             Empresa         @relation(fields: [empresa_id], references: [id])
+  id                    Int             @id @default(autoincrement())
+  empresa_id            Int
+  descripcion           String
+  abreviatura           String
+  unidad_multiplo       Decimal         @db.Decimal(12, 3)
+  activo                Boolean         @default(true)
+  created_at            DateTime        @default(now())
+  updated_at            DateTime        @updatedAt
+  created_by            Int?
+  updated_by            Int?
+  materiales            Material[]
+  stock_materiales      StockMaterial[]
+  stock_historial       StockMaterialHistorial[]
+  componentes           MaterialComponente[]
+  usuario_creador       Usuario?        @relation("UnidadCreador", fields: [created_by], references: [id])
+  empresa               Empresa         @relation(fields: [empresa_id], references: [id])
   usuario_modificador Usuario?        @relation("UnidadModificador", fields: [updated_by], references: [id])
-  venta_detalles      VentaDetalle[]
+  venta_detalles        VentaDetalle[]
+  movimientos_detalles  MovimientoAlmacenDetalle[]
+  unidades              MaterialPresentacion[]
 
   @@unique([empresa_id, abreviatura])
 }
@@ -1126,9 +1131,10 @@ model Industria {
   created_by          Int?
   updated_by          Int?
   usuario_creador     Usuario?    @relation("IndustriaCreador", fields: [created_by], references: [id])
-  empresa             Empresa     @relation(fields: [empresa_id], references: [id])
+  empresa             Empresa     @relation("EmpresaIndustrias", fields: [empresa_id], references: [id])
   usuario_modificador Usuario?    @relation("IndustriaModificador", fields: [updated_by], references: [id])
   proveedores         Proveedor[]
+  empresas            Empresa[]  @relation("EmpresaIndustria")
 
   @@unique([empresa_id, descripcion])
 }
@@ -1356,7 +1362,7 @@ model Ubicacion {
   created_by  Int?
   updated_by  Int?
 
-  Empresa             Empresa                         @relation(fields: [empresa_id], references: [id])
+  empresa              Empresa                       @relation(fields: [empresa_id], references: [id])
   usuario_creador     Usuario?                        @relation("UbicacionCreador", fields: [created_by], references: [id])
   usuario_modificador Usuario?                        @relation("UbicacionModificador", fields: [updated_by], references: [id])
   almacenUbicaciones  AlmacenUbicacion[]
@@ -1676,7 +1682,7 @@ model ClasePedido {
   empresa_id        Int
   codigo            String
   descripcion       String
-  esquema_id        Int
+  esquema_id        Int?
   estado_stock_id   Int?
   registro_almacen  Boolean
   tipo_operacion_id Int?
@@ -1689,13 +1695,13 @@ model ClasePedido {
   updated_by        Int?
 
   ventas              Venta[]
-  empresa             Empresa        @relation(fields: [empresa_id], references: [id])
-  esquema             EsquemaCalculo @relation(fields: [esquema_id], references: [id])
-  estado_stock        EstadoStock?   @relation(fields: [estado_stock_id], references: [id])
-  tipo_operacion      TipoOperacion? @relation(fields: [tipo_operacion_id], references: [id])
-  concepto_caja       ConceptoCaja?  @relation(fields: [concepto_caja_id], references: [id])
-  usuario_creador     Usuario?       @relation("ClasePedidoCreador", fields: [created_by], references: [id])
-  usuario_modificador Usuario?       @relation("ClasePedidoModificador", fields: [updated_by], references: [id])
+  empresa             Empresa         @relation(fields: [empresa_id], references: [id])
+  esquema             EsquemaCalculo? @relation(fields: [esquema_id], references: [id])
+  estado_stock        EstadoStock?    @relation(fields: [estado_stock_id], references: [id])
+  tipo_operacion      TipoOperacion?  @relation(fields: [tipo_operacion_id], references: [id])
+  concepto_caja       ConceptoCaja?   @relation(fields: [concepto_caja_id], references: [id])
+  usuario_creador     Usuario?        @relation("ClasePedidoCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?        @relation("ClasePedidoModificador", fields: [updated_by], references: [id])
 
   @@unique([empresa_id, codigo])
 }
@@ -1750,7 +1756,7 @@ model ParametroSistema {
   valor_json           Json?
   editable             Boolean                   @default(false)
   requiere_reinicio    Boolean                   @default(false)
-  etiqueta             String
+  etiqueta             String?
   activo               Boolean                   @default(true)
   created_at           DateTime                  @default(now())
   updated_at           DateTime                  @updatedAt

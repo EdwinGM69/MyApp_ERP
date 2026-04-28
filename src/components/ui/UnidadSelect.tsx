@@ -13,12 +13,14 @@ interface UnidadMedida {
 
 interface UnidadSelectProps {
   value?: number
-  onChange: (id: number | undefined) => void
+  onChange: (id: number | undefined, abreviatura?: string) => void
   placeholder?: string
   className?: string
+  materialId?: number
+  enabled?: boolean
 }
 
-export default function UnidadSelect({ value, onChange, placeholder = 'seleccionar unidad', className }: UnidadSelectProps) {
+export default function UnidadSelect({ value, onChange, placeholder = 'seleccionar unidad', className, materialId, enabled = true }: UnidadSelectProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [options, setOptions] = useState<UnidadMedida[]>([])
@@ -45,15 +47,49 @@ export default function UnidadSelect({ value, onChange, placeholder = 'seleccion
     }
   }, [value, selectedUnidad?.id])
 
+  // Reset when material changes
+  useEffect(() => {
+    if (materialId && value) {
+      async function validateUnidadInMaterial() {
+        try {
+          const res = await apiFetch(`/api/materiales/presentaciones?materialId=${materialId}&pageSize=50`)
+          const json = await res.json()
+          const presentaciones = json.data || []
+          const found = presentaciones.find((p: any) => p.unidad_medida_id === value)
+          if (!found) {
+            setSelectedUnidad(null)
+            onChange(undefined)
+          }
+        } catch (error) {
+          console.error('[UnidadSelect] Error validating unidad for material:', error)
+        }
+      }
+      if (enabled) validateUnidadInMaterial()
+    }
+  }, [materialId])
+
   // Search units
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (!open) return
+      if (!open || !enabled) return
       setLoading(true)
       try {
-        const res = await apiFetch(`/api/logistica/unidades?search=${search}&pageSize=10`)
-        const json = await res.json()
-        setOptions(json.data || [])
+        let res
+        if (materialId) {
+          res = await apiFetch(`/api/materiales/presentaciones?materialId=${materialId}&pageSize=20`)
+          const json = await res.json()
+          const presentaciones = json.data || []
+          const normalized = presentaciones.map((p: any) => ({
+            id: p.unidad_medida_id,
+            descripcion: p.unidad_medida?.descripcion || '',
+            abreviatura: p.unidad_medida?.abreviatura || ''
+          }))
+          setOptions(normalized)
+        } else {
+          res = await apiFetch(`/api/logistica/unidades?search=${search}&pageSize=10`)
+          const json = await res.json()
+          setOptions(json.data || [])
+        }
       } catch (error) {
         console.error('Error searching units:', error)
       } finally {
@@ -62,7 +98,7 @@ export default function UnidadSelect({ value, onChange, placeholder = 'seleccion
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [search, open])
+  }, [search, open, materialId, enabled])
 
   // Click outside
   useEffect(() => {
@@ -78,7 +114,7 @@ export default function UnidadSelect({ value, onChange, placeholder = 'seleccion
   const onUnidadCreated = (newUnidad: UnidadMedida) => {
     setSelectedUnidad(newUnidad)
     setOptions(prev => [newUnidad, ...prev])
-    onChange(newUnidad.id)
+    onChange(newUnidad.id, newUnidad.abreviatura)
     setShowModal(false)
     setSearch('')
     setOpen(false)
@@ -122,7 +158,7 @@ export default function UnidadSelect({ value, onChange, placeholder = 'seleccion
                 <div
                   key={u.id}
                   onClick={() => {
-                    onChange(u.id)
+                    onChange(u.id, u.abreviatura)
                     setSelectedUnidad(u)
                     setOpen(false)
                     setSearch('')

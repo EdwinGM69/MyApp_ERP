@@ -2,16 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Topbar from '@/components/layout/Topbar'
-import Pagination from '@/components/ui/Pagination'
-import { useRouter } from 'next/navigation'
 import { apiFetch } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
-
-interface Rol {
-  id: number
-  nombre: string
-}
+import UsuarioDetailView from './components/UsuarioDetailView'
+import UsuarioEditor from './components/UsuarioEditor'
 
 interface Usuario {
   id: number
@@ -36,38 +31,85 @@ interface Usuario {
   activo: boolean
   avatar_url?: string | null
   updated_at: string
+  usuario_sucursales?: { sucursal_id: number; sucursal?: { id: number; descripcion: string } }[]
 }
 
 export default function UsuariosPage() {
-  const router = useRouter()
+  // Master List State
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
-  const [loading, setLoading] = useState(true)
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [total, setTotal] = useState(0)
+  const [loadingMaster, setLoadingMaster] = useState(true)
+  const [search, setSearch] = useState('')
 
-  const fetchUsuarios = useCallback(async () => {
-    setLoading(true)
+  // Selection State
+  const [selectedId, setSelectedId] = useState<number | null>(null)
+  const [selected, setSelected] = useState<Usuario | null>(null)
+
+  // Editor State
+  const [isEditing, setIsEditing] = useState(false)
+  const [editingUser, setEditingUser] = useState<Usuario | null>(null)
+
+  // Fetch List
+  const fetchList = useCallback(async () => {
+    setLoadingMaster(true)
     try {
-      const params = new URLSearchParams({ 
-        page: String(page), 
-        pageSize: String(pageSize),
-      })
+      const params = new URLSearchParams()
+      if (search) params.append('search', search)
+
       const res = await apiFetch(`/api/usuarios?${params}`)
-      if (!res.ok) throw new Error('Error fetching users')
       const json = await res.json()
-      setUsuarios(json.data ?? [])
-      setTotal(json.total ?? 0)
-    } catch (error) {
+      setUsuarios(json.data || [])
+
+      // Auto-select first user if none selected and we have data
+      if (json.data?.length > 0 && !selectedId) {
+        setSelectedId(json.data[0].id)
+        setSelected(json.data[0])
+      } else if (!json.data?.length) {
+        setSelectedId(null)
+        setSelected(null)
+      }
+    } catch (err) {
       toast.error('Error al cargar usuarios')
     } finally {
-      setLoading(false)
+      setLoadingMaster(false)
     }
-  }, [page, pageSize])
+  }, [search, selectedId])
 
   useEffect(() => {
-    fetchUsuarios()
-  }, [fetchUsuarios])
+    fetchList()
+  }, [fetchList])
+
+  useEffect(() => {
+    if (selectedId) {
+      setSelected(usuarios.find(u => u.id === selectedId) || null)
+    }
+  }, [selectedId, usuarios])
+
+  const handleSelectUser = (usuario: Usuario) => {
+    setSelectedId(usuario.id)
+    setSelected(usuario)
+    setIsEditing(false)
+  }
+
+  const handleOpenNew = () => {
+    setEditingUser(null)
+    setIsEditing(true)
+  }
+
+  const handleOpenEdit = (usuario: Usuario) => {
+    setEditingUser(usuario)
+    setIsEditing(true)
+  }
+
+  const handleCloseEditor = () => {
+    setIsEditing(false)
+    setEditingUser(null)
+  }
+
+  const handleSaveSuccess = () => {
+    setIsEditing(false)
+    setEditingUser(null)
+    fetchList()
+  }
 
   const handleDelete = async (usuario: Usuario) => {
     if (!confirm(`¿Está seguro de que desea desactivar al usuario ${usuario.nombre}?`)) return
@@ -80,23 +122,20 @@ export default function UsuariosPage() {
         throw new Error(json.error || 'Error al desactivar usuario')
       }
       toast.success('Usuario desactivado exitosamente')
-      fetchUsuarios()
+      fetchList()
+
+      // If deleted user was selected, clear selection
+      if (selectedId === usuario.id) {
+        setSelectedId(null)
+        setSelected(null)
+      }
     } catch (error: any) {
       toast.error(error.message)
     }
   }
 
-  const handleEdit = (usuario: Usuario) => {
-    router.push(`/usuarios/editar/${usuario.id}`)
-  }
-
-  const handleOpenNew = () => {
-    router.push('/usuarios/nuevo')
-  }
-
   const formatDate = (isoString: string) => {
     const d = new Date(isoString);
-    // return format like 2023-10-24 08:30
     return d.toISOString().replace('T', ' ').substring(0, 16)
   }
 
@@ -110,139 +149,122 @@ export default function UsuariosPage() {
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 h-full overflow-hidden bg-white dark:bg-slate-950">
       <Topbar title="Gestión de Usuarios" />
 
-      <main className="flex-1 overflow-y-auto p-8 bg-slate-50 dark:bg-background-dark">
-        <div className="max-w-[1200px] mx-auto">
-          {/* Header Section */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-            <div>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Gestión de Usuarios</h1>
-              <p className="text-slate-500 font-medium text-sm mt-1">Administra los accesos y perfiles de los miembros de tu organización.</p>
-            </div>
-            <button 
-              onClick={handleOpenNew}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-bold transition-colors flex items-center justify-center gap-2 shadow-sm"
-            >
-              <span className="material-symbols-outlined text-lg">add</span>
-              Agregar Nuevo Usuario
-            </button>
-          </div>
-
-          {/* Table Container */}
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-white">
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white">ID</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white">FOTO</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white">NOMBRE COMPLETO</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white">EMAIL</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white">ROL</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white">ESTADO</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest bg-white">ÚLTIMA CONEXIÓN</th>
-                    <th className="px-6 py-4 text-[11px] font-bold text-slate-400 uppercase tracking-widest text-right bg-white">ACCIONES</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 bg-white">
-                  {loading ? (
-                    <tr>
-                      <td colSpan={8} className="px-6 py-8 text-center text-slate-400 font-medium">Cargando usuarios...</td>
-                    </tr>
-                  ) : usuarios.length === 0 ? (
-                    <tr>
-                      <td colSpan={8} className="px-6 py-8 text-center text-slate-400 font-medium">No se encontraron usuarios.</td>
-                    </tr>
-                  ) : usuarios.map((usuario) => (
-                    <tr key={usuario.id} className="hover:bg-slate-50 transition-colors group">
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-medium text-slate-400">#{String(usuario.id).padStart(3, '0')}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        {usuario.avatar_url ? (
-                          <img src={usuario.avatar_url} alt={usuario.nombre} className="w-10 h-10 rounded-full object-cover" />
-                        ) : (
-                          <div 
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm"
-                            style={{ backgroundColor: stringToColor(usuario.nombre) }}
-                          >
-                            {usuario.nombre.substring(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm font-bold text-slate-800">{usuario.nombre}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-slate-500 font-medium">{usuario.email}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="inline-flex items-center px-3 py-1 bg-slate-100 text-slate-600 rounded-full text-xs font-bold">
-                          {usuario.rol?.nombre || 'Sin Rol'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className={cn(
-                          "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold",
-                          usuario.activo ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"
-                        )}>
-                          <div className={cn("w-1.5 h-1.5 rounded-full", usuario.activo ? "bg-emerald-500" : "bg-slate-400")} />
-                          {usuario.activo ? 'Activo' : 'Inactivo'}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={cn(
-                          "text-sm font-medium",
-                          usuario.activo ? "text-slate-400" : "text-slate-400"
-                        )}>
-                          {formatDate(usuario.updated_at)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button 
-                            onClick={() => handleEdit(usuario)}
-                            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors rounded-lg" 
-                            title="Editar"
-                          >
-                            <span className="material-symbols-outlined text-xl">edit</span>
-                          </button>
-                          <button 
-                            onClick={() => handleDelete(usuario)}
-                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors rounded-lg" 
-                            title="Desactivar"
-                            disabled={!usuario.activo}
-                          >
-                            <span className="material-symbols-outlined text-xl">delete</span>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      <div className="flex flex-1 overflow-hidden">
+        {/* Sidebar Master */}
+        <div className="w-80 border-r border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-col shrink-0">
+          <div className="p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Listado Maestro</h3>
+              <button
+                onClick={handleOpenNew}
+                className="size-8 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all flex items-center justify-center shadow-sm active:scale-90"
+              >
+                <span className="material-symbols-outlined text-xl">add</span>
+              </button>
             </div>
 
-            {/* Pagination Custom */}
-            <div className="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
-              <div className="text-sm font-medium text-slate-500">
-                Mostrando <span className="font-bold text-slate-700">{Math.min(1 + (page - 1) * pageSize, total)}</span> - <span className="font-bold text-slate-700">{Math.min(page * pageSize, total)}</span> de <span className="font-bold text-slate-700">{total}</span> usuarios
-              </div>
-              <Pagination 
-                page={page} 
-                totalPages={Math.ceil(total / pageSize)} 
-                onPage={setPage}
-                pageSize={pageSize} 
-                onPageSize={(s) => { setPageSize(s); setPage(1) }} 
-                total={total} 
+            <div className="relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+              <input
+                type="text"
+                placeholder="Buscar usuario..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-slate-800 border-none rounded-xl text-sm outline-none shadow-sm ring-1 ring-slate-200/50 dark:ring-slate-700 font-medium"
               />
             </div>
           </div>
-        </div>
-      </main>
 
+          <div className="flex-1 overflow-y-auto px-3 space-y-1 pb-4">
+            {loadingMaster ? (
+              <div className="p-10 text-center text-slate-400">
+                <div className="animate-spin size-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+                <span className="text-xs font-medium uppercase tracking-widest">Cargando...</span>
+              </div>
+            ) : usuarios.length === 0 ? (
+              <div className="p-10 text-center text-slate-400">
+                <span className="text-xs font-medium">No se encontraron usuarios</span>
+              </div>
+            ) : usuarios.map((usuario) => (
+              <div
+                key={usuario.id}
+                className={cn(
+                  "relative group cursor-pointer",
+                  selectedId === usuario.id
+                    ? "bg-white dark:bg-slate-800 shadow-lg ring-1 ring-slate-100 dark:ring-slate-700"
+                    : "hover:bg-slate-200/30 dark:hover:bg-slate-800/30"
+                )}
+              >
+                <button
+                  onClick={() => handleSelectUser(usuario)}
+                  className="w-full p-4 text-left transition-all rounded-2xl"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "size-10 rounded-xl flex items-center justify-center shrink-0 transition-colors font-black text-xs",
+                      selectedId === usuario.id ? "bg-primary text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
+                    )}>
+                      {usuario.nombre.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className={cn(
+                        "text-sm font-bold block truncate tracking-tight transition-colors",
+                        selectedId === usuario.id ? "text-slate-900 dark:text-white" : "text-slate-600 dark:text-slate-400"
+                      )}>
+                        {usuario.nombre}
+                      </span>
+                      <span className="text-[10px] font-medium text-slate-400 uppercase tracking-tighter">
+                        {usuario.email} · {usuario.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </div>
+                  </div>
+                </button>
+
+                {/* Delete button - only show on hover or when selected */}
+                {usuario.activo && (selectedId === usuario.id || true) && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleDelete(usuario)
+                    }}
+                    className="absolute top-2 right-2 size-6 rounded-full bg-red-50 hover:bg-red-100 text-red-500 hover:text-red-700 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100"
+                    title="Desactivar usuario"
+                  >
+                    <span className="material-symbols-outlined text-sm">delete</span>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto bg-white dark:bg-slate-950 p-10">
+          {isEditing ? (
+            <UsuarioEditor
+              usuario={editingUser}
+              onCancel={handleCloseEditor}
+              onSuccess={handleSaveSuccess}
+            />
+          ) : selected ? (
+            <UsuarioDetailView usuario={selected} onEdit={() => handleOpenEdit(selected)} />
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-slate-300 gap-6 animate-in fade-in duration-700">
+              <div className="size-32 rounded-full bg-slate-50 dark:bg-slate-900 flex items-center justify-center shadow-inner">
+                <span className="material-symbols-outlined text-6xl opacity-20 font-variation-icon">person</span>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-black uppercase tracking-[0.3em] opacity-30 leading-none mb-2">Gestión de Usuarios</p>
+                <p className="text-xs font-medium text-slate-400 italic">Selecciona un usuario para visualizar su información.</p>
+                <p className="text-xs font-medium text-slate-400 italic mt-1">O crea uno nuevo usando el botón +</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

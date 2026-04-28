@@ -37,7 +37,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         roles_adicionales: {
           include: { rol: true }
         },
-        usuario_sucursales: true
+        usuario_sucursales: {
+          include: { sucursal: true }
+        }
       }
     })
 
@@ -125,7 +127,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           roles_adicionales: {
             include: { rol: true }
           },
-          usuario_sucursales: true
+          usuario_sucursales: {
+            include: { sucursal: true }
+          }
         }
       })
     } catch (prismaError: any) {
