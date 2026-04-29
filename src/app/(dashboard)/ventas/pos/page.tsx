@@ -1049,7 +1049,7 @@ export default function POSPage() {
           descuento: existing.descuento * newQty / existing.cantidad,
           descuento_cupon: (existing.descuento_cupon || 0) * newQty / existing.cantidad,
           descuento_promocion: existing.descuento_promocion,
-          subtotal: nuevoSubtotal - (existing.descuento * newQty / existing.cantidad) - ((existing.descuento_cupon || 0) * newQty / existing.cantidad) - existing.descuento_promocion + nuevoImpuesto,
+          subtotal: nuevoSubtotal - (existing.descuento * newQty / existing.cantidad) - ((existing.descuento_cupon || 0) * newQty / existing.cantidad) - (existing.descuento_promocion || 0) + nuevoImpuesto,
           impuesto: nuevoImpuesto
         }
 
@@ -1081,7 +1081,7 @@ export default function POSPage() {
             }
           })
 
-          let newCartWithPromo = newCart.map(item => {
+          let newCartWithPromo = cartWithUpdatedItem.map(item => {
             const applicablePromos = promociones.filter(promo => {
               const materialMatch = promo.material_ids.includes(item.material.id)
               const categoriaMatch = item.material.categoria_id && promo.categoria_ids.includes(item.material.categoria_id)
@@ -1194,12 +1194,12 @@ export default function POSPage() {
         almacen_id: defaultAlmacenId,
         unidad_medida_id: material.unidad_medida_id || 1,
         pasos_calculados: newItemFromPromo?.pasos_calculados ?? calculated.pasos_calculados,
-        promocion_aplicada: newItemFromPromo?.promocion_aplicada ?? promoTotalInfo ? {
+        promocion_aplicada: newItemFromPromo?.promocion_aplicada ?? (promoTotalInfo ? {
           promoId: promoTotalInfo.promoId || promociones[0]?.id || 0,
-          nombre: promoTotalInfo.nombre,
+          nombre: promoTotalInfo.nombre || '',
           cantidad_regalo: promoTotalInfo.cantidad_regalo || 0,
           valor_descuento: descuentoPromo
-        } : undefined
+        } : undefined)
       }]
 
       // Recalculate promotions for new cart
