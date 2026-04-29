@@ -954,10 +954,9 @@ export default function POSPage() {
         const descuentoComercialUnitario = descuentoComercialPaso?.valor || 0
         const descuentoCuponUnitario = descuentoCuponPaso?.valor || 0
 
-        // Calculate effective unit price (subtract both commercial discount and coupon)
-        const precioUnitarioConDescuento = cheapestItem.precio_unit - descuentoComercialUnitario - descuentoCuponUnitario
+        // Calculate effective unit price WITHOUT commercial discount (promo applies to base price only)
         const cantidadGratis = divisionEnteraTotal
-        const valorDescuento = cantidadGratis * precioUnitarioConDescuento
+        const valorDescuento = cantidadGratis * cheapestItem.precio_unit
         totalPromoDescuento = valorDescuento
 
         const newCartWithPromo = allCartItems.map(item => {
@@ -1019,6 +1018,7 @@ export default function POSPage() {
     }
 
     const promoResult = applyPromotionLogic(cart, material, 1)
+    const newItemFromPromo = promoResult.updatedCart.find(i => i.material.id === material.id)
     const promoTotalInfo = promoResult.promoTotal
     const descuentoPromo = promoResult.descuentoPromo
     const pasosConPromo = promoResult.nuevosPasos
@@ -1049,7 +1049,7 @@ export default function POSPage() {
           descuento: existing.descuento * newQty / existing.cantidad,
           descuento_cupon: (existing.descuento_cupon || 0) * newQty / existing.cantidad,
           descuento_promocion: existing.descuento_promocion,
-          subtotal: nuevoSubtotal,
+          subtotal: nuevoSubtotal - (existing.descuento * newQty / existing.cantidad) - ((existing.descuento_cupon || 0) * newQty / existing.cantidad) - existing.descuento_promocion + nuevoImpuesto,
           impuesto: nuevoImpuesto
         }
 
@@ -1081,7 +1081,7 @@ export default function POSPage() {
             }
           })
 
-          const newCartWithPromo = cartWithUpdatedItem.map(item => {
+          let newCartWithPromo = newCart.map(item => {
             const applicablePromos = promociones.filter(promo => {
               const materialMatch = promo.material_ids.includes(item.material.id)
               const categoriaMatch = item.material.categoria_id && promo.categoria_ids.includes(item.material.categoria_id)
@@ -1116,9 +1116,9 @@ export default function POSPage() {
                 const descuentoCuponBusqueda = pasosActuales.find(p => p.codigo === 'Descuento' && p.descripcion === 'Cupon')
                 const descuentoComercialUnitario = descuentoComercialPaso?.valor || 0
                 const descuentoCuponUnitario = descuentoCuponBusqueda?.valor || 0
-                const precioUnitarioConDescuento = item.precio_unit - descuentoComercialUnitario - descuentoCuponUnitario
+                // Promo applies to base price only, not after commercial discount
                 const cantidadGratis = divisionEnteraTotal
-                const valorDescuento = cantidadGratis * precioUnitarioConDescuento
+                const valorDescuento = cantidadGratis * item.precio_unit
                 totalPromoDescuento += valorDescuento
                 activePromo = { nombre: promo.nombre, valor: totalPromoDescuento, promoId: promo.id, cantidad_regalo: cantidadGratis }
 
@@ -1186,13 +1186,15 @@ export default function POSPage() {
         material,
         cantidad: 1,
         precio_unit: calculated.precio_unit,
-        descuento: calculated.descuento + descuentoPromo,
-        subtotal: calculated.subtotal - descuentoPromo,
+        descuento: newItemFromPromo?.descuento ?? calculated.descuento,
+        descuento_cupon: newItemFromPromo?.descuento_cupon ?? 0,
+        descuento_promocion: newItemFromPromo?.descuento_promocion ?? 0,
+        subtotal: newItemFromPromo?.subtotal ?? calculated.subtotal,
         impuesto: calculated.impuesto,
         almacen_id: defaultAlmacenId,
         unidad_medida_id: material.unidad_medida_id || 1,
-        pasos_calculados: descuentoPromo > 0 ? pasosConPromo : calculated.pasos_calculados,
-        promocion_aplicada: promoTotalInfo ? {
+        pasos_calculados: newItemFromPromo?.pasos_calculados ?? calculated.pasos_calculados,
+        promocion_aplicada: newItemFromPromo?.promocion_aplicada ?? promoTotalInfo ? {
           promoId: promoTotalInfo.promoId || promociones[0]?.id || 0,
           nombre: promoTotalInfo.nombre,
           cantidad_regalo: promoTotalInfo.cantidad_regalo || 0,
@@ -1257,9 +1259,8 @@ export default function POSPage() {
               const descuentoComercialUnitario = descuentoComercialPaso?.valor || 0
               const descuentoCuponPaso = pasosActuales.find(p => p.codigo === 'Descuento' && p.descripcion === 'Cupon')
               const descuentoCuponUnitario = descuentoCuponPaso?.valor || 0
-              const precioUnitarioConDescuento = item.precio_unit - descuentoComercialUnitario - descuentoCuponUnitario
               const cantidadGratis = divisionEnteraTotal
-              const valorDescuento = cantidadGratis * precioUnitarioConDescuento
+              const valorDescuento = cantidadGratis * item.precio_unit
               totalPromoDescuento += valorDescuento
               activePromo = { nombre: promo.nombre, valor: totalPromoDescuento, promoId: promo.id, cantidad_regalo: cantidadGratis }
 
@@ -1280,7 +1281,7 @@ export default function POSPage() {
               return {
                 ...item,
                 pasos_calculados: pasosConPromo,
-                descuento: item.descuento + valorDescuento,
+                descuento: item.descuento,
                 subtotal: item.subtotal - valorDescuento,
                 promocion_aplicada: {
                   promoId: promo.id,
@@ -1364,7 +1365,7 @@ export default function POSPage() {
         }
       })
 
-      const newCartWithPromo = currentCart.map(item => {
+      let newCartWithPromo = currentCart.map(item => {
         const applicablePromos = promociones.filter(promo => {
           const materialMatch = promo.material_ids.includes(item.material.id)
           const categoriaMatch = item.material.categoria_id && promo.categoria_ids.includes(item.material.categoria_id)
@@ -1420,9 +1421,8 @@ export default function POSPage() {
             const descuentoComercialUnitario = descuentoComercialPaso?.valor ? descuentoComercialPaso.valor / cantidadAnteriorItem : 0
             const descuentoCuponPaso = pasosActuales.find(p => p.codigo === 'Descuento' && p.descripcion === 'Cupon')
             const descuentoCuponUnitario = descuentoCuponPaso?.valor ? descuentoCuponPaso.valor / cantidadAnteriorItem : 0
-            const precioUnitarioConDescuento = item.precio_unit - descuentoComercialUnitario - descuentoCuponUnitario
             const cantidadGratis = divisionEnteraTotal
-            const valorDescuento = cantidadGratis * precioUnitarioConDescuento
+            const valorDescuento = cantidadGratis * item.precio_unit
 
             totalPromoDescuento += valorDescuento
             activePromo = { nombre: promo.nombre, valor: totalPromoDescuento, promoId: promo.id, cantidad_regalo: cantidadGratis }
@@ -1465,7 +1465,7 @@ export default function POSPage() {
               descuento: descuentoComercialUnitario * item.cantidad,
               descuento_cupon: descuentoCuponUnitario * item.cantidad,
               descuento_promocion: valorDescuento,
-              subtotal: item.precio_unit * item.cantidad,
+              subtotal: nuevoSubtotalNeto + nuevoImpuesto,
               impuesto: nuevoImpuesto,
               promocion_aplicada: {
                 promoId: promo.id,
@@ -1490,6 +1490,14 @@ export default function POSPage() {
           descuento_promocion: 0,
           subtotal: item.precio_unit * item.cantidad,
           promocion_aplicada: undefined
+        }
+      })
+
+      newCartWithPromo = newCartWithPromo.map(item => {
+        const totalDiscount = item.descuento + (item.descuento_cupon || 0) + (item.descuento_promocion || 0)
+        return {
+          ...item,
+          subtotal: item.precio_unit * item.cantidad - totalDiscount + item.impuesto
         }
       })
 
@@ -1668,9 +1676,8 @@ export default function POSPage() {
               const descuentoComercialUnitario = descuentoComercialPaso?.valor || 0
               const descuentoCuponPaso = pasosActuales.find(p => p.codigo === 'Descuento' && p.descripcion === 'Cupon')
               const descuentoCuponUnitario = descuentoCuponPaso?.valor || 0
-              const precioUnitarioConDescuento = item.precio_unit - descuentoComercialUnitario - descuentoCuponUnitario
               const cantidadGratis = divisionEnteraTotal
-              const valorDescuento = cantidadGratis * precioUnitarioConDescuento
+              const valorDescuento = cantidadGratis * item.precio_unit
               totalPromoDescuento += valorDescuento
               activePromo = { nombre: promo.nombre, valor: totalPromoDescuento, promoId: promo.id, cantidad_regalo: cantidadGratis }
 
@@ -1845,7 +1852,7 @@ export default function POSPage() {
       const descuentoComercialDelItem = pasos.filter((p: any) => p.codigo === 'Descuento' && p.descripcion !== 'Promocion' && p.descripcion !== 'Cupon').reduce((sum: number, p: any) => sum + p.valor, 0)
       const descuentoPromoDelItem = pasos.filter((p: any) => p.descripcion === 'Promocion').reduce((sum: number, p: any) => sum + p.valor, 0)
       const descuentoCuponDelItem = pasos.filter((p: any) => p.descripcion === 'Cupon').reduce((sum: number, p: any) => sum + p.valor, 0)
-      
+
       const pasosDescuento = pasos.filter((p: any) => p.codigo === 'Descuento')
       const descuentoUnitario = pasosDescuento.reduce((sum: number, p: any) => sum + p.valor, 0)
       // base = cantidad * precio - descuento total
@@ -1854,18 +1861,18 @@ export default function POSPage() {
 
       const nuevoSubtotal = item.precio_unit * item.cantidad
 
-      const promoActualizada = pasoPromo && item.promocion_aplicada 
-        ? { ...item.promocion_aplicada, valor_descuento: pasoPromo.valor } 
+      const promoActualizada = pasoPromo && item.promocion_aplicada
+        ? { ...item.promocion_aplicada, valor_descuento: pasoPromo.valor }
         : undefined
-      return { 
-        ...item, 
-        pasos_calculados: pasos, 
+      return {
+        ...item,
+        pasos_calculados: pasos,
         descuento: descuentoComercialDelItem,
         descuento_cupon: descuentoCuponDelItem,
         descuento_promocion: descuentoPromoDelItem,
-        impuesto: nuevoImpuesto, 
-        subtotal: nuevoSubtotal, 
-        promocion_aplicada: promoActualizada 
+        impuesto: nuevoImpuesto,
+        subtotal: nuevoSubtotal,
+        promocion_aplicada: promoActualizada
       }
     })
     setCart(nuevoCarrito)
@@ -2022,7 +2029,7 @@ export default function POSPage() {
             }]
           }
 
-          const promoAplicableLocal = promociones.find(promo => 
+          const promoAplicableLocal = promociones.find(promo =>
             promo.material_ids.includes(item.material.id) ||
             (item.material.categoria_id && promo.categoria_ids.includes(item.material.categoria_id))
           )
@@ -2044,7 +2051,7 @@ export default function POSPage() {
           const descuentoComercialDelItem = pasos.filter((p: any) => p.codigo === 'Descuento' && p.descripcion !== 'Promocion' && p.descripcion !== 'Cupon').reduce((sum: number, p: any) => sum + p.valor, 0)
           const descuentoPromoDelItem = pasos.filter((p: any) => p.descripcion === 'Promocion').reduce((sum: number, p: any) => sum + p.valor, 0)
           const descuentoCuponDelItem = pasos.filter((p: any) => p.descripcion === 'Cupon').reduce((sum: number, p: any) => sum + p.valor, 0)
-          
+
           console.log('[POS applyCupon] BEFORE IGV calc - precio:', item.precio_unit, 'cant:', item.cantidad, 'itemSubtotal:', item.precio_unit * item.cantidad, 'descuentoComerc:', descuentoComercialDelItem, 'descPromo:', descuentoPromoDelItem, 'descCupon:', descuentoCuponDelItem)
           // IGV = (precio * cantidad - descuentoItem por unidad) * igvPorcentaje
           const baseImponible = (item.precio_unit * item.cantidad) - descuentoItem
@@ -2070,8 +2077,8 @@ export default function POSPage() {
             descuento_promocion: descuentoPromoDelItem,
             impuesto: nuevoImpuesto,
             subtotal: nuevoSubtotal,
-            promocion_aplicada: (pasoPromo && pasoPromo.valor > 0 && item.promocion_aplicada) 
-              ? { ...item.promocion_aplicada, valor_descuento: pasoPromo.valor } 
+            promocion_aplicada: (pasoPromo && pasoPromo.valor > 0 && item.promocion_aplicada)
+              ? { ...item.promocion_aplicada, valor_descuento: pasoPromo.valor }
               : undefined
           }
         })
@@ -2108,7 +2115,7 @@ export default function POSPage() {
           }
 
           // Recalculate promotion value if exists (with new coupon) - solo si el cupón aplica a este material Y el material está afecto a LA promocion
-          const promoAplicable = promociones.find(promo => 
+          const promoAplicable = promociones.find(promo =>
             promo.material_ids.includes(item.material.id) ||
             (item.material.categoria_id && promo.categoria_ids.includes(item.material.categoria_id))
           )
@@ -2137,7 +2144,7 @@ export default function POSPage() {
           const descuentoComercialDelItem = pasos.filter((p: any) => p.codigo === 'Descuento' && p.descripcion !== 'Promocion' && p.descripcion !== 'Cupon').reduce((sum: number, p: any) => sum + p.valor, 0)
           const descuentoPromoDelItem = pasos.filter((p: any) => p.descripcion === 'Promocion').reduce((sum: number, p: any) => sum + p.valor, 0)
           const descuentoCuponDelItem = pasos.filter((p: any) => p.descripcion === 'Cupon').reduce((sum: number, p: any) => sum + p.valor, 0)
-          
+
           // base = cantidad * precio - descuento total
           const baseImponible = (item.precio_unit * item.cantidad) - descuentoItem
           //const baseImponible = itemSubtotal - (descuentoItem * item.cantidad)
@@ -2157,7 +2164,7 @@ export default function POSPage() {
           const nuevoSubtotal = item.precio_unit * item.cantidad
 
           // Update promocion_aplicada if exists
-          const promoActualizada = (pasoPromo && nuevoValorPromo > 0 && item.promocion_aplicada) 
+          const promoActualizada = (pasoPromo && nuevoValorPromo > 0 && item.promocion_aplicada)
             ? { ...item.promocion_aplicada, valor_descuento: pasoPromo.valor }
             : undefined
 
@@ -2282,7 +2289,7 @@ export default function POSPage() {
         detalles: cart.map((i) => {
           const pasoCupon = i.pasos_calculados?.find(p => p.descripcion === 'Cupon' && p.valor > 0)
           const pasoPromo = i.pasos_calculados?.find(p => p.descripcion === 'Promocion' && p.valor > 0)
-          const pasoDescuentoComercial = i.pasos_calculados?.find(p => 
+          const pasoDescuentoComercial = i.pasos_calculados?.find(p =>
             p.codigo === 'Descuento' && p.descripcion !== 'Promocion' && p.descripcion !== 'Cupon'
           )
           const descuentoComercial = (pasoDescuentoComercial?.valor || 0)
@@ -2723,30 +2730,19 @@ export default function POSPage() {
                 </div>
                 {descuentoComercial > 0 && (
                   <div className="flex justify-between text-xs text-red-500">
-                    <span>Dscto. Comercial</span>
+                    <span>Descuento Comercial</span>
                     <span>-{formatCurrency(descuentoComercial, { symbol: monedaSimbolo })}</span>
                   </div>
                 )}
                 {promocionTotal && (
                   <div className="flex justify-between text-xs text-green-600">
-                    <span>Promocion {promocionTotal.cantidad_regalo > 0 ? `${promocionTotal.cantidad_regalo} gratis` : promocionTotal.nombre}</span>
+                    <span>Descuento Promocional{promocionTotal.cantidad_regalo > 0 ? ` (${promocionTotal.cantidad_regalo} gratis)` : ` (${promocionTotal.nombre})`}</span>
                     <span>-{formatCurrency(promocionTotal.valor, { symbol: monedaSimbolo })}</span>
                   </div>
                 )}
-                {cuponAplicado && !cuponAplicado?.acumulable && descuentoCuponCalculado > 0 && (
-                  <div className="flex justify-between text-xs text-green-600">
-                    <span>
-                      {descuentoEsCupon
-                        ? `Cupón ${cuponAplicado?.nombre}${cuponAplicado?.tipo === 'PORCENTAJE' ? ` ${cuponAplicado?.valor}%` : cuponSimbolo}`
-                        : `Descuento ${cuponAplicado?.tipo === 'PORCENTAJE' ? `${cuponAplicado?.valor}%` : cuponSimbolo}`
-                      }
-                    </span>
-                    <span>-{formatCurrency(descuentoCuponCalculado, { symbol: monedaSimbolo })}</span>
-                  </div>
-                )}
-                {cuponAplicado?.acumulable && descuentoCuponCalculado > 0 && (
-                  <div className="flex justify-between text-xs text-green-600">
-                    <span>Cupón {cuponAplicado.nombre}{cuponAplicado.tipo === 'PORCENTAJE' ? `${cuponAplicado.valor}%` : cuponSimbolo}</span>
+                {(cuponAplicado && descuentoCuponCalculado > 0) && (
+                  <div className="flex justify-between text-xs text-blue-600">
+                    <span>Descuento Cupón ({cuponAplicado.nombre}{cuponAplicado.tipo === 'PORCENTAJE' ? ` ${cuponAplicado.valor}%` : cuponSimbolo})</span>
                     <span>-{formatCurrency(descuentoCuponCalculado, { symbol: monedaSimbolo })}</span>
                   </div>
                 )}
@@ -2792,8 +2788,8 @@ export default function POSPage() {
                             }
                           }}
                           className={`flex flex-col items-center justify-center px-3 py-2 text-xs rounded-lg transition-colors min-w-[70px] ${isSelected
-                              ? 'bg-primary text-white'
-                              : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                            ? 'bg-primary text-white'
+                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
                             }`}
                         >
                           <span className="material-symbols-outlined text-lg">{getMedioPagoIcon(mp.descripcion)}</span>

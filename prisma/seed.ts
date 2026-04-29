@@ -166,11 +166,11 @@ async function main() {
   // Clase de pedido
   const clasesPedido = await Promise.all([
     prisma.clasePedido.upsert({
-      where: { empresa_id_codigo: { empresa_id: empresa.id, codigo: 'VTALOC' } },
+      where: { empresa_id_codigo: { empresa_id: empresa.id, codigo: 'VTAPOS' } },
       update: {},
       create: {
-        codigo: 'VTALOC',
-        descripcion: 'Venta Local',
+        codigo: 'VTAPOS',
+        descripcion: 'Venta punto de venta',
         registro_almacen: false,
         registro_caja: false,
         activo: true,
@@ -189,8 +189,38 @@ async function main() {
         codigo: 'POS.PEDVTA',
         descripcion: 'Clase pedido para punto de venta',
         tipo_dato: 'STRING',
-        valor_string: 'VTALOC',
+        valor_string: 'VTAPOS',
         etiqueta: 'PEDVTA',
+        activo: true,
+        empresa: { connect: { id: empresa.id } },
+        modulo: { connect: { id: 1 } }
+      },
+    }),
+    prisma.parametroSistema.upsert({
+      where: { empresa_id_nivel_modulo_id_codigo: { empresa_id: empresa.id, modulo_id: 1, codigo: 'POS.PREVTA', nivel: 'EMPRESA' } },
+      update: {},
+      create: {
+        nivel: 'EMPRESA',
+        codigo: 'POS.PREVTA',
+        descripcion: 'Precio de venta para POS',
+        tipo_dato: 'STRING',
+        valor_string: 'PRCVTA',
+        etiqueta: 'PREVTA',
+        activo: true,
+        empresa: { connect: { id: empresa.id } },
+        modulo: { connect: { id: 1 } }
+      },
+    }),
+    prisma.parametroSistema.upsert({
+      where: { empresa_id_nivel_modulo_id_codigo: { empresa_id: empresa.id, modulo_id: 1, codigo: 'POS.DCTVENTA', nivel: 'EMPRESA' } },
+      update: {},
+      create: {
+        nivel: 'EMPRESA',
+        codigo: 'POS.DCTVENTA',
+        descripcion: 'Descuento comercial para POS',
+        tipo_dato: 'STRING',
+        valor_string: 'DCTOVTA',
+        etiqueta: 'DCTVENTA',
         activo: true,
         empresa: { connect: { id: empresa.id } },
         modulo: { connect: { id: 1 } }

@@ -66,8 +66,12 @@ interface VentaDetalle {
   promocion_badge?: string | null // e.g. "3x1"
   promocion_cantidad_compra?: number | null
   promocion_cantidad_regalo?: number | null
+  cantidad_total_grupo?: number | null // total qty of all items in promo group
+  promo_aplicada?: boolean // true if this line gets the promo discount
   categoria_id?: number | null // stored to check category promos
   aplica_cupon?: boolean // indicates if coupon applies to this line
+  cupon_codigo?: string | null // coupon code
+  cupon_descuento?: number | null // coupon discount percentage or value
 }
 
 export default function VentaForm() {
@@ -264,6 +268,18 @@ export default function VentaForm() {
     if (!hasOtherMaterials && cuponAplicadoGlobal) {
       eliminarCuponGlobal()
     }
+
+    // Recalculate promotions for remaining lines
+    setTimeout(() => {
+      const remainingLineas = lineas.filter((_, i) => i !== index)
+      if (remainingLineas.length > 0) {
+        remainingLineas.forEach((l, i) => {
+          if (l.material_id && pasosEsquema.length > 0) {
+            checkPromocion(i, l.material_id, l.categoria_id, l, remainingLineas)
+          }
+        })
+      }
+    }, 50)
   }
 
   const fetchCuponesActivos = async () => {
@@ -320,9 +336,9 @@ export default function VentaForm() {
       const sinRestricciones = cuponDetalles.length === 0 && cuponCategorias.length === 0
 
       // Find lines where material applies
-      const materialesAplican: string[] = []
-      const updatedLineas = lineas.map((linea) => {
-        if (!linea.material_id) return linea
+      const qualifyingLines: Array<{ id: string, linea: typeof lineas[0], unitario: number, total: number }> = []
+      lineas.forEach((linea) => {
+        if (!linea.material_id) return
 
         // Check if material ID is in details
         const materialMatch = materialIdsAplica.has(linea.material_id)
@@ -330,30 +346,53 @@ export default function VentaForm() {
         const categoryMatch = linea.categoria_id && categoriaIdsAplica.has(linea.categoria_id)
 
         if (sinRestricciones || materialMatch || categoryMatch) {
-          materialesAplican.push(linea.id)
           // Calculate unit and total values
           const cuponValorUnitario = cupon.tipo === 'PORCENTAJE'
             ? linea.precio_unit * (cupon.valor / 100)
             : cupon.valor
           const cuponValorTotal = cuponValorUnitario * linea.cantidad
-          return {
-            ...linea,
-            descuento_cupon_unitario: cuponValorUnitario,
-            descuento_cupon: cuponValorTotal,
-            aplica_cupon: true
-          }
+          qualifyingLines.push({ id: linea.id, linea, unitario: cuponValorUnitario, total: cuponValorTotal })
         }
-        return linea
       })
 
-      if (materialesAplican.length === 0) {
+      if (qualifyingLines.length === 0) {
         toast.error('El cupón no puede aplicarse a ningún material en el detalle')
         return
       }
 
+      // Calculate total discount
+      const totalCuponDescuento = qualifyingLines.reduce((sum, q) => sum + q.total, 0)
+
+      // Apply to the line with the highest quantity among qualifying
+      qualifyingLines.sort((a, b) => b.linea.cantidad - a.linea.cantidad)
+      const chosen = qualifyingLines[0]
+      const chosenUnitario = totalCuponDescuento / chosen.linea.cantidad
+
+      const updatedLineas = lineas.map((linea) => {
+        if (linea.id === chosen.id) {
+          return {
+            ...linea,
+            descuento_cupon_unitario: chosenUnitario,
+            descuento_cupon: totalCuponDescuento,
+            aplica_cupon: true,
+            cupon_codigo: cupon.nombre || cupon.codigo,
+            cupon_descuento: cupon.tipo === 'PORCENTAJE' ? cupon.valor : cupon.valor
+          }
+        } else {
+          return {
+            ...linea,
+            descuento_cupon_unitario: 0,
+            descuento_cupon: 0,
+            aplica_cupon: qualifyingLines.some(q => q.id === linea.id),
+            cupon_codigo: null,
+            cupon_descuento: null
+          }
+        }
+      })
+
       // Update state
       setCuponAplicadoGlobal(cupon)
-      setMaterialesConCupon(Object.fromEntries(materialesAplican.map(id => [id, true])))
+      setMaterialesConCupon({ [chosen.id]: true })
       setLineas(updatedLineas)
 
       // Recalculate all lines
@@ -363,7 +402,7 @@ export default function VentaForm() {
         }
       })
 
-      toast.success(`Cupón "${cupon.nombre}" aplicado a ${materialesAplican.length} producto(s)`)
+      toast.success(`Cupón "${cupon.nombre}" aplicado a ${materialIdsAplica.size} producto(s)`)
     } catch (err) {
       console.error('Error applying coupon:', err)
       toast.error('Error al aplicar el cupón')
@@ -380,7 +419,9 @@ export default function VentaForm() {
         ...linea,
         descuento_cupon: 0,
         descuento_cupon_unitario: 0,
-        aplica_cupon: false
+        aplica_cupon: false,
+        cupon_codigo: null,
+        cupon_descuento: null
       }))
       setLineas(updatedLineas)
 
@@ -476,6 +517,8 @@ export default function VentaForm() {
     const promocionId = lineaData?.promocion_id
     const promocionCantidadCompra = lineaData?.promocion_cantidad_compra
     const promocionCantidadRegalo = lineaData?.promocion_cantidad_regalo
+    const cantidadTotalGrupo = lineaData?.cantidad_total_grupo || null
+    const promoAplicada = lineaData?.promo_aplicada || false
 
     // Coupon data from line - use the total value directly
     const descuentoCuponUnitario = lineaData?.descuento_cupon_unitario || 0
@@ -711,28 +754,33 @@ export default function VentaForm() {
           const isCupon = descripcionLower.includes('cupon') || descripcionLower.includes('cupón')
           console.log(`DEBUG: Step "${paso.descripcion_corta}" - descripcionLower: "${descripcionLower}", isPromocion: ${isPromocion}, isCupon: ${isCupon}`)
           if (isPromocion) {
-            // Promotion step: calculate discount from free units
-            console.log(`DEBUG: Promotion Step - promocionId: ${promocionId}, promocionCantidadCompra: ${promocionCantidadCompra}, promocionCantidadRegalo: ${promocionCantidadRegalo}, cantidad: ${cantidad} -> convertida: ${cantidadConvertida}`)
+            // Promotion step: ONLY apply if this line is the chosen one (promo_aplicada = true)
+            const qtyForPromo = cantidadTotalGrupo || cantidadConvertida
+            console.log(`DEBUG: Promotion Step - promocionId: ${promocionId}, promocionCantidadCompra: ${promocionCantidadCompra}, promocionCantidadRegalo: ${promocionCantidadRegalo}, cantidad: ${cantidad} -> convertida: ${cantidadConvertida}, totalGrupo: ${cantidadTotalGrupo}, promoAplicada: ${promoAplicada}`)
             console.log(`DEBUG: Promotion data from lineaData:`, {
               promocion_id: lineaData?.promocion_id,
               promocion_cantidad_compra: lineaData?.promocion_cantidad_compra,
-              promocion_cantidad_regalo: lineaData?.promocion_cantidad_regalo
+              promocion_cantidad_regalo: lineaData?.promocion_cantidad_regalo,
+              cantidad_total_grupo: cantidadTotalGrupo,
+              promo_aplicada: promoAplicada
             })
-            if (promocionId && promocionCantidadCompra && promocionCantidadRegalo && cantidadConvertida >= promocionCantidadCompra) {
+            if (promoAplicada && promocionId && promocionCantidadCompra && promocionCantidadRegalo && qtyForPromo >= promocionCantidadCompra) {
               // Effective unit price after commercial AND coupon discounts
               const precioEfectivo = precioUnitBase - descuentosUnitarios - descuentoCuponUnitarioAcumulado
-              // Number of free units (using converted quantity)
-              const unidadesGratis = Math.floor(cantidadConvertida / promocionCantidadCompra) * promocionCantidadRegalo
-              valorFinal = precioEfectivo * unidadesGratis
-              console.log(`DEBUG: Promotion Calculation - precioUnitBase: ${precioUnitBase}, descuentosUnitarios: ${descuentosUnitarios}, descuentoCuponUnitarioAcumulado: ${descuentoCuponUnitarioAcumulado}, precioEfectivo: ${precioEfectivo}, unidadesGratis: ${unidadesGratis}, valorFinal: ${valorFinal}`)
+              // Number of free units (using TOTAL quantity from group)
+              const unidadesGratisTotal = Math.floor(qtyForPromo / promocionCantidadCompra) * promocionCantidadRegalo
+              // Apply full discount to this line (only one line in group has promo_aplicada = true)
+              valorFinal = precioEfectivo * unidadesGratisTotal
+              console.log(`DEBUG: Promotion Calculation (GROUPED) - qtyForPromo: ${qtyForPromo}, precioUnitBase: ${precioUnitBase}, descuentosUnitarios: ${descuentosUnitarios}, descuentoCuponUnitarioAcumulado: ${descuentoCuponUnitarioAcumulado}, precioEfectivo: ${precioEfectivo}, unidadesGratisTotal: ${unidadesGratisTotal}, valorFinal: ${valorFinal}`)
               console.log(`DEBUG: Before applying promotion - subtotalBruto: ${subtotalBruto}, descuentoPromocion: ${descuentoPromocion}, totalDescuento: ${totalDescuento}`)
               descuentoPromocion += valorFinal
               totalDescuento += valorFinal
               subtotalBruto = subtotalBruto - valorFinal
               console.log(`DEBUG: After applying promotion - subtotalBruto: ${subtotalBruto}, descuentoPromocion: ${descuentoPromocion}, totalDescuento: ${totalDescuento}`)
             } else {
+              // This line is NOT the chosen one for promo discount
               valorFinal = 0
-              console.log(`DEBUG: Promotion NOT Applied - condition not met: promocionId=${!!promocionId}, compra=${promocionCantidadCompra}, regalo=${promocionCantidadRegalo}, cantidad=${cantidad}`)
+              console.log(`DEBUG: Promotion NOT applied to this line - promoAplicada: ${promoAplicada}, condition: promocionId=${!!promocionId}, compra=${promocionCantidadCompra}, regalo=${promocionCantidadRegalo}, cantidad=${qtyForPromo}`)
             }
             console.log(`DEBUG: Step Promocion: valorFinal=${valorFinal}, descuentoPromocion=${descuentoPromocion}, totalDescuento=${totalDescuento}`)
           }
@@ -740,7 +788,7 @@ export default function VentaForm() {
           else if (isCupon) {
             // Only apply coupon if the line qualifies
             if (lineaData.aplica_cupon) {
-// Coupon step: Calculate based on condition (global coupon)
+              // Coupon step: Calculate based on condition (global coupon)
               if (condicionEncontrada && valorBase > 0) {
                 const descuentoUnitario = esporcentaje
                   ? precioUnitBase * (valorBase / 100)
@@ -1007,21 +1055,35 @@ export default function VentaForm() {
   // -----------------------------------------------------------
   // Promotion validation
   // Checks /api/pos/promociones for active promos on canal='pos'
-  // on the current sale date. Checks material first, then category.
+  // on the current sale date. Groups all materials that apply to the same
+  // promotion and calculates based on TOTAL quantity.
   // -----------------------------------------------------------
   const checkPromocion = async (
     index: number,
     materialId: number,
     categoriaId: number | null | undefined,
-    lineaData?: VentaDetalle
+    lineaData?: VentaDetalle,
+    updatedLines?: VentaDetalle[]
   ) => {
     if (!materialId) return
     try {
-      // Pass sale date so server filters by the correct date range
       const fechaParam = fechaVenta || new Date().toISOString().split('T')[0]
-      console.log(`DEBUG: Checking promotion for material ${materialId}, category ${categoriaId}, date ${fechaParam}`)
+      console.log(`DEBUG: Checking promotion for index ${index}, material ${materialId}, category ${categoriaId}, date ${fechaParam}`)
+
+      // Use updated lines if provided, otherwise use state
+      const sourceLines = updatedLines || lineas
+      console.log(`DEBUG: Source lines for promo group:`, sourceLines.map(l => l.material_codigo))
+
+      // Get ALL materials from current lines to group by promotion
+      const allMaterialIds = sourceLines
+        .filter(l => l.material_id && l.material_id !== materialId)
+        .map(l => l.material_id!)
+      allMaterialIds.push(materialId)
+
+      console.log(`DEBUG: Checking promotions for ALL materials:`, allMaterialIds)
+
       const res = await apiFetch(
-        `/api/pos/promociones?materialIds=${materialId}&fecha=${fechaParam}`
+        `/api/pos/promociones?materialIds=${allMaterialIds.join(',')}&fecha=${fechaParam}`
       )
       if (!res.ok) {
         console.log(`DEBUG: API call failed for promotions`)
@@ -1036,49 +1098,184 @@ export default function VentaForm() {
         material_ids: number[]
         categoria_ids: number[]
       }> = json.data || []
-      console.log(`DEBUG: Found ${promos.length} promotions for material ${materialId}`)
+      console.log(`DEBUG: Found ${promos.length} promotions for all materials`)
 
-      let encontrada: (typeof promos)[0] | undefined
+      // Get current line data
+      const currentLinea = lineaData || sourceLines[index]
+      if (!currentLinea) return
 
-      // Check by material
-      encontrada = promos.find(p => p.material_ids.includes(materialId))
-      console.log(`DEBUG: Promotion found by material: ${encontrada ? encontrada.nombre : 'none'}`)
+      // Group materials by promotion
+      const promoGroups = new Map<number, { promo: typeof promos[0]; materialIds: number[] }>()
 
-      // Fallback: check by category
-      if (!encontrada && categoriaId) {
-        encontrada = promos.find(p => p.categoria_ids.includes(categoriaId))
-        console.log(`DEBUG: Promotion found by category: ${encontrada ? encontrada.nombre : 'none'}`)
+      promos.forEach(promo => {
+        if (!promoGroups.has(promo.id)) {
+          promoGroups.set(promo.id, { promo, materialIds: [] })
+        }
+        // Add materials that apply to this promo
+        promo.material_ids.forEach(mid => {
+          const group = promoGroups.get(promo.id)!
+          if (!group.materialIds.includes(mid)) {
+            group.materialIds.push(mid)
+          }
+        })
+        promo.categoria_ids.forEach(cid => {
+          // Check which lines have this category
+          const grp = promoGroups.get(promo.id)!
+          sourceLines.forEach(l => {
+            if (l.categoria_id === cid && l.material_id && !grp.materialIds.includes(l.material_id)) {
+              grp.materialIds.push(l.material_id)
+            }
+          })
+        })
+      })
+
+      console.log(`DEBUG: Promotion groups:`, Array.from(promoGroups.values()).map(g => ({ id: g.promo.id, nombre: g.promo.nombre, materialIds: g.materialIds })))
+
+      // Find promotion that applies to this specific material
+      let encontrada: typeof promos[0] | undefined
+      let promoGroup: { promo: typeof promos[0]; materialIds: number[] } | undefined
+
+      for (const [promoId, group] of promoGroups) {
+        if (group.materialIds.includes(materialId)) {
+          encontrada = group.promo
+          promoGroup = group
+          break
+        }
       }
+
+      console.log(`DEBUG: Final promotion for material ${materialId}:`, encontrada ? encontrada.nombre : 'none')
 
       const promoLabel = encontrada ? encontrada.nombre : null
       const promoBadge = encontrada ? `${encontrada.cantidad_compra}x${encontrada.cantidad_regalo}` : null
-      console.log(`DEBUG: Final promotion - label: ${promoLabel}, badge: ${promoBadge}, id: ${encontrada?.id}, compra: ${encontrada?.cantidad_compra}, regalo: ${encontrada?.cantidad_regalo}`)
 
-      // Use provided lineaData or fallback to current state
-      const currentLinea = lineaData || lineas[index]
-      if (!currentLinea) return
+      // Calculate TOTAL quantity for this promotion group
+      let cantidadTotalGrupo = 0
+      if (promoGroup) {
+        sourceLines.forEach(l => {
+          if (l.material_id && promoGroup.materialIds.includes(l.material_id)) {
+            const um = l.unidad_multiplo || 1
+            cantidadTotalGrupo += (l.cantidad || 0) * um
+          }
+        })
+        console.log(`DEBUG: Total quantity for promo group ${encontrada?.nombre}: ${cantidadTotalGrupo}`)
+      }
 
-      const updatedLinea = {
+      // Choose the CHEAPEST line in the group to apply the discount (promo applies to cheapest)
+      let chosenLineIndex = -1
+      let minPrecio = Infinity
+      if (promoGroup) {
+        sourceLines.forEach((l, idx) => {
+          if (l.material_id && promoGroup.materialIds.includes(l.material_id)) {
+            const precio = l.precio_unit || 0
+            if (precio > 0 && precio < minPrecio) {
+              minPrecio = precio
+              chosenLineIndex = idx
+            }
+          }
+        })
+      }
+      console.log(`DEBUG: Chosen line for promo discount: index=${chosenLineIndex}, precio=${minPrecio}`)
+
+      // Apply promo metadata to ALL lines in group (badge always shows if material is affected by promo)
+      const updatedLineasPromo = sourceLines.map((l, idx) => {
+        if (promoGroup && l.material_id && promoGroup.materialIds.includes(l.material_id)) {
+          if (idx === chosenLineIndex) {
+            return {
+              ...l,
+              promocion_id: encontrada!.id,
+              promocion_label: promoLabel,
+              promocion_badge: promoBadge, // Always show badge for affected materials
+              promocion_cantidad_compra: encontrada!.cantidad_compra,
+              promocion_cantidad_regalo: encontrada!.cantidad_regalo,
+              cantidad_total_grupo: cantidadTotalGrupo,
+              promo_aplicada: true // This line gets the discount
+            }
+          } else {
+            return {
+              ...l,
+              promocion_id: encontrada!.id,
+              promocion_label: promoLabel,
+              promocion_badge: promoBadge, // Always show badge for all affected materials
+              promocion_cantidad_compra: encontrada!.cantidad_compra,
+              promocion_cantidad_regalo: encontrada!.cantidad_regalo,
+              cantidad_total_grupo: cantidadTotalGrupo,
+              promo_aplicada: false // This line does NOT get discount
+            }
+          }
+        }
+        return l
+      })
+
+      // Build updated line with promo data (for single line case)
+      const updatedLinea: VentaDetalle = {
         ...currentLinea,
         promocion_id: encontrada?.id ?? null,
         promocion_label: promoLabel,
         promocion_badge: promoBadge,
         promocion_cantidad_compra: encontrada?.cantidad_compra ?? null,
-        promocion_cantidad_regalo: encontrada?.cantidad_regalo ?? null
+        promocion_cantidad_regalo: encontrada?.cantidad_regalo ?? null,
+        cantidad_total_grupo: cantidadTotalGrupo
       }
 
-      // Recalculate with updated promotion data (calculateLineCalculations will update the line)
-      if (updatedLinea.material_id && pasosEsquema.length > 0) {
-        console.log(`DEBUG: Triggering recalculation for line ${index} with promotion data`)
-        calculateLineCalculations(index, updatedLinea.material_id, updatedLinea.cantidad, updatedLinea, undefined, undefined, cuponAplicadoGlobal)
-      } else {
-        console.log(`DEBUG: No schema or material, just updating line data`)
-        // If no schema, at least update the line with promotion data
-        setLineas(prev => {
-          const next = [...prev]
-          next[index] = updatedLinea
-          return next
+// Helper to recalculate all lines in the promo group
+      const recalculatePromoGroup = (linesToUpdate: VentaDetalle[]) => {
+        if (!promoGroup || !encontrada || cantidadTotalGrupo === 0) return linesToUpdate
+
+        return linesToUpdate.map((l, idx) => {
+          if (l.material_id && promoGroup.materialIds.includes(l.material_id)) {
+            if (idx === chosenLineIndex) {
+              const lineWithPromo: VentaDetalle = {
+                ...l,
+                promocion_id: encontrada!.id,
+                promocion_label: promoLabel,
+                promocion_badge: promoBadge, // Always show badge for affected materials
+                promocion_cantidad_compra: encontrada!.cantidad_compra,
+                promocion_cantidad_regalo: encontrada!.cantidad_regalo,
+                cantidad_total_grupo: cantidadTotalGrupo,
+                promo_aplicada: true // This line gets the discount
+              }
+              return lineWithPromo
+            } else {
+              const lineWithPromo: VentaDetalle = {
+                ...l,
+                promocion_id: encontrada!.id,
+                promocion_label: promoLabel,
+                promocion_badge: promoBadge, // Always show badge for all affected materials
+                promocion_cantidad_compra: encontrada!.cantidad_compra,
+                promocion_cantidad_regalo: encontrada!.cantidad_regalo,
+                cantidad_total_grupo: cantidadTotalGrupo,
+                promo_aplicada: false // This line does NOT get discount
+              }
+              return lineWithPromo
+            }
+          }
+return l
         })
+      }
+
+      // Apply promo updates
+      const linesToUpdate = updatedLines || lineas
+      let updatedLinesFinal = linesToUpdate
+
+      if (promoGroup) {
+        // Update all lines in the group
+        updatedLinesFinal = recalculatePromoGroup(linesToUpdate)
+      } else {
+        // Update single line
+        updatedLinesFinal = linesToUpdate.map((l, i) => i === index ? updatedLinea : l)
+      }
+
+      setLineas(updatedLinesFinal);
+
+      // Recalculate all lines in promo group
+      if (promoGroup) {
+        updatedLinesFinal.forEach((l, i) => {
+          if (l.material_id && promoGroup!.materialIds.includes(l.material_id) && pasosEsquema.length > 0) {
+            calculateLineCalculations(i, l.material_id, l.cantidad, l, undefined, undefined, cuponAplicadoGlobal);
+          }
+        });
+      } else if (updatedLinea.material_id && pasosEsquema.length > 0) {
+        calculateLineCalculations(index, updatedLinea.material_id, updatedLinea.cantidad, updatedLinea, undefined, undefined, cuponAplicadoGlobal);
       }
     } catch (err) {
       console.error('Error checking promocion:', err)
@@ -1123,6 +1320,8 @@ export default function VentaForm() {
       promocion_badge: null,
       promocion_cantidad_compra: null,
       promocion_cantidad_regalo: null,
+      cantidad_total_grupo: null,
+      promo_aplicada: false,
       descuento_cupon: 0,
       descuento_cupon_unitario: 0,
       descuento_promocion: 0,
@@ -1145,8 +1344,8 @@ export default function VentaForm() {
       fetchStock(index, material.id, currentLinea.almacen_id, sucursal.id, material.unidad_medida_id || umId, clasePedido.estado_stock_id)
     }
 
-    // Trigger promotion check (will also trigger calculations)
-    checkPromocion(index, material.id, material.categoria_id ?? null, newLineas[index])
+    // Trigger promotion check with all updated lines (for proper group calculation)
+    checkPromocion(index, material.id, material.categoria_id ?? null, newLineas[index], newLineas)
   }
 
   const handleAlmacenSelect = (index: number, almacen: any) => {
@@ -1201,21 +1400,25 @@ export default function VentaForm() {
     const newLineas = [...lineas]
     const l = { ...newLineas[index], [field]: value }
 
+    // Update the line immediately in state
+    newLineas[index] = l
+    setLineas(newLineas)
+
     // If change is quantity or price_unit, we need to recalculate
     if (field === 'cantidad' || field === 'precio_unit' || field === 'descuento') {
       if (l.material_id && pasosEsquema.length > 0) {
-        // Let calculateLineCalculations handle ALL logic including coupon recalculation
-        calculateLineCalculations(index, l.material_id, l.cantidad, l, undefined, undefined, cuponAplicadoGlobal)
+        // Always recalculate promo group when quantity or price changes
+        if ((field === 'cantidad' || field === 'precio_unit') && l.material_id) {
+          checkPromocion(index, l.material_id, l.categoria_id, l, newLineas)
+        } else {
+          calculateLineCalculations(index, l.material_id, l.cantidad, l, undefined, undefined, cuponAplicadoGlobal)
+        }
       } else {
         // Manual fallback if no schema
         const subtotalBruto = l.cantidad * l.precio_unit
         l.subtotal = subtotalBruto - l.descuento + l.impuesto
-        newLineas[index] = l
         setLineas(newLineas)
       }
-    } else {
-      newLineas[index] = l
-      setLineas(newLineas)
     }
   }
 
@@ -1845,6 +2048,17 @@ export default function VentaForm() {
                             materialId={linea.material_id || undefined}
                             enabled={!!linea.material_id}
                           />
+                          {linea.aplica_cupon && linea.cupon_codigo && (
+                            <div className="mt-1 flex items-center justify-center gap-1">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/15 border border-blue-300 dark:border-blue-500/30 text-[6px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-wider">
+                                <span className="material-symbols-outlined" style={{ fontSize: '8px' }}>redeem</span>
+                                {linea.cupon_codigo}
+                                <span className="ml-1 font-bold">
+                                  {linea.cupon_descuento && linea.cupon_descuento > 0 ? `-${linea.cupon_descuento}%` : ''}
+                                </span>
+                              </span>
+                            </div>
+                          )}
                         </div>
 
                         <div className="col-span-2">
@@ -1856,12 +2070,12 @@ export default function VentaForm() {
                             className="w-full h-8 px-4 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-right outline-none focus:border-blue-500 transition-all"
                           />
                           <div className="mt-1 flex items-center justify-center gap-2">
-                            {linea.promocion_cantidad_compra && linea.promocion_label && linea.cantidad >= linea.promocion_cantidad_compra && (
+                            {linea.promo_aplicada && linea.promocion_badge && linea.cantidad_total_grupo && linea.promocion_cantidad_compra && linea.cantidad_total_grupo >= linea.promocion_cantidad_compra && (
                               <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-100 dark:bg-green-500/15 border border-green-300 dark:border-green-500/30 text-[7px] font-black text-green-700 dark:text-green-400 uppercase tracking-wider">
                                 <span className="material-symbols-outlined" style={{ fontSize: '8px' }}>local_offer</span>
                                 {linea.promocion_label}
                                 <span className="ml-1 px-1 py-0.5 rounded bg-slate-900 text-white text-[6px] font-bold">
-                                  {Math.floor(linea.cantidad / linea.promocion_cantidad_compra) * (linea.promocion_cantidad_regalo || 1)}
+                                  {Math.floor(linea.cantidad_total_grupo / linea.promocion_cantidad_compra) * (linea.promocion_cantidad_regalo || 1)}
                                 </span>
                               </span>
                             )}

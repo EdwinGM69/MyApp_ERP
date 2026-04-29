@@ -24,10 +24,10 @@ const maestrosCategories = [
     items: [
       { href: '/maestros/clientes', icon: 'group', label: 'Clientes' },
       { href: '/maestros/comercial/condiciones', icon: 'rule', label: 'Condiciones Comerciales' },
-      { href: '/maestros/comercial/esquemas-calculo', icon: 'architecture', label: 'Esquemas de Cálculo' },
-      { href: '/maestros/comercial/clases-pedido', icon: 'description', label: 'Clase de Pedido' },
       { href: '/precios/cupones', icon: 'confirmation_number', label: 'Cupones' },
       { href: '/precios/promociones', icon: 'campaign', label: 'Promociones' },
+      { href: '/maestros/comercial/esquemas-calculo', icon: 'architecture', label: 'Esquemas de Cálculo' },
+      { href: '/maestros/comercial/clases-pedido', icon: 'description', label: 'Clase de Pedido' },
     ]
   },
   {
