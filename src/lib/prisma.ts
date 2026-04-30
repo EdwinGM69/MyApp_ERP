@@ -4,8 +4,6 @@ import { PrismaPg } from '@prisma/adapter-pg'
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient; pool: Pool | null }
 
-let pool: Pool | null = null
-
 function getDbUrl(): string {
   const urls = [
     process.env.DB_DIRECT_URL,
@@ -29,55 +27,70 @@ function getDbUrl(): string {
     .replace('YOUR_PASSWORD', 'jdC0lXzFQFvuZ4Vd')
 }
 
-const dbUrl = getDbUrl()
+function createPrismaClient(): PrismaClient {
+  const dbUrl = getDbUrl()
 
-if (!dbUrl) {
-  throw new Error('No database URL found. Please set DB_DIRECT_URL, DIRECT_URL, or DATABASE_URL environment variable.')
-}
+  if (!dbUrl) {
+    throw new Error('No database URL found. Please set DB_DIRECT_URL, DIRECT_URL, or DATABASE_URL environment variable.')
+  }
 
-const connectionString = dbUrl.replace('sslmode=require', '').replace('sslmode=verify-full', '').replace('&&', '&').replace('?&', '?').replace(/&\s*$/, '').replace(/\?$/, '')
+  const connectionString = dbUrl
+    .replace('sslmode=require', '')
+    .replace('sslmode=verify-full', '')
+    .replace('&&', '&')
+    .replace('?&', '?')
+    .replace(/&\s*$/, '')
+    .replace(/\?$/, '')
 
-console.log('[PRISMA] Environment:', process.env.NODE_ENV)
-console.log('[PRISMA] Using connection string:', connectionString.replace(/:[^:@]+@/, ':****@'))
+  console.log('[PRISMA] Environment:', process.env.NODE_ENV)
+  console.log('[PRISMA] Using connection string:', connectionString.replace(/:[^:@]+@/, ':****@'))
 
-// SSL configuration - allow self-signed certificates
-const env = process.env.NODE_ENV?.trim()
-const sslConfig = env === 'production'
-  ? { rejectUnauthorized: true }
-  : { rejectUnauthorized: false }
+  // In serverless (Vercel), each function instance should use minimal connections.
+  // Supabase PgBouncer has pool_size: 15, so we keep max very low to avoid
+  // EMAXCONNSESSION errors when multiple serverless functions run concurrently.
+  const isServerless = !!process.env.VERCEL || !!process.env.AWS_LAMBDA_FUNCTION_NAME
+  const poolMax = isServerless ? 2 : 10
 
-console.log('[PRISMA] SSL config:', JSON.stringify(sslConfig))
+  console.log('[PRISMA] Pool max connections:', poolMax, isServerless ? '(serverless)' : '(standard)')
 
-pool = new Pool({
-  connectionString,
-  ssl: {
-    rejectUnauthorized: false
-  },
-  max: 10,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-})
-const adapter = new PrismaPg(pool)
+  const pool = new Pool({
+    connectionString,
+    ssl: {
+      rejectUnauthorized: false
+    },
+    max: poolMax,
+    idleTimeoutMillis: isServerless ? 10000 : 30000,
+    connectionTimeoutMillis: 10000,
+  })
 
-export const prisma =
-  globalForPrisma.prisma ||
-  new PrismaClient({ 
+  // Store pool reference for cleanup
+  globalForPrisma.pool = pool
+
+  const adapter = new PrismaPg(pool)
+
+  return new PrismaClient({
     adapter,
     transactionOptions: {
       maxWait: 30000,
       timeout: 30000,
     }
   })
+}
 
-if (process.env.NODE_ENV !== 'production') {
+// CRITICAL: Cache in BOTH development AND production.
+// In serverless environments, globalThis persists across warm invocations
+// of the same function instance, preventing connection pool exhaustion.
+export const prisma = globalForPrisma.prisma || createPrismaClient()
+
+// Cache the singleton for ALL environments (including production/serverless)
+if (!globalForPrisma.prisma) {
   globalForPrisma.prisma = prisma
-  globalForPrisma.pool = pool
 }
 
 process.on('beforeExit', async () => {
-  if (pool) {
-    await pool.end()
-    pool = null
+  if (globalForPrisma.pool) {
+    await globalForPrisma.pool.end()
+    globalForPrisma.pool = null
   }
 })
 
