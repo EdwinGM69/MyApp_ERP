@@ -11,6 +11,8 @@ const clasePedidoSchema = z.object({
   estado_stock_id: z.coerce.number().nullable().optional().transform(v => v === 0 ? null : v),
   tipo_operacion_id: z.coerce.number().nullable().optional().transform(v => v === 0 ? null : v),
   concepto_caja_id: z.coerce.number().nullable().optional().transform(v => v === 0 ? null : v),
+  operacion_extorno_id: z.coerce.number().nullable().optional().transform(v => v === 0 ? null : v),
+  concepto_extorno_id: z.coerce.number().nullable().optional().transform(v => v === 0 ? null : v),
   registro_almacen: z.boolean().optional(),
   registro_caja: z.boolean().optional(),
   activo: z.boolean().optional(),
@@ -57,6 +59,12 @@ export async function GET(req: NextRequest) {
         },
         concepto_caja: {
           select: { id: true, descripcion: true, codigo: true }
+        },
+        operacion_extorno: {
+          select: { id: true, descripcion: true, codigo: true }
+        },
+        concepto_extorno: {
+          select: { id: true, descripcion: true, codigo: true }
         }
       },
       orderBy: { created_at: 'desc' },
@@ -89,6 +97,8 @@ export async function POST(req: NextRequest) {
         estado_stock_id: data.estado_stock_id ?? null,
         tipo_operacion_id: tipoOperacionId ?? null,
         concepto_caja_id: conceptoCajaId ?? null,
+        operacion_extorno_id: data.operacion_extorno_id ?? null,
+        concepto_extorno_id: data.concepto_extorno_id ?? null,
         registro_almacen: registroAlmacen,
         registro_caja: registroCaja,
         activo: data.activo ?? true,
@@ -134,6 +144,8 @@ export async function PUT(req: NextRequest) {
         estado_stock_id: data.estado_stock_id ?? null,
         tipo_operacion_id: tipoOperacionId ?? null,
         concepto_caja_id: conceptoCajaId ?? null,
+        operacion_extorno_id: data.operacion_extorno_id ?? null,
+        concepto_extorno_id: data.concepto_extorno_id ?? null,
         registro_almacen: registroAlmacen,
         registro_caja: registroCaja,
         activo: data.activo,

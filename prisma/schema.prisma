@@ -21,6 +21,12 @@ enum TipoDatoParametroSistema {
   JSON
 }
 
+enum PeriodoReinicio {
+  ANUAL
+  MENSUAL
+  NUNCA
+}
+
 model Empresa {
   id                       Int                             @id @default(autoincrement())
   nombre                   String
@@ -85,6 +91,7 @@ model Empresa {
   condiciones              Condicion[]
   esquemas_calculo         EsquemaCalculo[]
   clases_pedido            ClasePedido[]
+  correlativos             Correlativo[]
    monedas_denominacion     MonedaDenominacion[]
    transacciones_caja       TransaccionCaja[]
    flujos_documentos        FlujoDocumentos[]
@@ -200,6 +207,8 @@ model Usuario {
   pasos_modificados              EsquemaCalculoPasos[]     @relation("EsquemaCalculoPasoModificador")
   clases_pedido_creados          ClasePedido[]             @relation("ClasePedidoCreador")
   clases_pedido_modificados      ClasePedido[]             @relation("ClasePedidoModificador")
+  correlativos_creados           Correlativo[]             @relation("CorrelativoCreador")
+  correlativos_modificados       Correlativo[]             @relation("CorrelativoModificador")
   caja_gestion                   CajaGestion[]             @relation("CajaApertura")
   caja_arqueos                   CajaArqueo[]              @relation("UsuarioArqueo")
   transacciones_creadas          TransaccionCaja[]         @relation("TransaccionCreador")
@@ -1331,6 +1340,7 @@ model TipoOperacion {
   empresa              Empresa             @relation(fields: [empresa_id], references: [id])
   usuario_modificador  Usuario?            @relation("TipoOperacionModificador", fields: [updated_by], references: [id])
   clases_pedido        ClasePedido[]
+  clases_pedido_extorno ClasePedido[]   @relation("ClasePedidoOperacionExtorno")
 
   @@unique([empresa_id, codigo])
 }
@@ -1565,6 +1575,7 @@ model ConceptoCaja {
   usuario_creador     Usuario?      @relation("ConceptoCajaCreador", fields: [created_by], references: [id])
   usuario_modificador Usuario?      @relation("ConceptoCajaModificador", fields: [updated_by], references: [id])
   clases_pedido       ClasePedido[]
+  clases_pedido_extorno ClasePedido[]   @relation("ClasePedidoConceptoExtorno")
   transacciones       TransaccionCaja[]
 
   @@unique([empresa_id, codigo])
@@ -1685,14 +1696,16 @@ model ClasePedido {
   esquema_id        Int?
   estado_stock_id   Int?
   registro_almacen  Boolean
-  tipo_operacion_id Int?
-  registro_caja     Boolean
-  concepto_caja_id  Int?
-  activo            Boolean  @default(true)
-  created_at        DateTime @default(now())
-  updated_at        DateTime @updatedAt
-  created_by        Int?
-  updated_by        Int?
+  tipo_operacion_id      Int?
+  registro_caja          Boolean
+  concepto_caja_id       Int?
+  operacion_extorno_id   Int?
+  concepto_extorno_id    Int?
+  activo                 Boolean  @default(true)
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+  created_by             Int?
+  updated_by             Int?
 
   ventas              Venta[]
   empresa             Empresa         @relation(fields: [empresa_id], references: [id])
@@ -1700,10 +1713,35 @@ model ClasePedido {
   estado_stock        EstadoStock?    @relation(fields: [estado_stock_id], references: [id])
   tipo_operacion      TipoOperacion?  @relation(fields: [tipo_operacion_id], references: [id])
   concepto_caja       ConceptoCaja?   @relation(fields: [concepto_caja_id], references: [id])
+  operacion_extorno   TipoOperacion?  @relation("ClasePedidoOperacionExtorno", fields: [operacion_extorno_id], references: [id])
+  concepto_extorno    ConceptoCaja?   @relation("ClasePedidoConceptoExtorno", fields: [concepto_extorno_id], references: [id])
   usuario_creador     Usuario?        @relation("ClasePedidoCreador", fields: [created_by], references: [id])
   usuario_modificador Usuario?        @relation("ClasePedidoModificador", fields: [updated_by], references: [id])
 
   @@unique([empresa_id, codigo])
+}
+
+model Correlativo {
+  id                Int            @id @default(autoincrement())
+  empresa_id        Int
+  tipo_documento    String         @db.Text
+  serie             String
+  numero_actual     Int
+  periodo_reinicio  PeriodoReinicio
+  year              Int
+  month             Int            @default(0)
+  ceros_relleno     Int            @default(8)
+  activo            Boolean        @default(true)
+  created_at        DateTime       @default(now())
+  updated_at        DateTime       @updatedAt
+  created_by        Int?
+  updated_by        Int?
+
+  empresa           Empresa        @relation(fields: [empresa_id], references: [id])
+  usuario_creador   Usuario?       @relation("CorrelativoCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?     @relation("CorrelativoModificador", fields: [updated_by], references: [id])
+
+  @@unique([empresa_id, tipo_documento, serie, year, month])
 }
 
 model MonedaDenominacion {

@@ -216,7 +216,11 @@ function VentaCard({ venta, monedaSimbolo, onAnular }: {
           </button>
           <button
             onClick={() => onAnular(venta.id)}
-            className="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all flex items-center justify-center active:scale-90"
+            disabled={venta.estado === 'anulada'}
+            className={cn(
+              "w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all flex items-center justify-center active:scale-90",
+              venta.estado === 'anulada' && "opacity-50 cursor-not-allowed hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+            )}
             title="Anular"
           >
             <span className="material-symbols-outlined text-[16px]">block</span>
@@ -454,7 +458,21 @@ export default function VentasPage() {
 
   const handleAnular = async (id: string) => {
     if (!confirm('¿Está seguro de que desea anular esta venta?')) return
-    toast.error('Funcionalidad de anulación pendiente de implementación en backend.')
+    try {
+      const res = await apiFetch(`/api/ventas?id=${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ accion: 'anular' })
+      })
+      const json = await res.json()
+      if (json.success) {
+        toast.success('Venta anulada correctamente')
+        fetchVentas()
+      } else {
+        toast.error(json.error || 'Error al anular la venta')
+      }
+    } catch {
+      toast.error('Error al conectar con el servidor')
+    }
   }
 
   return (
@@ -478,9 +496,6 @@ export default function VentasPage() {
                     className="w-full pl-10 pr-4 h-11 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
                   />
                 </div>
-                <button type="submit" className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/20 active:scale-95">
-                  Buscar
-                </button>
               </form>
 
               <div className="flex items-center gap-3 shrink-0">

@@ -170,6 +170,41 @@ export async function POST(req: NextRequest) {
         throw new Error('Debe proporcionar el número de pedido para este tipo de operación');
       }
 
+      // Obtener número de correlativo de forma atómica
+      const currentYear = new Date().getFullYear()
+      let numeroMov: string = `MOV-${Date.now()}`
+
+      try {
+        const correlativoResult = await tx.$queryRaw<Array<{ numero_actual: number; serie: string }>>`
+          UPDATE "Correlativo"
+          SET numero_actual = numero_actual + 1
+          WHERE empresa_id = ${empresaId}
+            AND tipo_documento = 'MOVALM'
+            AND serie = 'MOV'
+            AND year = ${currentYear}
+            AND month = 0
+          RETURNING numero_actual, serie
+        `
+
+        if (correlativoResult && correlativoResult.length > 0) {
+          const correlativoData = await tx.correlativo.findFirst({
+            where: {
+              empresa_id: empresaId,
+              tipo_documento: 'MOVALM',
+              serie: 'MOV',
+              year: currentYear,
+              month: 0
+            },
+            select: { ceros_relleno: true }
+          })
+          const cerosRelleno = correlativoData?.ceros_relleno || 8
+          numeroMov = `MOV-${correlativoResult[0].numero_actual.toString().padStart(cerosRelleno, '0')}`
+        }
+      } catch (correlativoErr: any) {
+        console.warn('[POST /api/almacen] Correlativo no encontrado, usando fallback:', correlativoErr.message)
+        numeroMov = `MOV-${Date.now()}`
+      }
+
       // 2. Create Movement Header
       const mov = await tx.movimientoAlmacen.create({
         data: {
@@ -182,7 +217,7 @@ export async function POST(req: NextRequest) {
           ...(movData.proveedor_id ? { proveedor: { connect: { id: movData.proveedor_id } } } : {}),
           numero_pedido: movData.numero_pedido || null,
           empresa: { connect: { id: empresaId } },
-          numero_mov: generateMovNumber(),
+          numero_mov: numeroMov,
           created_by: userId,
           detalles: {
             create: resolvedDetalles.map((d) => ({

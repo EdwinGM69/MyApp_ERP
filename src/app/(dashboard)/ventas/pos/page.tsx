@@ -1795,7 +1795,7 @@ export default function POSPage() {
       descuentoMostrar = descuentoComercial
     }
 
-    const total = subtotal - descuentoComercial - descuentoPromo - descuentoCuponTotal + impuestoTotal
+    const total = subtotal - descuentoComercial - descuentoPromo - descuentoCuponTotal
     console.log('[POS totals] Final - subtotal:', subtotal, 'descComerc:', descuentoComercial, 'descPromo:', descuentoPromo, 'descCupon:', descuentoCuponTotal, 'descTotal:', descuentoMostrar, 'impuesto:', impuestoTotal, 'total:', total)
 
     return { subtotal, descuento: descuentoMostrar, descuentoComercial, descuentoPromo, descuentoCupon: descuentoCuponTotal, impuesto: impuestoTotal, total }

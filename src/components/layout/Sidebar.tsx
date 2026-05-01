@@ -68,6 +68,7 @@ const adminItems = [
   { href: '/logistica/industrias', icon: 'factory', label: 'Industrias' },
   { href: '/logistica/paises', icon: 'public', label: 'Países' },
   { href: '/logistica/documentos-identificacion', icon: 'badge', label: 'Documentos ID' },
+  { href: '/maestros/comercial/correlativos', icon: 'tag', label: 'Correlativos' },
 ]
 
 const bottomItems: any[] = []

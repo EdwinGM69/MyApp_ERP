@@ -241,8 +241,43 @@ export async function POST(req: NextRequest) {
         finalClienteId = existingCliente.id
       }
 
+      // Obtener número de correlativo de forma atómica
+      const currentYear = new Date().getFullYear()
+      let numeroPedido = ventaData.numero_pedido
+
+      try {
+        const correlativoResult = await tx.$queryRaw<Array<{ numero_actual: number; serie: string }>>`
+          UPDATE "Correlativo"
+          SET numero_actual = numero_actual + 1
+          WHERE empresa_id = ${empresaId}
+            AND tipo_documento = 'PEDVTA'
+            AND serie = 'PED'
+            AND year = ${currentYear}
+            AND month = 0
+          RETURNING numero_actual, serie
+        `
+
+        if (correlativoResult && correlativoResult.length > 0) {
+          const correlativoData = await tx.correlativo.findFirst({
+            where: {
+              empresa_id: empresaId,
+              tipo_documento: 'PEDVTA',
+              serie: 'PED',
+              year: currentYear,
+              month: 0
+            },
+            select: { ceros_relleno: true }
+          })
+          const cerosRelleno = correlativoData?.ceros_relleno || 8
+          numeroPedido = `PED-${correlativoResult[0].numero_actual.toString().padStart(cerosRelleno, '0')}`
+        }
+      } catch (correlativoErr: any) {
+        console.warn('[POST /api/ventas] Correlativo no encontrado o error, usando fallback:', correlativoErr.message)
+        numeroPedido = `PED-${Date.now().toString().slice(-6)}`
+      }
+
       const testVenta = {
-        numero_pedido: ventaData.numero_pedido,
+        numero_pedido: numeroPedido,
         empresa_id: empresaId,
         sucursal_id: sucursal_id,
         clase_pedido_id: clase_pedido_id,
@@ -336,17 +371,52 @@ export async function POST(req: NextRequest) {
       })
 
       if (ventaData.estado === 'procesada' && clasePedido.registro_almacen && clasePedido.tipo_operacion_id) {
+        // Obtener número de correlativo para movimiento de almacén
+        const currentYear = new Date().getFullYear()
+        let numeroMov: string = `MOV-${Date.now()}`
+
+        try {
+          const correlativoResult = await tx.$queryRaw<Array<{ numero_actual: number; serie: string }>>`
+            UPDATE "Correlativo"
+            SET numero_actual = numero_actual + 1
+            WHERE empresa_id = ${empresaId}
+              AND tipo_documento = 'MOVALM'
+              AND serie = 'MOV'
+              AND year = ${currentYear}
+              AND month = 0
+            RETURNING numero_actual, serie
+          `
+
+          if (correlativoResult && correlativoResult.length > 0) {
+            const correlativoData = await tx.correlativo.findFirst({
+              where: {
+                empresa_id: empresaId,
+                tipo_documento: 'MOVALM',
+                serie: 'MOV',
+                year: currentYear,
+                month: 0
+              },
+              select: { ceros_relleno: true }
+            })
+            const cerosRelleno = correlativoData?.ceros_relleno || 8
+            numeroMov = `MOV-${correlativoResult[0].numero_actual.toString().padStart(cerosRelleno, '0')}`
+          }
+        } catch (correlativoErr: any) {
+          console.warn('[POST /api/ventas] Correlativo MOVALM no encontrado, usando fallback:', correlativoErr.message)
+          numeroMov = `MOV-${Date.now()}`
+        }
+
         const movimiento = await tx.movimientoAlmacen.create({
           data: {
             empresa_id: empresaId,
-            numero_mov: generateMovNumber(),
+            numero_mov: numeroMov,
             sucursal_id: sucursal_id,
             tipo_operacion_id: clasePedido.tipo_operacion_id,
             cliente_id: finalClienteId ?? undefined,
-            numero_pedido: ventaData.numero_pedido,
-            fecha: new Date(ventaData.fecha_venta || new Date()),
+            numero_pedido: numeroPedido,
+            fecha: new Date(),
             created_by: userId,
-            observaciones: `Movimiento generado desde venta ${ventaData.numero_pedido}`
+            observaciones: `Movimiento generado desde venta ${numeroPedido}`
           }
         })
 
@@ -606,6 +676,269 @@ export async function POST(req: NextRequest) {
       error: 'Error al registrar la venta',
       details: err.message || err.toString(),
       stack: err.stack
+    }, { status: 500 })
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const { empresaId, userId } = await requireAuth(req)
+    const { searchParams } = req.nextUrl
+    const id = searchParams.get('id')
+    const body = await req.json()
+
+    if (!id) return NextResponse.json({ error: 'ID de venta requerido' }, { status: 400 })
+    if (body.accion !== 'anular') return NextResponse.json({ error: 'Acción no válida' }, { status: 400 })
+
+    const ventaId = parseInt(id)
+    const now = new Date()
+
+    const venta = await prisma.venta.findUnique({
+      where: { id: ventaId, empresa_id: empresaId },
+      include: {
+        clase_pedido: true,
+        detalles: {
+          include: {
+            material: { select: { id: true, codigo: true, esquema_id: true } }
+          }
+        }
+      }
+    })
+
+    if (!venta) return NextResponse.json({ error: 'Venta no encontrada' }, { status: 404 })
+    if (venta.estado !== 'procesada') return NextResponse.json({ error: 'Solo se pueden anular ventas procesadas' }, { status: 400 })
+
+    const clasePedido = venta.clase_pedido
+    console.log('DEBUG - ClasePedido:', clasePedido)
+    console.log('DEBUG - operacion_extorno_id:', clasePedido?.operacion_extorno_id)
+
+    await prisma.$transaction(async (tx) => {
+      await tx.venta.update({
+        where: { id: ventaId },
+        data: {
+          estado: 'anulada',
+          updated_at: now,
+          updated_by: userId
+        }
+      })
+
+      if (clasePedido.registro_almacen && clasePedido.operacion_extorno_id) {
+        const flujosAlmacen = await tx.flujoDocumentos.findMany({
+          where: {
+            empresa_id: empresaId,
+            tipo_referencia: 'I',
+            referencia_anterior_id: ventaId,
+            activo: true
+          }
+        })
+
+        for (const flujo of flujosAlmacen) {
+          const movimientoOriginal = await tx.movimientoAlmacen.findUnique({
+            where: { id: flujo.referencia_id },
+            include: {
+              detalles: {
+                include: {
+                  material: { select: { id: true, codigo: true, esquema_id: true } }
+                }
+              }
+            }
+          })
+
+          if (!movimientoOriginal) continue
+
+          console.log('DEBUG - Creating extorno movimiento, operacion_extorno_id:', clasePedido.operacion_extorno_id)
+          const movimientoExtorno = await tx.movimientoAlmacen.create({
+            data: {
+              empresa_id: empresaId,
+              numero_mov: generateMovNumber(),
+              documento: movimientoOriginal.documento,
+              referencia: `ANULACIÓN: ${movimientoOriginal.referencia || 'Venta ' + venta.numero_pedido}`,
+              tipo_operacion_id: clasePedido.operacion_extorno_id,
+              cliente_id: movimientoOriginal.cliente_id,
+              sucursal_id: movimientoOriginal.sucursal_id,
+              numero_pedido: `ANUL-${venta.numero_pedido}`,
+              fecha: now,
+              created_by: userId,
+              observaciones: `Extorno de movimiento ${movimientoOriginal.numero_mov} por anulación de venta ${venta.numero_pedido}`
+            }
+          })
+
+          await tx.flujoDocumentos.create({
+            data: {
+              empresa_id: empresaId,
+              referencia_id: movimientoExtorno.id,
+              tipo_referencia: 'I',
+              referencia_anterior_id: ventaId,
+              activo: true,
+              created_at: now,
+              created_by: userId
+            }
+          })
+
+          for (const det of movimientoOriginal.detalles) {
+            const movDetalleExtorno = await tx.movimientoAlmacenDetalle.create({
+              data: {
+                movimiento_id: movimientoExtorno.id,
+                material_id: det.material_id,
+                cantidad: det.cantidad,
+                unidad_medida_id: det.unidad_medida_id,
+                costo_unit: det.costo_unit,
+                almacen_id: det.almacen_id,
+                sucursal_id: det.sucursal_id,
+                linea: det.linea,
+                esquema_id: det.esquema_id,
+                estado_stock_id: det.estado_stock_id,
+                created_by: userId
+              }
+            })
+
+            const distribucionesOriginal = await tx.movimientoDetalleDistribucion.findMany({
+              where: { linea_detalle_id: det.id }
+            })
+
+            for (const dist of distribucionesOriginal) {
+              await tx.movimientoDetalleDistribucion.create({
+                data: {
+                  empresa_id: empresaId,
+                  linea_detalle_id: movDetalleExtorno.id,
+                  ubicacion_id: dist.ubicacion_id,
+                  numero_lote: dist.numero_lote,
+                  cantidad: dist.cantidad,
+                  created_by: userId
+                }
+              })
+
+              const stock = det.estado_stock_id ? await tx.stockMaterial.findFirst({
+                where: {
+                  empresa_id: empresaId,
+                  sucursal_id: det.sucursal_id,
+                  almacen_id: det.almacen_id,
+                  ubicacion_id: dist.ubicacion_id,
+                  estado_stock_id: det.estado_stock_id,
+                  material_id: det.material_id,
+                  numero_lote: dist.numero_lote,
+                  unidad_medida_id: det.unidad_medida_id
+                }
+              }) : null
+
+              if (stock) {
+                await tx.stockMaterial.update({
+                  where: { id: stock.id },
+                  data: { cantidad: { increment: Number(dist.cantidad) } }
+                })
+              }
+
+              const today = now.toISOString().split('T')[0]
+              const existingHistorial = det.estado_stock_id ? await tx.stockMaterialHistorial.findFirst({
+                where: {
+                  empresa_id: empresaId,
+                  sucursal_id: det.sucursal_id,
+                  almacen_id: det.almacen_id,
+                  ubicacion_id: dist.ubicacion_id,
+                  estado_stock_id: det.estado_stock_id,
+                  material_id: det.material_id,
+                  numero_lote: dist.numero_lote,
+                  updated_at: {
+                    gte: new Date(today + 'T00:00:00.000Z'),
+                    lt: new Date(today + 'T23:59:59.999Z')
+                  }
+                }
+              }) : null
+
+              if (existingHistorial && stock) {
+                const newCantidad = Number(stock.cantidad)
+                await tx.stockMaterialHistorial.update({
+                  where: { id: existingHistorial.id },
+                  data: { cantidad: newCantidad }
+                })
+              }
+            }
+          }
+        }
+      }
+
+      if (clasePedido.registro_caja && clasePedido.concepto_extorno_id) {
+        const flujosCaja = await tx.flujoDocumentos.findMany({
+          where: {
+            empresa_id: empresaId,
+            tipo_referencia: 'C',
+            referencia_anterior_id: ventaId,
+            activo: true
+          }
+        })
+
+        for (const flujo of flujosCaja) {
+          const transaccionOriginal = await tx.transaccionCaja.findUnique({
+            where: { id: flujo.referencia_id },
+            include: {
+              pagos: true
+            }
+          })
+
+          if (!transaccionOriginal) continue
+
+          const transaccionExtorno = await tx.transaccionCaja.create({
+            data: {
+              empresa_id: empresaId,
+              sucursal_id: transaccionOriginal.sucursal_id,
+              sesion_caja_id: transaccionOriginal.sesion_caja_id,
+              caja_id: transaccionOriginal.caja_id,
+              concepto_id: clasePedido.concepto_extorno_id,
+              numero_documento: `ANUL-${transaccionOriginal.numero_documento}`,
+              fecha_documento: now,
+              cliente_id: transaccionOriginal.cliente_id,
+              motivo: `ANULACIÓN: ${transaccionOriginal.motivo || 'Venta ' + venta.numero_pedido}`,
+              importe: Number(transaccionOriginal.importe) * -1,
+              moneda_id: transaccionOriginal.moneda_id,
+              estado: 'P',
+              transaccion_anula_id: transaccionOriginal.id,
+              created_at: now,
+              created_by: userId
+            }
+          })
+
+          await tx.flujoDocumentos.create({
+            data: {
+              empresa_id: empresaId,
+              referencia_id: transaccionExtorno.id,
+              tipo_referencia: 'C',
+              referencia_anterior_id: ventaId,
+              activo: true,
+              created_at: now,
+              created_by: userId
+            }
+          })
+
+          for (const pago of transaccionOriginal.pagos) {
+            await tx.transaccionCajaPago.create({
+              data: {
+                transaccion_id: transaccionExtorno.id,
+                medio_pago_id: pago.medio_pago_id,
+                importe: pago.importe,
+                referencia_banco: pago.referencia_banco,
+                numero_operacion: pago.numero_operacion
+              }
+            })
+          }
+
+          if (transaccionOriginal.estado === 'P') {
+            await tx.transaccionCaja.update({
+              where: { id: transaccionOriginal.id },
+              data: { estado: 'A', motivo_anulacion: 'Anulada por extorno de venta' }
+            })
+          }
+        }
+      }
+
+      return { success: true, ventaId }
+    }, { timeout: 30000 })
+
+    return NextResponse.json({ success: true, message: 'Venta anulada correctamente' })
+  } catch (err: any) {
+    console.error('ERROR AL ANULAR VENTA:', err)
+    return NextResponse.json({
+      error: 'Error al anular la venta',
+      details: err.message || err.toString()
     }, { status: 500 })
   }
 }

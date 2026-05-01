@@ -36,6 +36,18 @@ interface ClasePedido {
     codigo: string
     descripcion: string
   }
+  operacion_extorno_id?: number
+  operacion_extorno?: {
+    id: number
+    codigo: string
+    descripcion: string
+  }
+  concepto_extorno_id?: number
+  concepto_extorno?: {
+    id: number
+    codigo: string
+    descripcion: string
+  }
   registro_almacen: boolean
   registro_caja: boolean
   activo: boolean
@@ -130,6 +142,8 @@ export default function ClasesPedidoPage() {
       estado_stock_id: '',
       tipo_operacion_id: (c?.tipo_operacion_id && isInventarioActive) ? c.tipo_operacion_id : '',
       concepto_caja_id: (c?.concepto_caja_id && isCajaActive) ? c.concepto_caja_id : '',
+      operacion_extorno_id: (c?.operacion_extorno_id && isInventarioActive) ? c.operacion_extorno_id : '',
+      concepto_extorno_id: (c?.concepto_extorno_id && isCajaActive) ? c.concepto_extorno_id : '',
       registro_almacen: isInventarioActive ? (c?.registro_almacen ?? false) : false,
       registro_caja: isCajaActive ? (c?.registro_caja ?? false) : false,
       activo: c?.activo ?? true
@@ -420,6 +434,20 @@ export default function ClasesPedidoPage() {
                           ))}
                         </select>
                       </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Operación de Extorno</label>
+                        <select
+                          value={editingData.operacion_extorno_id || ''}
+                          disabled={!editingData.registro_almacen || !activeModules.includes('LOGISTICA')}
+                          onChange={(e) => setEditingData({ ...editingData, operacion_extorno_id: e.target.value ? Number(e.target.value) : null })}
+                          className="w-full h-12 px-4 bg-slate-50/50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-[10px] font-black outline-none transition-all uppercase disabled:opacity-30"
+                        >
+                          <option value="">SIN OPERACIÓN EXTORNO...</option>
+                          {tiposOperacion.map(tp => (
+                            <option key={tp.id} value={tp.id}>{tp.descripcion}</option>
+                          ))}
+                        </select>
+                      </div>
                       {!activeModules.includes('LOGISTICA') && (
                         <div className="p-3 bg-slate-100/50 dark:bg-slate-800/50 rounded-xl flex items-center gap-2">
                           <span className="material-symbols-outlined text-sm text-slate-400">lock</span>
@@ -462,6 +490,20 @@ export default function ClasesPedidoPage() {
                           className="w-full h-12 px-4 bg-slate-50/50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-[10px] font-black outline-none transition-all uppercase disabled:opacity-30"
                         >
                           <option value="">SIN CONCEPTO...</option>
+                          {conceptosCaja.map(cc => (
+                            <option key={cc.id} value={cc.id}>{cc.descripcion}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest ml-1">Concepto de Extorno</label>
+                        <select
+                          value={editingData.concepto_extorno_id || ''}
+                          disabled={!editingData.registro_caja || !activeModules.includes('TESORERIA')}
+                          onChange={(e) => setEditingData({ ...editingData, concepto_extorno_id: e.target.value ? Number(e.target.value) : null })}
+                          className="w-full h-12 px-4 bg-slate-50/50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-xl text-[10px] font-black outline-none transition-all uppercase disabled:opacity-30"
+                        >
+                          <option value="">SIN CONCEPTO EXTORNO...</option>
                           {conceptosCaja.map(cc => (
                             <option key={cc.id} value={cc.id}>{cc.descripcion}</option>
                           ))}
