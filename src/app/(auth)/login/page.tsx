@@ -11,15 +11,7 @@ export default function LoginPage() {
 
   const [form, setForm] = useState({ email: '', password: '', remember: false })
   const [loading, setLoading] = useState(false)
-  const [csrfToken, setCsrfToken] = useState<string>('')
 
-  useEffect(() => {
-    // Get CSRF token on mount
-    fetch('/api/auth/csrf')
-      .then(res => res.json())
-      .then(data => setCsrfToken(data.csrfToken))
-      .catch(err => console.error('Failed to get CSRF token:', err))
-  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -40,14 +32,9 @@ export default function LoginPage() {
 
     setLoading(true)
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (csrfToken) {
-        headers['x-csrf-token'] = csrfToken
-      }
-
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
           email: form.email.toLowerCase().trim(),

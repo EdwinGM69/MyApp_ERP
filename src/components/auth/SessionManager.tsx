@@ -6,12 +6,10 @@ import { useAuthStore, apiFetch } from '@/hooks/useAuth'
 const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000
 const WARNING_BEFORE_MS = 5 * 60 * 1000
 const PROACTIVE_REFRESH_MS = 12 * 60 * 1000
-const CHECK_INTERVAL_MS = 30 * 1000
 
 export function SessionManager() {
   const user = useAuthStore(s => s.user)
   const forceLogout = useAuthStore(s => s.forceLogout)
-  const refreshSession = useAuthStore(s => s.refreshSession)
 
   const [showWarning, setShowWarning] = useState(false)
   const [remainingSeconds, setRemainingSeconds] = useState(0)
@@ -21,8 +19,10 @@ export function SessionManager() {
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
   const checkIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const lastActivityRef = useRef<number>(Date.now())
-  const isActiveRef = useRef<boolean>(false)
   const warningShownRef = useRef<boolean>(false)
+  
+  const userRef = useRef(user)
+  userRef.current = user
 
   const clearAllTimers = useCallback(() => {
     if (inactivityTimerRef.current) {
@@ -48,39 +48,19 @@ export function SessionManager() {
     await forceLogout()
   }, [forceLogout, clearAllTimers])
 
-  const handleRefresh = useCallback(async () => {
-    try {
-      const res = await apiFetch('/api/auth/refresh', { method: 'POST' })
-      if (res.ok) {
-        console.log('[SessionManager] Proactive refresh successful')
-        isActiveRef.current = true
-        resetActivityTimers()
-      } else {
-        console.warn('[SessionManager] Proactive refresh failed, logging out')
-        await handleLogout()
-      }
-    } catch (error) {
-      console.error('[SessionManager] Error during proactive refresh:', error)
-      await handleLogout()
-    }
-  }, [handleLogout])
-
   const resetActivityTimers = useCallback(() => {
-    if (!user) return
+    console.log('[SessionManager] Resetting activity timers')
+    if (!userRef.current) return
 
     lastActivityRef.current = Date.now()
     warningShownRef.current = false
-    isActiveRef.current = true
-    setShowWarning(false)
 
     if (inactivityTimerRef.current) {
       clearTimeout(inactivityTimerRef.current)
     }
-
     if (warningTimerRef.current) {
       clearTimeout(warningTimerRef.current)
     }
-
     if (refreshTimerRef.current) {
       clearTimeout(refreshTimerRef.current)
     }
@@ -101,12 +81,39 @@ export function SessionManager() {
       console.log('[SessionManager] Proactive refresh triggered')
       handleRefresh()
     }, PROACTIVE_REFRESH_MS)
-  }, [user, handleLogout, handleRefresh])
+  }, [handleLogout])
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/auth/refresh', { method: 'POST' })
+      if (res.ok) {
+        console.log('[SessionManager] Proactive refresh successful')
+        resetActivityTimers()
+      } else if (res.status === 401) {
+        const inactiveTime = Date.now() - lastActivityRef.current
+        if (inactiveTime < INACTIVITY_TIMEOUT_MS) {
+          console.warn('[SessionManager] Refresh failed but user was active recently')
+        } else {
+          console.warn('[SessionManager] Proactive refresh failed (401), logging out')
+          await handleLogout()
+        }
+      }
+    } catch (error) {
+      const inactiveTime = Date.now() - lastActivityRef.current
+      if (inactiveTime < INACTIVITY_TIMEOUT_MS - WARNING_BEFORE_MS) {
+        console.warn('[SessionManager] Refresh error but user is active')
+      } else {
+        console.error('[SessionManager] Error during proactive refresh:', error)
+        await handleLogout()
+      }
+    }
+  }, [handleLogout, resetActivityTimers])
 
   const handleActivity = useCallback(() => {
-    if (!user) return
+    console.log('[SessionManager] Activity detected')
+    if (!userRef.current) return
     resetActivityTimers()
-  }, [user, resetActivityTimers])
+  }, [resetActivityTimers])
 
   const handleContinueSession = useCallback(() => {
     console.log('[SessionManager] User chose to continue session')
@@ -114,17 +121,31 @@ export function SessionManager() {
   }, [resetActivityTimers])
 
   useEffect(() => {
+    console.log('[SessionManager] useEffect running, user:', !!user)
     if (!user) {
       clearAllTimers()
       setShowWarning(false)
       return
     }
 
-    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove']
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove', 'click', 'input', 'focus', 'blur', 'wheel']
 
+    console.log('[SessionManager] Adding event listeners for user activity')
     events.forEach(event => {
-      window.addEventListener(event, handleActivity)
+      if (document.body) {
+        document.body.addEventListener(event, handleActivity, true)
+      }
     })
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && userRef.current) {
+        const inactiveTime = Date.now() - lastActivityRef.current
+        console.log(`[SessionManager] Window became visible after ${Math.round(inactiveTime / 1000)}s of inactivity`)
+        resetActivityTimers()
+      }
+    }
+
+    window.addEventListener('visibilitychange', handleVisibilityChange)
 
     resetActivityTimers()
 
@@ -142,8 +163,11 @@ export function SessionManager() {
 
     return () => {
       events.forEach(event => {
-        window.removeEventListener(event, handleActivity)
+        if (document.body) {
+          document.body.removeEventListener(event, handleActivity, true)
+        }
       })
+      window.removeEventListener('visibilitychange', handleVisibilityChange)
       clearAllTimers()
     }
   }, [user, handleActivity, resetActivityTimers, clearAllTimers])
