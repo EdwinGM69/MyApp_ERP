@@ -7,6 +7,9 @@ const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000
 const WARNING_BEFORE_MS = 5 * 60 * 1000
 const PROACTIVE_REFRESH_MS = 12 * 60 * 1000
 
+// Throttle interval: ignore rapid-fire events within this window
+const ACTIVITY_THROTTLE_MS = 5_000
+
 export function SessionManager() {
   const user = useAuthStore(s => s.user)
   const forceLogout = useAuthStore(s => s.forceLogout)
@@ -14,163 +17,186 @@ export function SessionManager() {
   const [showWarning, setShowWarning] = useState(false)
   const [remainingSeconds, setRemainingSeconds] = useState(0)
 
-  const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const warningTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const refreshTimerRef = useRef<NodeJS.Timeout | null>(null)
-  const checkIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  // ── refs for timers ──
+  const inactivityTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const countdownIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const lastActivityRef = useRef<number>(Date.now())
   const warningShownRef = useRef<boolean>(false)
-  
+
+  // ── stable refs so closures always see the latest value ──
   const userRef = useRef(user)
   userRef.current = user
 
+  const forceLogoutRef = useRef(forceLogout)
+  forceLogoutRef.current = forceLogout
+
+  // ────────────────────────────────────────────────────────
+  // Helper: clear every pending timer
+  // ────────────────────────────────────────────────────────
   const clearAllTimers = useCallback(() => {
-    if (inactivityTimerRef.current) {
-      clearTimeout(inactivityTimerRef.current)
-      inactivityTimerRef.current = null
-    }
-    if (warningTimerRef.current) {
-      clearTimeout(warningTimerRef.current)
-      warningTimerRef.current = null
-    }
-    if (refreshTimerRef.current) {
-      clearTimeout(refreshTimerRef.current)
-      refreshTimerRef.current = null
-    }
-    if (checkIntervalRef.current) {
-      clearInterval(checkIntervalRef.current)
-      checkIntervalRef.current = null
+    if (inactivityTimerRef.current) { clearTimeout(inactivityTimerRef.current); inactivityTimerRef.current = null }
+    if (warningTimerRef.current)    { clearTimeout(warningTimerRef.current);    warningTimerRef.current = null }
+    if (refreshTimerRef.current)    { clearTimeout(refreshTimerRef.current);    refreshTimerRef.current = null }
+    if (countdownIntervalRef.current) { clearInterval(countdownIntervalRef.current); countdownIntervalRef.current = null }
+  }, [])
+
+  // ────────────────────────────────────────────────────────
+  // Logout
+  // ────────────────────────────────────────────────────────
+  const doLogout = useCallback(async () => {
+    clearAllTimers()
+    setShowWarning(false)
+    await forceLogoutRef.current()
+  }, [clearAllTimers])
+
+  // Store doLogout in a ref so setTimeout callbacks always use the latest
+  const doLogoutRef = useRef(doLogout)
+  doLogoutRef.current = doLogout
+
+  // ────────────────────────────────────────────────────────
+  // Proactive token refresh
+  // ────────────────────────────────────────────────────────
+  const doRefresh = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/auth/refresh', { method: 'POST' })
+      if (res.ok) {
+        console.log('[SessionManager] Proactive refresh successful')
+      } else if (res.status === 401) {
+        const inactiveTime = Date.now() - lastActivityRef.current
+        if (inactiveTime >= INACTIVITY_TIMEOUT_MS) {
+          console.warn('[SessionManager] Refresh 401 + inactive → logout')
+          await doLogoutRef.current()
+        } else {
+          console.warn('[SessionManager] Refresh 401 but user was active recently, ignoring')
+        }
+      }
+    } catch (error) {
+      const inactiveTime = Date.now() - lastActivityRef.current
+      if (inactiveTime >= INACTIVITY_TIMEOUT_MS - WARNING_BEFORE_MS) {
+        console.error('[SessionManager] Refresh error + inactive → logout', error)
+        await doLogoutRef.current()
+      } else {
+        console.warn('[SessionManager] Refresh error but user is active, ignoring')
+      }
     }
   }, [])
 
-  const handleLogout = useCallback(async () => {
-    clearAllTimers()
-    await forceLogout()
-  }, [forceLogout, clearAllTimers])
-
-  const resetActivityTimers = useCallback(() => {
-    console.log('[SessionManager] Resetting activity timers')
+  // ────────────────────────────────────────────────────────
+  // Core: reset all inactivity / warning / refresh timers
+  // This function is called on every qualifying user activity.
+  // It uses NO useCallback dependencies that could go stale;
+  // instead it reads from refs.
+  // ────────────────────────────────────────────────────────
+  const resetTimers = useCallback(() => {
     if (!userRef.current) return
 
     lastActivityRef.current = Date.now()
     warningShownRef.current = false
+    setShowWarning(false)
 
-    if (inactivityTimerRef.current) {
-      clearTimeout(inactivityTimerRef.current)
-    }
-    if (warningTimerRef.current) {
-      clearTimeout(warningTimerRef.current)
-    }
-    if (refreshTimerRef.current) {
-      clearTimeout(refreshTimerRef.current)
-    }
+    // Clear previous timers
+    if (inactivityTimerRef.current) clearTimeout(inactivityTimerRef.current)
+    if (warningTimerRef.current)    clearTimeout(warningTimerRef.current)
+    if (refreshTimerRef.current)    clearTimeout(refreshTimerRef.current)
 
+    // 1) Hard logout after full inactivity window
     inactivityTimerRef.current = setTimeout(() => {
-      console.log('[SessionManager] Inactivity timeout reached')
-      handleLogout()
+      console.log('[SessionManager] Inactivity timeout reached → logout')
+      doLogoutRef.current()
     }, INACTIVITY_TIMEOUT_MS)
 
+    // 2) Show warning dialog before the hard logout
     warningTimerRef.current = setTimeout(() => {
-      console.log('[SessionManager] Showing warning')
+      console.log('[SessionManager] Showing inactivity warning')
       warningShownRef.current = true
       setShowWarning(true)
       setRemainingSeconds(Math.floor(WARNING_BEFORE_MS / 1000))
     }, INACTIVITY_TIMEOUT_MS - WARNING_BEFORE_MS)
 
+    // 3) Proactive token refresh while user is active
     refreshTimerRef.current = setTimeout(() => {
       console.log('[SessionManager] Proactive refresh triggered')
-      handleRefresh()
+      doRefresh()
     }, PROACTIVE_REFRESH_MS)
-  }, [handleLogout])
+  }, [doRefresh])
 
-  const handleRefresh = useCallback(async () => {
-    try {
-      const res = await apiFetch('/api/auth/refresh', { method: 'POST' })
-      if (res.ok) {
-        console.log('[SessionManager] Proactive refresh successful')
-        resetActivityTimers()
-      } else if (res.status === 401) {
-        const inactiveTime = Date.now() - lastActivityRef.current
-        if (inactiveTime < INACTIVITY_TIMEOUT_MS) {
-          console.warn('[SessionManager] Refresh failed but user was active recently')
-        } else {
-          console.warn('[SessionManager] Proactive refresh failed (401), logging out')
-          await handleLogout()
-        }
-      }
-    } catch (error) {
-      const inactiveTime = Date.now() - lastActivityRef.current
-      if (inactiveTime < INACTIVITY_TIMEOUT_MS - WARNING_BEFORE_MS) {
-        console.warn('[SessionManager] Refresh error but user is active')
-      } else {
-        console.error('[SessionManager] Error during proactive refresh:', error)
-        await handleLogout()
-      }
-    }
-  }, [handleLogout, resetActivityTimers])
+  // Keep a ref so the stable event handler always calls the latest resetTimers
+  const resetTimersRef = useRef(resetTimers)
+  resetTimersRef.current = resetTimers
 
-  const handleActivity = useCallback(() => {
-    console.log('[SessionManager] Activity detected')
-    if (!userRef.current) return
-    resetActivityTimers()
-  }, [resetActivityTimers])
-
-  const handleContinueSession = useCallback(() => {
-    console.log('[SessionManager] User chose to continue session')
-    resetActivityTimers()
-  }, [resetActivityTimers])
-
+  // ────────────────────────────────────────────────────────
+  // Single effect: wire up event listeners + countdown
+  // The event handler is defined once (stable reference)
+  // and reads from refs, so it never goes stale.
+  // ────────────────────────────────────────────────────────
   useEffect(() => {
-    console.log('[SessionManager] useEffect running, user:', !!user)
     if (!user) {
       clearAllTimers()
       setShowWarning(false)
       return
     }
 
-    const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'mousemove', 'click', 'input', 'focus', 'blur', 'wheel']
+    console.log('[SessionManager] Initialising session timers')
 
-    console.log('[SessionManager] Adding event listeners for user activity')
-    events.forEach(event => {
-      if (document.body) {
-        document.body.addEventListener(event, handleActivity, true)
-      }
-    })
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible' && userRef.current) {
-        const inactiveTime = Date.now() - lastActivityRef.current
-        console.log(`[SessionManager] Window became visible after ${Math.round(inactiveTime / 1000)}s of inactivity`)
-        resetActivityTimers()
-      }
+    // ── Throttled activity handler (stable – never recreated) ──
+    let lastHandledAt = 0
+    const onActivity = () => {
+      const now = Date.now()
+      if (now - lastHandledAt < ACTIVITY_THROTTLE_MS) return // throttle
+      lastHandledAt = now
+      console.log('[SessionManager] Activity detected – resetting timers')
+      resetTimersRef.current()
     }
 
-    window.addEventListener('visibilitychange', handleVisibilityChange)
+    // Listen on a wide set of interaction events (capture phase)
+    const events: string[] = [
+      'mousedown', 'keydown', 'scroll', 'touchstart',
+      'mousemove', 'click', 'input', 'wheel',
+    ]
+    events.forEach(evt => document.addEventListener(evt, onActivity, true))
 
-    resetActivityTimers()
-
-    checkIntervalRef.current = setInterval(() => {
-      if (warningShownRef.current && showWarning) {
-        const elapsed = Date.now() - lastActivityRef.current
-        const timeInWarning = INACTIVITY_TIMEOUT_MS - WARNING_BEFORE_MS
-        const timeLeft = Math.max(0, Math.floor((timeInWarning - (elapsed - timeInWarning)) / 1000))
-        setRemainingSeconds(prev => {
-          if (prev > 0) return prev - 1
-          return 0
-        })
+    // Also reset on tab-refocus
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible' && userRef.current) {
+        const inactiveMs = Date.now() - lastActivityRef.current
+        console.log(`[SessionManager] Tab visible after ${Math.round(inactiveMs / 1000)}s`)
+        // Only reset if the session hasn't fully expired already
+        if (inactiveMs < INACTIVITY_TIMEOUT_MS) {
+          resetTimersRef.current()
+        }
       }
+    }
+    window.addEventListener('visibilitychange', onVisibility)
+
+    // Kick off the first set of timers
+    resetTimersRef.current()
+
+    // ── Countdown interval for the warning dialog ──
+    countdownIntervalRef.current = setInterval(() => {
+      if (!warningShownRef.current) return
+      const elapsed = Date.now() - lastActivityRef.current
+      const remaining = Math.max(0, Math.floor((INACTIVITY_TIMEOUT_MS - elapsed) / 1000))
+      setRemainingSeconds(remaining)
     }, 1000)
 
     return () => {
-      events.forEach(event => {
-        if (document.body) {
-          document.body.removeEventListener(event, handleActivity, true)
-        }
-      })
-      window.removeEventListener('visibilitychange', handleVisibilityChange)
+      events.forEach(evt => document.removeEventListener(evt, onActivity, true))
+      window.removeEventListener('visibilitychange', onVisibility)
       clearAllTimers()
     }
-  }, [user, handleActivity, resetActivityTimers, clearAllTimers])
+    // Only re-run when the user logs in / out
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  // ────────────────────────────────────────────────────────
+  // UI: "Continue" button in warning dialog
+  // ────────────────────────────────────────────────────────
+  const handleContinueSession = useCallback(() => {
+    console.log('[SessionManager] User chose to continue session')
+    resetTimersRef.current()
+  }, [])
 
   if (!showWarning || !user) return null
 
@@ -192,7 +218,7 @@ export function SessionManager() {
           </div>
           <div className="flex gap-3 w-full">
             <button
-              onClick={handleLogout}
+              onClick={() => doLogoutRef.current()}
               className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             >
               Cerrar Sesión

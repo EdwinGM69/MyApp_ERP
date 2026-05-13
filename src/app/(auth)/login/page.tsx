@@ -11,6 +11,7 @@ export default function LoginPage() {
 
   const [form, setForm] = useState({ email: '', password: '', remember: false })
   const [loading, setLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
 
   async function handleSubmit(e: React.FormEvent) {
@@ -60,8 +61,8 @@ export default function LoginPage() {
           <span className="material-symbols-outlined text-white text-2xl">point_of_sale</span>
         </div>
         <div>
-          <h1 className="text-white text-xl font-bold leading-none">ERP/POS Pro</h1>
-          <p className="text-slate-400 text-xs mt-0.5">Sistema de Gestión Empresarial</p>
+          <h1 className="text-white text-xl font-bold leading-none">KAMAQ ONE</h1>
+          <p className="text-slate-400 text-xs mt-0.5">Sistema de Gestión</p>
         </div>
       </div>
 
@@ -95,13 +96,24 @@ export default function LoginPage() {
               lock
             </span>
             <input
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               required
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               placeholder="••••••••"
-              className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl pl-10 pr-4 py-2.5 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
+              className="w-full bg-slate-700 border border-slate-600 text-white rounded-xl pl-10 pr-10 py-2.5 text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors focus:outline-none"
+              tabIndex={-1}
+              aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+            >
+              <span className="material-symbols-outlined text-xl">
+                {showPassword ? 'visibility_off' : 'visibility'}
+              </span>
+            </button>
           </div>
         </div>
 

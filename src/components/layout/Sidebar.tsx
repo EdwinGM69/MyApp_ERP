@@ -126,7 +126,7 @@ export default function Sidebar() {
           <span className="material-symbols-outlined text-xl">point_of_sale</span>
         </div>
         <div>
-          <h1 className="text-white text-base font-bold leading-none">ERP/POS Pro</h1>
+          <h1 className="text-white text-base font-bold leading-none">KAMAQ ONE</h1>
           <p className="text-slate-500 text-xs font-medium mt-0.5">
             {mounted ? (user?.empresa || 'Administración General') : ''}
           </p>
