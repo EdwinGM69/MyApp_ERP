@@ -102,8 +102,17 @@ model Rol {
   id                   Int          @id @default(autoincrement())
   nombre               String       @unique
   descripcion          String?
+  sistema              Boolean
+  activo               Boolean
+  created_at           DateTime     @default(now())
+  updated_at           DateTime     @updatedAt
+  created_by           Int?
+  update_by            Int?
+  usuario_creador      Usuario?     @relation("RolCreador", fields: [created_by], references: [id])
+  usuario_modificador  Usuario?     @relation("RolModificador", fields: [update_by], references: [id])
   usuarios             Usuario[]
   usuarios_adicionales UsuarioRol[]
+  permisos             Permisos[]
 }
 
 model Usuario {
@@ -195,6 +204,9 @@ model Usuario {
   usuario_sucursales             UsuarioSucursal[]         @relation("UsuarioToUsuarioSucursal")
   usuarioSucursales_creadas      UsuarioSucursal[]         @relation("UsuarioSucursalCreador")
   roles_adicionales              UsuarioRol[]
+  roles_creados                  Rol[]                     @relation("RolCreador")
+  roles_modificados              Rol[]                     @relation("RolModificador")
+  roles_asignados                UsuarioRol[]              @relation("UsuarioRolAsignador")
   tipos_condicion_creados        TipoCondicion[]           @relation("TipoCondicionCreador")
   tipos_condicion_modificados    TipoCondicion[]           @relation("TipoCondicionModificador")
   condiciones_creadas            Condicion[]               @relation("CondicionCreador")
@@ -216,17 +228,21 @@ model Usuario {
    flujos_documentos_creados      FlujoDocumentos[]         @relation("FlujoDocumentosCreador")
    parametros_sistema_creados     ParametroSistema[]        @relation("ParametroSistemaCreador")
    parametros_sistema_modificados ParametroSistema[]        @relation("ParametroSistemaModificador")
+   opciones_menu_creados          OpcionMenu[]               @relation("OpcionMenuCreador")
+   opciones_menu_modificados      OpcionMenu[]               @relation("OpcionMenuModificador")
 
    @@unique([empresa_id, email])
 }
 
 model UsuarioRol {
-  id         Int      @id @default(autoincrement())
-  usuario_id Int
-  rol_id     Int
-  created_at DateTime @default(now())
-  rol        Rol      @relation(fields: [rol_id], references: [id], onDelete: Cascade)
-  usuario    Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
+  id                Int      @id @default(autoincrement())
+  usuario_id        Int
+  rol_id            Int
+  assigned_at       DateTime @default(now())
+  assigned_by       Int?
+  usuario_asignador Usuario? @relation("UsuarioRolAsignador", fields: [assigned_by], references: [id])
+  rol               Rol      @relation(fields: [rol_id], references: [id], onDelete: Cascade)
+  usuario           Usuario  @relation(fields: [usuario_id], references: [id], onDelete: Cascade)
 
   @@unique([usuario_id, rol_id])
 }
@@ -1518,9 +1534,12 @@ model Modulo {
   id              Int             @id @default(autoincrement())
   codigo          String          @unique
   descripcion     String
+  icono           String?
+  orden           Int             @default(0)
   activo          Boolean         @default(true)
   empresa_modulos EmpresaModulo[]
   parametros_sistema ParametroSistema[]
+  opciones_menu OpcionMenu[]
 }
 
 model EmpresaModulo {
@@ -1807,4 +1826,46 @@ model ParametroSistema {
   usuario_modificador  Usuario?                  @relation("ParametroSistemaModificador", fields: [updated_by], references: [id])
 
   @@unique([empresa_id, nivel, modulo_id, codigo])
+}
+
+model OpcionMenu {
+  id          Int          @id @default(autoincrement())
+  modulo_id   Int
+  parent_id   Int?
+  codigo      String
+  descripcion String
+  ruta        String?
+  orden       Int          @default(0)
+  activo      Boolean      @default(true)
+  created_at  DateTime     @default(now())
+  updated_at  DateTime?    @updatedAt
+  created_by  Int?
+  updated_by  Int?
+
+  modulo              Modulo       @relation(fields: [modulo_id], references: [id])
+  parent              OpcionMenu?  @relation("MenuOpcionSubmenu", fields: [parent_id], references: [id])
+  children            OpcionMenu[] @relation("MenuOpcionSubmenu")
+  usuario_creador     Usuario?     @relation("OpcionMenuCreador", fields: [created_by], references: [id])
+  usuario_modificador Usuario?     @relation("OpcionMenuModificador", fields: [updated_by], references: [id])
+  permisos            Permisos[]
+
+  @@unique([modulo_id, codigo])
+}
+
+model Permisos {
+  id                Int      @id @default(autoincrement())
+  rol_id            Int
+  opcion_menu_id    Int
+  visualizar        Boolean  @default(false)
+  crear             Boolean  @default(false)
+  editar            Boolean  @default(false)
+  borrar            Boolean  @default(false)
+  exportar          Boolean  @default(false)
+  importar          Boolean  @default(false)
+  abrir_cerrar_caja Boolean @default(false)
+
+  rol        Rol        @relation(fields: [rol_id], references: [id], onDelete: Cascade)
+  opcion_menu OpcionMenu @relation(fields: [opcion_menu_id], references: [id], onDelete: Cascade)
+
+  @@unique([rol_id, opcion_menu_id])
 }

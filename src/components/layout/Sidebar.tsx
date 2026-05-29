@@ -6,116 +6,371 @@ import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/hooks/useAuth'
 import { useSucursal } from '@/contexts/SucursalContext'
+import { apiFetch } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 
-const navItems = [
-  { href: '/dashboard', icon: 'dashboard', label: 'Tablero' },
-  { href: '/ventas', icon: 'description', label: 'Ventas' },
-  { href: '/ventas/pos', icon: 'shopping_cart', label: 'Punto de Venta' },
-  { href: '/gestion-caja', icon: 'account_balance_wallet', label: 'Gestión de Caja' },
-  { href: '/almacen/movimientos', icon: 'inventory_2', label: 'Inventario' },
-  { href: '/reportes', icon: 'bar_chart', label: 'Reportes' },
-]
+// ------------------------------------------------------------------
+// Tipos
+// ------------------------------------------------------------------
+interface OpcionMenuAPI {
+  id: number
+  parent_id: number | null
+  descripcion: string
+  ruta: string | null
+  orden: number
+  icono: string | null
+}
 
-const maestrosCategories = [
-  {
-    label: 'Comercial',
-    icon: 'storefront',
-    items: [
-      { href: '/maestros/clientes', icon: 'group', label: 'Clientes' },
-      { href: '/maestros/comercial/condiciones', icon: 'rule', label: 'Condiciones Comerciales' },
-      { href: '/precios/cupones', icon: 'confirmation_number', label: 'Cupones' },
-      { href: '/precios/promociones', icon: 'campaign', label: 'Promociones' },
-      { href: '/maestros/comercial/esquemas-calculo', icon: 'architecture', label: 'Esquemas de Cálculo' },
-      { href: '/maestros/comercial/clases-pedido', icon: 'description', label: 'Clase de Pedido' },
-    ]
-  },
-  {
-    label: 'Logística',
-    icon: 'inventory_2',
-    items: [
-      { href: '/maestros/logistica/marcas', icon: 'branding_watermark', label: 'Marcas' },
-      { href: '/maestros/logistica/categorias', icon: 'category', label: 'Categorías' },
-      { href: '/maestros/logistica/tipos-material', icon: 'inventory_2', label: 'Tipos de Material' },
-      { href: '/maestros/logistica/unidades', icon: 'straighten', label: 'Unidades de Medida' },
-      { href: '/maestros/estados-stock', icon: 'rule', label: 'Estado de Stock' },
-      { href: '/maestros/logistica/tipos-operacion', icon: 'list_alt', label: 'Tipos de Operación' },
-      { href: '/maestros/ubicaciones', icon: 'location_on', label: 'Ubicaciones' },
-      { href: '/maestros/logistica/almacenes', icon: 'warehouse', label: 'Almacenes' },
-      { href: '/maestros/logistica/esquemas-valoracion', icon: 'payments', label: 'Esquema de Valoración' },
-      { href: '/maestros/proveedores', icon: 'local_shipping', label: 'Proveedores' },
-      { href: '/maestros/materiales', icon: 'category', label: 'Materiales' },
-    ]
-  },
-  {
-    label: 'Tesorería',
-    icon: 'account_balance_wallet',
-    items: [
-      { href: '/tesoreria/monedas', icon: 'payments', label: 'Monedas' },
-      { href: '/tesoreria/bancos', icon: 'account_balance', label: 'Bancos' },
-      { href: '/tesoreria/tipo-cambio', icon: 'currency_exchange', label: 'Tipo de Cambio' },
-      { href: '/tesoreria/medios-pago', icon: 'payments', label: 'Medios de Pago' },
-      { href: '/tesoreria/cajas', icon: 'account_balance_wallet', label: 'Cajas' },
-      { href: '/tesoreria/conceptos-caja', icon: 'category', label: 'Concepto Caja' },
-    ]
+interface MenuNode extends OpcionMenuAPI {
+  children: MenuNode[]
+}
+
+// ------------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------------
+
+/** Construye árbol jerárquico a partir de lista plana ordenada por `orden` */
+function buildTree(items: OpcionMenuAPI[]): MenuNode[] {
+  const map = new Map<number, MenuNode>()
+  const roots: MenuNode[] = []
+
+  items.forEach((item) => {
+    map.set(item.id, { ...item, children: [] })
+  })
+
+  items.forEach((item) => {
+    const node = map.get(item.id)!
+    if (item.parent_id === null) {
+      roots.push(node)
+    } else {
+      const parent = map.get(item.parent_id)
+      if (parent) {
+        parent.children.push(node)
+      } else {
+        // Si el padre no está (filtrado por permisos), lo ponemos como raíz
+        roots.push(node)
+      }
+    }
+  })
+
+  return roots
+}
+
+/** Íconos por defecto basados en palabras clave de la ruta/descripción */
+function inferIcon(node: MenuNode): string {
+  if (node.icono) return node.icono
+  const desc = node.descripcion.toLowerCase()
+  const ruta = (node.ruta ?? '').toLowerCase()
+
+  // ── Operaciones / transacciones específicas (nivel hoja) ─────────────────
+  // Se verifican ANTES de los módulos para evitar que keywords del padre
+  // (ej: 'ventas' en "Registro de Ventas") capturen a todos los hijos.
+  /*
+  if (desc.includes('factura') || ruta.includes('factura')) return 'receipt'
+  if (desc.includes('cotizaci') || ruta.includes('cotizaci')) return 'request_quote'
+  if (desc.includes('pedido') || ruta.includes('pedido')) return 'shopping_bag'
+  if ((desc.includes('orden') && desc.includes('compra')) || ruta.includes('orden-compra') || ruta.includes('orden_compra')) return 'order_approve'
+  if (desc.includes('devoluci') || ruta.includes('devoluci')) return 'assignment_return'
+  if (desc.includes('nota de cr') || desc.includes('nota cr')) return 'note_alt'
+  if (desc.includes('nota de d') || desc.includes('nota de déb')) return 'note_alt'
+  if (desc.includes('remision') || desc.includes('remisión') || ruta.includes('remision')) return 'local_shipping'
+  if (desc.includes('guia') || desc.includes('guía') || ruta.includes('guia')) return 'receipt_long'
+  if (desc.includes('kardex') || ruta.includes('kardex')) return 'table_chart'
+  if (desc.includes('traslado') || ruta.includes('traslado')) return 'swap_horiz'
+  if (desc.includes('ajuste') || ruta.includes('ajuste')) return 'tune'
+  if (desc.includes('ingreso') || ruta.includes('ingreso')) return 'input'
+  if (desc.includes('egreso') || ruta.includes('egreso')) return 'output'
+  if (desc.includes('movimiento') || ruta.includes('movimiento')) return 'sync_alt'
+  if (desc.includes('existencia') || ruta.includes('existencia')) return 'inventory'
+  if (desc.includes('precio') || ruta.includes('precio')) return 'sell'
+  if (desc.includes('conteo') || desc.includes('toma fisica') || ruta.includes('conteo')) return 'fact_check'
+  if (desc.includes('arqueo') || ruta.includes('arqueo')) return 'point_of_sale'
+  if (desc.includes('apertura') || ruta.includes('apertura')) return 'lock_open'
+  if (desc.includes('cierre') || ruta.includes('cierre')) return 'lock'
+  if (desc.includes('cobro') || ruta.includes('cobro')) return 'attach_money'
+  if (desc.includes('abono') || ruta.includes('abono')) return 'payments'
+  if (desc.includes('anticipo') || ruta.includes('anticipo')) return 'savings'
+  if (desc.includes('transferencia') || ruta.includes('transferencia')) return 'swap_horiz'
+  if (desc.includes('conciliaci') || ruta.includes('conciliaci')) return 'compare'
+  if (desc.includes('anular') || desc.includes('cancelar')) return 'cancel'
+  if (desc.includes('reversar') || desc.includes('revertir')) return 'undo'
+  if (desc.includes('imprimir') || desc.includes('impresi')) return 'print'
+  if (desc.includes('exportar') || ruta.includes('export')) return 'file_download'
+  if (desc.includes('importar') || ruta.includes('import')) return 'file_upload'
+  if (desc.includes('historial') || ruta.includes('historial')) return 'history'
+  if (desc.includes('resumen') || ruta.includes('resumen')) return 'summarize'
+  if (desc.includes('registro') || ruta.includes('registro')) return 'edit_note'
+  if (desc.includes('listado') || ruta.includes('listado')) return 'format_list_bulleted'
+  if (desc.includes('detalle') || ruta.includes('detalle')) return 'receipt_long'
+  if (desc.includes('correlativo') || ruta.includes('correlativo')) return 'tag'
+  if (desc.includes('parámetros') || ruta.includes('parámetros')) return 'settings'
+*/
+  // ── Módulos / secciones (nivel padre) ────────────────────────────────────
+  if (desc.includes('tablero') || desc.includes('dashboard')) return 'dashboard'
+  if (desc.includes('punto de venta') || desc.includes('pos')) return 'shopping_cart'
+  if (desc.includes('ventas') || desc.includes('venta')) return 'description'
+  if (desc.includes('compras') || desc.includes('compra')) return 'shopping_cart'
+  if (desc.includes('caja')) return 'account_balance_wallet'
+  if (desc.includes('inventario') || desc.includes('almacen')) return 'inventory_2'
+  if (desc.includes('reporte')) return 'bar_chart'
+  if (desc.includes('cliente')) return 'group'
+  if (desc.includes('proveedor')) return 'local_shipping'
+  if (desc.includes('material')) return 'category'
+  if (desc.includes('marca')) return 'branding_watermark'
+  if (desc.includes('categor')) return 'category'
+  if (desc.includes('unidad')) return 'straighten'
+  if (desc.includes('ubicacion') || desc.includes('ubicación')) return 'location_on'
+  if (desc.includes('almac')) return 'warehouse'
+  if (desc.includes('valoraci')) return 'payments'
+  if (desc.includes('moneda')) return 'paid'
+  if (desc.includes('banco')) return 'account_balance'
+  if (desc.includes('cambio')) return 'currency_exchange'
+  if (desc.includes('medio') && desc.includes('pago')) return 'credit_card'
+  if (desc.includes('cup')) return 'confirmation_number'
+  if (desc.includes('descuento')) return 'discount'
+  if (desc.includes('promoci')) return 'campaign'
+  if (desc.includes('esquema')) return 'architecture'
+  if (desc.includes('empresa')) return 'settings_applications'
+  if (desc.includes('sucursal')) return 'store'
+  if (desc.includes('usuario')) return 'manage_accounts'
+  if (desc.includes('rol') || desc.includes('permiso')) return 'admin_panel_settings'
+  if (desc.includes('parámetros')) return 'settings'
+  if (desc.includes('industria')) return 'factory'
+  if (desc.includes('país') || desc.includes('pais')) return 'public'
+  if (desc.includes('documento')) return 'badge'
+  if (desc.includes('correlativos')) return 'tag'
+  if (desc.includes('condici')) return 'rule'
+  if (desc.includes('clase') && desc.includes('pedido')) return 'description'
+  if (desc.includes('tipo') && desc.includes('operaci')) return 'list_alt'
+  if (desc.includes('stock')) return 'rule'
+  return 'chevron_right'
+}
+
+// ------------------------------------------------------------------
+// Sub-componentes de renderizado
+// ------------------------------------------------------------------
+
+interface NavLinkProps {
+  href: string
+  icon: string
+  label: string
+  depth?: number
+  isActive: (href: string) => boolean
+}
+
+function NavLink({ href, icon, label, depth = 0, isActive }: NavLinkProps) {
+  const active = isActive(href)
+  return (
+    <Link
+      href={href}
+      className={cn(
+        'flex items-center gap-3 rounded-lg transition-colors text-sm font-medium',
+        depth === 0 ? 'px-3 py-2.5' : 'px-3 py-2',
+        active
+          ? depth === 0
+            ? 'bg-primary text-white'
+            : 'bg-primary/10 text-primary font-medium'
+          : 'hover:bg-slate-800 hover:text-white text-slate-400'
+      )}
+    >
+      <span className={cn('material-symbols-outlined', depth === 0 ? 'text-xl' : 'text-lg')}>
+        {icon}
+      </span>
+      {label}
+    </Link>
+  )
+}
+
+interface CollapsibleMenuProps {
+  node: MenuNode
+  depth: number
+  openMap: Record<string, boolean>
+  toggleOpen: (key: string) => void
+  isActive: (href: string) => boolean
+}
+
+function CollapsibleMenu({ node, depth, openMap, toggleOpen, isActive }: CollapsibleMenuProps) {
+  const key = `node-${node.id}`
+  const open = openMap[key] ?? false
+  const icon = inferIcon(node)
+
+  if (node.children.length === 0) {
+    // Hoja con ruta
+    if (node.ruta) {
+      return (
+        <NavLink href={node.ruta} icon={icon} label={node.descripcion} depth={depth} isActive={isActive} />
+      )
+    }
+    // Etiqueta sin hijos ni ruta (raro, pero lo mostramos como sección)
+    return (
+      <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 mt-3">
+        {node.descripcion}
+      </p>
+    )
   }
-]
 
-const adminItems = [
-  { href: '/empresa', icon: 'settings_applications', label: 'Empresa' },
-  { href: '/usuarios', icon: 'manage_accounts', label: 'Usuarios' },
-  { href: '/maestros/configuracion/parametros-sistema', icon: 'settings', label: 'Parámetros del Sistema' },
-  { href: '/logistica/industrias', icon: 'factory', label: 'Industrias' },
-  { href: '/logistica/paises', icon: 'public', label: 'Países' },
-  { href: '/logistica/documentos-identificacion', icon: 'badge', label: 'Documentos ID' },
-  { href: '/maestros/comercial/correlativos', icon: 'tag', label: 'Correlativos' },
-]
+  // Nodo con children: si parent_id == null y ruta == null → etiqueta de sección
+  if (node.parent_id === null && node.ruta === null) {
+    return (
+      <div className="pt-3">
+        <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+          {node.descripcion}
+        </p>
+        <div className="space-y-0.5">
+          {node.children.map((child) => (
+            <CollapsibleMenu
+              key={child.id}
+              node={child}
+              depth={depth}
+              openMap={openMap}
+              toggleOpen={toggleOpen}
+              isActive={isActive}
+            />
+          ))}
+        </div>
+      </div>
+    )
+  }
 
-const bottomItems: any[] = []
+  // Nodo agrupador colapsable (tiene hijos pero no es raíz de sección)
+  return (
+    <div className="space-y-0.5">
+      <button
+        onClick={() => toggleOpen(key)}
+        className={cn(
+          'w-full flex items-center justify-between px-3 rounded-lg transition-colors text-sm font-medium',
+          depth === 0 ? 'py-2.5' : 'py-2',
+          open ? 'bg-slate-800/50 text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+        )}
+      >
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              'material-symbols-outlined transition-colors',
+              depth === 0 ? 'text-xl' : 'text-lg',
+              open ? 'text-primary' : 'text-slate-400'
+            )}
+          >
+            {icon}
+          </span>
+          {node.descripcion}
+        </div>
+        <span
+          className={cn(
+            'material-symbols-outlined text-base transition-transform duration-200',
+            open ? 'rotate-180' : ''
+          )}
+        >
+          expand_more
+        </span>
+      </button>
+
+      {open && (
+        <div className="mt-0.5 space-y-0.5 ml-[22px] pl-4 border-l border-slate-700/60">
+          {node.children.map((child) => (
+            <CollapsibleMenu
+              key={child.id}
+              node={child}
+              depth={depth + 1}
+              openMap={openMap}
+              toggleOpen={toggleOpen}
+              isActive={isActive}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------
+// Componente principal Sidebar
+// ------------------------------------------------------------------
 
 export default function Sidebar() {
   const pathname = usePathname()
   const router = useRouter()
   const [mounted, setMounted] = useState(false)
-  const [openCategories, setOpenCategories] = useState<{ [key: string]: boolean }>({})
-
-  useEffect(() => {
-    setMounted(true)
-    const initialState: { [key: string]: boolean } = {}
-    maestrosCategories.forEach(cat => {
-      initialState[cat.label] = cat.items.some(i => pathname.startsWith(i.href))
-    })
-    setOpenCategories(initialState)
-  }, [pathname])
-
-  const toggleCategory = (label: string) => {
-    setOpenCategories(prev => ({ ...prev, [label]: !prev[label] }))
-  }
+  const [menuTree, setMenuTree] = useState<MenuNode[]>([])
+  const [loadingMenu, setLoadingMenu] = useState(true)
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>({})
 
   const clearAuth = useAuthStore((s) => s.clearAuth)
   const user = useAuthStore((s) => s.user)
   const { currentSucursal, hasSucursales } = useSucursal()
+
+  // ---- Cargar menú desde API ----
+  useEffect(() => {
+    setMounted(true)
+
+    async function fetchMenu() {
+      try {
+        const res = await apiFetch('/api/menu')
+        if (!res.ok) return
+        const data = await res.json()
+        const items: OpcionMenuAPI[] = data.menu ?? []
+        const tree = buildTree(items)
+        setMenuTree(tree)
+
+        // Auto-expandir nodos que contienen la ruta activa
+        const initialOpen: Record<string, boolean> = {}
+        const autoExpand = (nodes: MenuNode[]) => {
+          nodes.forEach((node) => {
+            if (node.children.length > 0) {
+              const hasActive = (ns: MenuNode[]): boolean =>
+                ns.some(
+                  (n) =>
+                    (n.ruta && pathname.startsWith(n.ruta)) ||
+                    (n.children.length > 0 && hasActive(n.children))
+                )
+              initialOpen[`node-${node.id}`] = hasActive(node.children)
+              autoExpand(node.children)
+            }
+          })
+        }
+        autoExpand(tree)
+        setOpenMap(initialOpen)
+      } catch {
+        // Silencioso — el sidebar simplemente no muestra ítems
+      } finally {
+        setLoadingMenu(false)
+      }
+    }
+
+    fetchMenu()
+  }, [pathname])
+
+  const toggleOpen = (key: string) => {
+    setOpenMap((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  function isActive(href: string) {
+    if (pathname === href) return true
+    if (pathname.startsWith(href + '/')) {
+      // Evitar falsos positivos: que no haya una coincidencia más específica
+      const allRoutes = collectRoutes(menuTree)
+      const betterMatch = allRoutes.find(
+        (r) => r !== href && pathname.startsWith(r) && r.length > href.length
+      )
+      return !betterMatch
+    }
+    return false
+  }
+
+  function collectRoutes(nodes: MenuNode[]): string[] {
+    const routes: string[] = []
+    nodes.forEach((n) => {
+      if (n.ruta) routes.push(n.ruta)
+      routes.push(...collectRoutes(n.children))
+    })
+    return routes
+  }
 
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' })
     clearAuth()
     toast.success('Sesión cerrada')
     router.push('/login')
-  }
-
-  function isActive(href: string) {
-    if (pathname === href) return true
-    if (pathname.startsWith(href + '/')) {
-      const allItems = [
-        ...navItems,
-        ...maestrosCategories.flatMap(cat => cat.items)
-      ]
-      const betterMatch = allItems.find(
-        (item) => item.href !== href && pathname.startsWith(item.href) && item.href.length > href.length
-      )
-      return !betterMatch
-    }
-    return false
   }
 
   return (
@@ -141,129 +396,36 @@ export default function Sidebar() {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-1">
-        {/* Main nav */}
-        {navItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium',
-              isActive(item.href)
-                ? 'bg-primary text-white'
-                : 'hover:bg-slate-800 hover:text-white text-slate-400'
-            )}
-          >
-            <span className="material-symbols-outlined text-xl">{item.icon}</span>
-            {item.label}
-          </Link>
-        ))}
-
-        {/* Maestros section (Flat categories) */}
-        <div className="pt-2">
-          <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-            Maestros
-          </p>
-
-          <div className="space-y-1">
-            {maestrosCategories.map((category) => (
-              <div key={category.label} className="space-y-0.5">
-                <button
-                  onClick={() => toggleCategory(category.label)}
-                  className={cn(
-                    "w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-colors text-sm font-medium",
-                    openCategories[category.label] ? "bg-slate-800/50 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={cn(
-                      "material-symbols-outlined text-xl transition-colors",
-                      openCategories[category.label] ? "text-primary" : "text-slate-400"
-                    )}>
-                      {category.icon}
-                    </span>
-                    {category.label}
-                  </div>
-                  {category.items.length > 0 && (
-                    <span
-                      className={cn(
-                        'material-symbols-outlined text-base transition-transform duration-200',
-                        openCategories[category.label] ? 'rotate-180' : ''
-                      )}
-                    >
-                      expand_more
-                    </span>
-                  )}
-                </button>
-
-                {openCategories[category.label] && category.items.length > 0 && (
-                  <div className="ml-9 mt-0.5 space-y-0.5">
-                    {category.items.map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={cn(
-                          'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors text-sm',
-                          isActive(item.href)
-                            ? 'bg-primary/10 text-primary font-medium'
-                            : 'hover:bg-slate-800 hover:text-white text-slate-400'
-                        )}
-                      >
-                        <span className="material-symbols-outlined text-lg">{item.icon}</span>
-                        {item.label}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
+        {loadingMenu ? (
+          // Skeleton de carga
+          <div className="space-y-2 mt-2">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-9 rounded-lg bg-slate-800/60 animate-pulse"
+                style={{ width: `${70 + (i % 3) * 10}%` }}
+              />
             ))}
           </div>
-        </div>
-
-        {/* Administracion section */}
-        <div className="pt-4">
-          <p className="px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">
-            Administración
+        ) : menuTree.length === 0 ? (
+          <p className="px-3 py-4 text-xs text-slate-500 text-center">
+            Sin opciones de menú disponibles.
           </p>
-          <div className="space-y-1">
-            {adminItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium',
-                  isActive(item.href)
-                    ? 'bg-primary text-white'
-                    : 'hover:bg-slate-800 hover:text-white text-slate-400'
-                )}
-              >
-                <span className="material-symbols-outlined text-xl">{item.icon}</span>
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* Bottom nav items */}
-        <div className="pt-2 border-t border-slate-800 mt-2">
-          {bottomItems.map((item) => (
-            <a
-              key={item.href}
-              href={item.href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium mt-1',
-                isActive(item.href)
-                  ? 'bg-primary text-white'
-                  : 'hover:bg-slate-800 hover:text-white text-slate-400'
-              )}
-            >
-              <span className="material-symbols-outlined text-xl">{item.icon}</span>
-              {item.label}
-            </a>
-          ))}
-        </div>
+        ) : (
+          menuTree.map((node) => (
+            <CollapsibleMenu
+              key={node.id}
+              node={node}
+              depth={0}
+              openMap={openMap}
+              toggleOpen={toggleOpen}
+              isActive={isActive}
+            />
+          ))
+        )}
       </nav>
 
-      {/* Premium notice */}
+      {/* User / Logout */}
       <div className="p-3 border-t border-slate-800">
         <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700">
           <div className="flex items-start gap-2 mb-2">
@@ -276,12 +438,14 @@ export default function Sidebar() {
             <button className="flex-1 text-[10px] font-bold bg-primary text-white py-1.5 rounded-lg hover:bg-primary-dark transition-colors uppercase tracking-tight">
               Actualizar Ahora
             </button>
-            <button className="flex-1 text-[10px] font-bold bg-slate-700 text-white py-1.5 rounded-lg hover:bg-slate-600 transition-colors uppercase tracking-tight">
-              Cambiar Plan
+            <button
+              onClick={handleLogout}
+              className="flex-1 text-[10px] font-bold bg-slate-700 text-white py-1.5 rounded-lg hover:bg-slate-600 transition-colors uppercase tracking-tight"
+            >
+              Cerrar Sesión
             </button>
           </div>
         </div>
-
       </div>
     </aside>
   )
