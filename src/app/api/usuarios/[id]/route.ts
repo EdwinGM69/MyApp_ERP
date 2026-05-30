@@ -12,7 +12,6 @@ const usuarioUpdateSchema = z.object({
   activo: z.boolean().optional(),
   telefono: z.string().optional().nullable(),
   posicion: z.string().optional().nullable(),
-  is_superadmin: z.boolean().optional(),
   two_factor_enabled: z.boolean().optional(),
   preferencias: z.any().optional(),
   roles_adicionales: z.array(z.number().int().positive()).optional(),

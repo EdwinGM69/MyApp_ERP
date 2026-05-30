@@ -22,7 +22,6 @@ interface Usuario {
   email: string
   telefono?: string | null
   posicion?: string | null
-  is_superadmin: boolean
   two_factor_enabled: boolean
   preferencias?: any
   rol_id: number
@@ -73,7 +72,6 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
   const [email, setEmail] = useState('')
   const [telefono, setTelefono] = useState('')
   const [posicion, setPosicion] = useState('')
-  const [isSuperadmin, setIsSuperadmin] = useState(false)
   const [assignedRoles, setAssignedRoles] = useState<number[]>([])
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -121,7 +119,6 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
       setEmail(usuario.email || '')
       setTelefono(usuario.telefono || '')
       setPosicion(usuario.posicion || '')
-      setIsSuperadmin(usuario.is_superadmin || false)
 
       const userRoles = [usuario.rol_id]
       if (usuario.roles_adicionales) {
@@ -153,7 +150,6 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
       setEmail('')
       setTelefono('')
       setPosicion('')
-      setIsSuperadmin(false)
       setAssignedRoles([])
       setTwoFactor(false)
       setAssignedSucursales([])
@@ -191,11 +187,6 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (assignedRoles.length === 0 && !isSuperadmin) {
-      toast.error('Debe asignar al menos un rol o seleccionar Super administrador')
-      return
-    }
-
     if (newPassword && newPassword !== confirmPassword) {
       toast.error('Las contraseñas nuevas no coinciden')
       return
@@ -214,7 +205,6 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
         email: email.trim(),
         telefono: telefono ? telefono.trim() : null,
         posicion: posicion ? posicion.trim() : null,
-        is_superadmin: isSuperadmin,
         two_factor_enabled: twoFactor,
         activo: true,
         rol_id: mainRolId,
@@ -329,24 +319,6 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
               <span className="material-symbols-outlined text-[16px]">verified</span>
               Configurar Permisos
             </button>
-          </div>
-
-          <div className="p-4 bg-orange-50 border border-orange-100 rounded-2xl">
-            <label className="flex items-center gap-4 cursor-pointer group">
-              <div className="relative flex items-center justify-center w-6 h-6">
-                <input
-                  type="checkbox"
-                  className="peer w-6 h-6 border-2 border-orange-200 rounded-lg cursor-pointer appearance-none checked:bg-orange-600 checked:border-orange-600 transition-all"
-                  checked={isSuperadmin}
-                  onChange={e => setIsSuperadmin(e.target.checked)}
-                />
-                <span className="material-symbols-outlined absolute text-white text-[16px] pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity">check</span>
-              </div>
-              <div>
-                <span className="text-sm font-bold text-orange-900">Acceso Super administrador</span>
-                <p className="text-[11px] text-orange-700 font-medium">Otorga control total sobre todos los módulos y configuraciones del sistema.</p>
-              </div>
-            </label>
           </div>
 
           <div>

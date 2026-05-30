@@ -125,7 +125,6 @@ model Usuario {
   avatar_url                     String?
   telefono                       String?
   posicion                       String?
-  is_superadmin                  Boolean                   @default(false)
   two_factor_enabled             Boolean                   @default(false)
   preferencias                   Json?
   last_sucursal_id               Int?

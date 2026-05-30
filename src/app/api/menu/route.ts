@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
       where: { id: userId },
       select: {
         rol_id: true,
-        is_superadmin: true,
         roles_adicionales: {
           select: { rol_id: true }
         }
@@ -31,20 +30,15 @@ export async function GET(req: NextRequest) {
     )
 
     // 2. Obtener los opcion_menu_id a los que tiene acceso (visualizar = true)
-    //    Si is_superadmin, se saltan los permisos y se muestran todas las opciones activas
-    let opcionesPermitidas: Set<number> | null = null
+    const permisos = await prisma.permisos.findMany({
+      where: {
+        rol_id: { in: rolIds },
+        visualizar: true,
+      },
+      select: { opcion_menu_id: true }
+    })
 
-    if (!usuario.is_superadmin) {
-      const permisos = await prisma.permisos.findMany({
-        where: {
-          rol_id: { in: rolIds },
-          visualizar: true,
-        },
-        select: { opcion_menu_id: true }
-      })
-
-      opcionesPermitidas = new Set(permisos.map((p) => p.opcion_menu_id))
-    }
+    const opcionesPermitidas = new Set(permisos.map((p) => p.opcion_menu_id))
 
     // 3. Traer todas las opciones de menú activas, ordenadas por `orden`
     const opcionesMenu = await prisma.opcionMenu.findMany({
@@ -66,14 +60,12 @@ export async function GET(req: NextRequest) {
     //    Una opción padre (sin ruta, etiqueta de sección) se muestra si tiene al menos
     //    un hijo visible. Las opciones con ruta se muestran si tienen permiso.
     const filtrarOpciones = (items: typeof opcionesMenu): typeof opcionesMenu => {
-      if (opcionesPermitidas === null) return items // superadmin
-
       // Primero, construir set de ids con acceso directo (tienen permiso)
       const idConPermiso = new Set(
         items
           .filter(
             (o) =>
-              o.ruta !== null && opcionesPermitidas!.has(o.id)
+              o.ruta !== null && opcionesPermitidas.has(o.id)
           )
           .map((o) => o.id)
       )

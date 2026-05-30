@@ -28,13 +28,6 @@ async function main() {
     create: { nombre: 'superadmin', descripcion: 'Administrador con acceso total', sistema: true, activo: true },
   })
 
-  // Create usuario rol
-  await prisma.usuarioRol.upsert({
-    where: { usuario_id_rol_id: { usuario_id: 1, rol_id: adminRol.id } },
-    update: {},
-    create: { usuario_id: 1, rol_id: adminRol.id, assigned_by: 1 }
-  })
-
   // Create empresa
   const empresa = await prisma.empresa.upsert({
     where: { nif: '20123456789' },
@@ -77,7 +70,7 @@ async function main() {
 
   // Create admin user
   const passwordHash = await bcrypt.hash('admin123', 12)
-  await prisma.usuario.upsert({
+  const adminUser = await prisma.usuario.upsert({
     where: { empresa_id_email: { empresa_id: empresa.id, email: 'admin@empresademo.com' } },
     update: {},
     create: {
@@ -88,6 +81,13 @@ async function main() {
       password_hash: passwordHash,
       activo: true,
     },
+  })
+
+  // Create usuario rol
+  await prisma.usuarioRol.upsert({
+    where: { usuario_id_rol_id: { usuario_id: adminUser.id, rol_id: adminRol.id } },
+    update: {},
+    create: { usuario_id: adminUser.id, rol_id: adminRol.id, assigned_by: adminUser.id }
   })
 
   // Create impuesto
@@ -141,291 +141,293 @@ async function main() {
     prisma.modulo.upsert({
       where: { codigo: 'COMERCIAL' },
       update: {},
-      create: { codigo: 'COMERCIAL', descripcion: 'Módulo Comercial', icono: 'storefront', orden: 1, activo: true },
+      create: { codigo: 'COMERCIAL', descripcion: 'Módulo Comercial', orden: 1, activo: true },
     }),
     prisma.modulo.upsert({
       where: { codigo: 'TESORERIA' },
       update: {},
-      create: { codigo: 'TESORERIA', descripcion: 'Módulo Tesorería', icono: 'account_balance_wallet', orden: 2, activo: true },
+      create: { codigo: 'TESORERIA', descripcion: 'Módulo Tesorería', orden: 2, activo: true },
     }),
     prisma.modulo.upsert({
       where: { codigo: 'LOGISTICA' },
       update: {},
-      create: { codigo: 'LOGISTICA', descripcion: 'Módulo Logística', icono: 'inventory_2', orden: 3, activo: true },
+      create: { codigo: 'LOGISTICA', descripcion: 'Módulo Logística', orden: 3, activo: true },
     }),
     prisma.modulo.upsert({
       where: { codigo: 'ADMINISTRACION' },
       update: {},
-      create: { codigo: 'ADMINISTRACION', descripcion: 'Administración', icono: 'settings_applications', orden: 4, activo: true },
+      create: { codigo: 'ADMINISTRACION', descripcion: 'Administración', orden: 4, activo: true },
     })
   ])
 
+  const [comercialModulo, tesoreriaModulo, logisticaModulo, adminModulo] = modulos
+
   const parentPrincipal = await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 2, codigo: 'DASHBOARD' } },
+    where: { modulo_id_codigo: { modulo_id: adminModulo.id, codigo: 'DASHBOARD' } },
     update: {},
-    create: { modulo_id: 2, codigo: 'DASHBOARD', descripcion: 'Dashboard', ruta: '/dashboard', orden: 1, activo: true, created_by: 1 },
+    create: { modulo_id: adminModulo.id, codigo: 'DASHBOARD', descripcion: 'Dashboard', ruta: '/dashboard', orden: 1, activo: true, created_by: 1 },
   })
 
   // Módulo Comercial
   const parentComercial = await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'COMERCIAL' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'COMERCIAL' } },
     update: {},
-    create: { modulo_id: 1, codigo: 'COMERCIAL', descripcion: 'Módulo Comercial', orden: 2, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, codigo: 'COMERCIAL', descripcion: 'Módulo Comercial', orden: 2, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'VENTAS' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'VENTAS' } },
     update: {},
-    create: { modulo_id: 1, parent_id: parentComercial.id, codigo: 'VENTAS', descripcion: 'Ventas', ruta: '/ventas', orden: 3, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, parent_id: parentComercial.id, codigo: 'VENTAS', descripcion: 'Ventas', ruta: '/ventas', orden: 3, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'PUNTO_VENTA' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'PUNTO_VENTA' } },
     update: {},
-    create: { modulo_id: 1, parent_id: parentComercial.id, codigo: 'PUNTO_VENTA', descripcion: 'Punto de Venta', ruta: '/ventas/pos', orden: 4, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, parent_id: parentComercial.id, codigo: 'PUNTO_VENTA', descripcion: 'Punto de Venta', ruta: '/ventas/pos', orden: 4, activo: true, created_by: 1 },
   })
 
   const parentMaestros = await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'MAESTROS_COM' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'MAESTROS_COM' } },
     update: {},
-    create: { modulo_id: 1, parent_id: parentComercial.id, codigo: 'MAESTROS_COM', descripcion: 'Maestros', orden: 5, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, parent_id: parentComercial.id, codigo: 'MAESTROS_COM', descripcion: 'Maestros', orden: 5, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'CLIENTES' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'CLIENTES' } },
     update: {},
-    create: { modulo_id: 1, parent_id: parentMaestros.id, codigo: 'CLIENTES', descripcion: 'Clientes', ruta: '/maestros/clientes', orden: 6, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, parent_id: parentMaestros.id, codigo: 'CLIENTES', descripcion: 'Clientes', ruta: '/maestros/clientes', orden: 6, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'CONDICION_COMERCIAL' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'CONDICION_COMERCIAL' } },
     update: {},
-    create: { modulo_id: 1, parent_id: parentMaestros.id, codigo: 'CONDICION_COMERCIAL', descripcion: 'Condicionaes Comerciales', ruta: '/maestros/comercial/condiciones', orden: 7, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, parent_id: parentMaestros.id, codigo: 'CONDICION_COMERCIAL', descripcion: 'Condicionaes Comerciales', ruta: '/maestros/comercial/condiciones', orden: 7, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'CUPONES' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'CUPONES' } },
     update: {},
-    create: { modulo_id: 1, parent_id: parentMaestros.id, codigo: 'CUPONES', descripcion: 'Cupones', ruta: '/precios/cupones', orden: 8, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, parent_id: parentMaestros.id, codigo: 'CUPONES', descripcion: 'Cupones', ruta: '/precios/cupones', orden: 8, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'PROMOCIONES' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'PROMOCIONES' } },
     update: {},
-    create: { modulo_id: 1, parent_id: parentMaestros.id, codigo: 'PROMOCIONES', descripcion: 'Promociones', ruta: '/precios/promociones', orden: 9, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, parent_id: parentMaestros.id, codigo: 'PROMOCIONES', descripcion: 'Promociones', ruta: '/precios/promociones', orden: 9, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'ESQUEMA_CALCULO' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'ESQUEMA_CALCULO' } },
     update: {},
-    create: { modulo_id: 1, parent_id: parentMaestros.id, codigo: 'ESQUEMA_CALCULO', descripcion: 'Esquema de Cálculo', ruta: '/maestros/comercial/esquemas-calculo', orden: 10, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, parent_id: parentMaestros.id, codigo: 'ESQUEMA_CALCULO', descripcion: 'Esquema de Cálculo', ruta: '/maestros/comercial/esquemas-calculo', orden: 10, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'CLASE_PEDIDO' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'CLASE_PEDIDO' } },
     update: {},
-    create: { modulo_id: 1, parent_id: parentMaestros.id, codigo: 'CLASE_PEDIDO', descripcion: 'Clase de Pedido', ruta: '/maestros/comercial/clases-pedido', orden: 11, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, parent_id: parentMaestros.id, codigo: 'CLASE_PEDIDO', descripcion: 'Clase de Pedido', ruta: '/maestros/comercial/clases-pedido', orden: 11, activo: true, created_by: 1 },
   })
 
   const parentReportes = await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'REPORTES' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'REPORTES' } },
     update: {},
-    create: { modulo_id: 1, parent_id: parentComercial.id, codigo: 'REPORTES', descripcion: 'Reportes', orden: 12, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, parent_id: parentComercial.id, codigo: 'REPORTES', descripcion: 'Reportes', orden: 12, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 1, codigo: 'REPORTE_VENTA' } },
+    where: { modulo_id_codigo: { modulo_id: comercialModulo.id, codigo: 'REPORTE_VENTA' } },
     update: {},
-    create: { modulo_id: 1, parent_id: parentReportes.id, codigo: 'REPORTE_VENTA', descripcion: 'Reporte de Venta', orden: 13, activo: true, created_by: 1 },
+    create: { modulo_id: comercialModulo.id, parent_id: parentReportes.id, codigo: 'REPORTE_VENTA', descripcion: 'Reporte de Venta', orden: 13, activo: true, created_by: 1 },
   })
 
   // Módulo de Tesoreria
   const parentTesoreria = await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 3, codigo: 'TESORERIA' } },
+    where: { modulo_id_codigo: { modulo_id: tesoreriaModulo.id, codigo: 'TESORERIA' } },
     update: {},
-    create: { modulo_id: 3, codigo: 'TESORERIA', descripcion: 'Módulo Tesoreria', orden: 14, activo: true, created_by: 1 },
+    create: { modulo_id: tesoreriaModulo.id, codigo: 'TESORERIA', descripcion: 'Módulo Tesoreria', orden: 14, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 3, codigo: 'GESTION_CAJA' } },
+    where: { modulo_id_codigo: { modulo_id: tesoreriaModulo.id, codigo: 'GESTION_CAJA' } },
     update: {},
-    create: { modulo_id: 3, parent_id: parentTesoreria.id, codigo: 'GESTION_CAJA', descripcion: 'Gestión de Caja', ruta: '/gestion-caja', orden: 15, activo: true, created_by: 1 },
+    create: { modulo_id: tesoreriaModulo.id, parent_id: parentTesoreria.id, codigo: 'GESTION_CAJA', descripcion: 'Gestión de Caja', ruta: '/gestion-caja', orden: 15, activo: true, created_by: 1 },
   })
 
   const parentMaestrosTesoreria = await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 3, codigo: 'MAESTROS_TES' } },
+    where: { modulo_id_codigo: { modulo_id: tesoreriaModulo.id, codigo: 'MAESTROS_TES' } },
     update: {},
-    create: { modulo_id: 3, parent_id: parentTesoreria.id, codigo: 'MAESTROS_TES', descripcion: 'Maestros', orden: 16, activo: true, created_by: 1 },
+    create: { modulo_id: tesoreriaModulo.id, parent_id: parentTesoreria.id, codigo: 'MAESTROS_TES', descripcion: 'Maestros', orden: 16, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 3, codigo: 'MONEDAS' } },
+    where: { modulo_id_codigo: { modulo_id: tesoreriaModulo.id, codigo: 'MONEDAS' } },
     update: {},
-    create: { modulo_id: 3, parent_id: parentMaestrosTesoreria.id, codigo: 'MONEDAS', descripcion: 'Monedas', ruta: '/tesoreria/monedas', orden: 17, activo: true, created_by: 1 },
+    create: { modulo_id: tesoreriaModulo.id, parent_id: parentMaestrosTesoreria.id, codigo: 'MONEDAS', descripcion: 'Monedas', ruta: '/tesoreria/monedas', orden: 17, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 3, codigo: 'BANCOS' } },
+    where: { modulo_id_codigo: { modulo_id: tesoreriaModulo.id, codigo: 'BANCOS' } },
     update: {},
-    create: { modulo_id: 3, parent_id: parentMaestrosTesoreria.id, codigo: 'BANCOS', descripcion: 'Bancos', ruta: '/tesoreria/bancos', orden: 18, activo: true, created_by: 1 },
+    create: { modulo_id: tesoreriaModulo.id, parent_id: parentMaestrosTesoreria.id, codigo: 'BANCOS', descripcion: 'Bancos', ruta: '/tesoreria/bancos', orden: 18, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 3, codigo: 'TIPO_CAMBIO' } },
+    where: { modulo_id_codigo: { modulo_id: tesoreriaModulo.id, codigo: 'TIPO_CAMBIO' } },
     update: {},
-    create: { modulo_id: 3, parent_id: parentMaestrosTesoreria.id, codigo: 'TIPO_CAMBIO', descripcion: 'Tipos de Cambio', ruta: '/tesoreria/tipo-cambio', orden: 19, activo: true, created_by: 1 },
+    create: { modulo_id: tesoreriaModulo.id, parent_id: parentMaestrosTesoreria.id, codigo: 'TIPO_CAMBIO', descripcion: 'Tipos de Cambio', ruta: '/tesoreria/tipo-cambio', orden: 19, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 3, codigo: 'MEDIO_PAGO' } },
+    where: { modulo_id_codigo: { modulo_id: tesoreriaModulo.id, codigo: 'MEDIO_PAGO' } },
     update: {},
-    create: { modulo_id: 3, parent_id: parentMaestrosTesoreria.id, codigo: 'MEDIO_PAGO', descripcion: 'Medios de Pago', ruta: '/tesoreria/medios-pago', orden: 20, activo: true, created_by: 1 },
+    create: { modulo_id: tesoreriaModulo.id, parent_id: parentMaestrosTesoreria.id, codigo: 'MEDIO_PAGO', descripcion: 'Medios de Pago', ruta: '/tesoreria/medios-pago', orden: 20, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 3, codigo: 'CAJAS' } },
+    where: { modulo_id_codigo: { modulo_id: tesoreriaModulo.id, codigo: 'CAJAS' } },
     update: {},
-    create: { modulo_id: 3, parent_id: parentMaestrosTesoreria.id, codigo: 'CAJAS', descripcion: 'Cajas', ruta: '/tesoreria/cajas', orden: 21, activo: true, created_by: 1 },
+    create: { modulo_id: tesoreriaModulo.id, parent_id: parentMaestrosTesoreria.id, codigo: 'CAJAS', descripcion: 'Cajas', ruta: '/tesoreria/cajas', orden: 21, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 3, codigo: 'CONCEPTO_CAJA' } },
+    where: { modulo_id_codigo: { modulo_id: tesoreriaModulo.id, codigo: 'CONCEPTO_CAJA' } },
     update: {},
-    create: { modulo_id: 3, parent_id: parentMaestrosTesoreria.id, codigo: 'CONCEPTO_CAJA', descripcion: 'Concepto Caja', ruta: '/tesoreria/conceptos-caja', orden: 22, activo: true, created_by: 1 },
+    create: { modulo_id: tesoreriaModulo.id, parent_id: parentMaestrosTesoreria.id, codigo: 'CONCEPTO_CAJA', descripcion: 'Concepto Caja', ruta: '/tesoreria/conceptos-caja', orden: 22, activo: true, created_by: 1 },
   })
 
   // Módulo Logística
   const parentLogistica = await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'LOGISTICA' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'LOGISTICA' } },
     update: {},
-    create: { modulo_id: 4, codigo: 'LOGISTICA', descripcion: 'Módulo Logística', orden: 23, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, codigo: 'LOGISTICA', descripcion: 'Módulo Logística', orden: 23, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'INVENTARIO' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'INVENTARIO' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentLogistica.id, codigo: 'INVENTARIO', descripcion: 'Inventario', ruta: '/almacen/movimientos', orden: 24, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentLogistica.id, codigo: 'INVENTARIO', descripcion: 'Inventario', ruta: '/almacen/movimientos', orden: 24, activo: true, created_by: 1 },
   })
 
   const parentMaestrosLogistica = await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'MAESTROS_LOG' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'MAESTROS_LOG' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentLogistica.id, codigo: 'MAESTROS_LOG', descripcion: 'Maestros', orden: 25, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentLogistica.id, codigo: 'MAESTROS_LOG', descripcion: 'Maestros', orden: 25, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'MARCAS' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'MARCAS' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentMaestrosLogistica.id, codigo: 'MARCAS', descripcion: 'Marcas', ruta: '/maestros/logistica/marcas', orden: 26, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentMaestrosLogistica.id, codigo: 'MARCAS', descripcion: 'Marcas', ruta: '/maestros/logistica/marcas', orden: 26, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'CATEGORIAS' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'CATEGORIAS' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentMaestrosLogistica.id, codigo: 'CATEGORIAS', descripcion: 'Categorías', ruta: '/maestros/logistica/categorias', orden: 27, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentMaestrosLogistica.id, codigo: 'CATEGORIAS', descripcion: 'Categorías', ruta: '/maestros/logistica/categorias', orden: 27, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'TIPO_MATERIAL' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'TIPO_MATERIAL' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentMaestrosLogistica.id, codigo: 'TIPO_MATERIAL', descripcion: 'Tipos de Material', ruta: '/maestros/logistica/tipos-material', orden: 28, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentMaestrosLogistica.id, codigo: 'TIPO_MATERIAL', descripcion: 'Tipos de Material', ruta: '/maestros/logistica/tipos-material', orden: 28, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'UNIDAD_MEDIDA' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'UNIDAD_MEDIDA' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentMaestrosLogistica.id, codigo: 'UNIDAD_MEDIDA', descripcion: 'Unidades de Medida', ruta: '/maestros/logistica/unidades', orden: 29, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentMaestrosLogistica.id, codigo: 'UNIDAD_MEDIDA', descripcion: 'Unidades de Medida', ruta: '/maestros/logistica/unidades', orden: 29, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'ESTADO_STOCK' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'ESTADO_STOCK' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentMaestrosLogistica.id, codigo: 'ESTADO_STOCK', descripcion: 'Estado de Stock', ruta: '/maestros/estados-stock', orden: 30, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentMaestrosLogistica.id, codigo: 'ESTADO_STOCK', descripcion: 'Estado de Stock', ruta: '/maestros/estados-stock', orden: 30, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'TIPO_OPERACION' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'TIPO_OPERACION' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentMaestrosLogistica.id, codigo: 'TIPO_OPERACION', descripcion: 'Tipo de Operación', ruta: '/maestros/logistica/tipos-operacion', orden: 31, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentMaestrosLogistica.id, codigo: 'TIPO_OPERACION', descripcion: 'Tipo de Operación', ruta: '/maestros/logistica/tipos-operacion', orden: 31, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'UBICACIONES' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'UBICACIONES' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentMaestrosLogistica.id, codigo: 'UBICACIONES', descripcion: 'Ubicaciones', ruta: '/maestros/ubicaciones', orden: 32, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentMaestrosLogistica.id, codigo: 'UBICACIONES', descripcion: 'Ubicaciones', ruta: '/maestros/ubicaciones', orden: 32, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'ALMACENES' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'ALMACENES' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentMaestrosLogistica.id, codigo: 'ALMACENES', descripcion: 'Almacenes', ruta: '/maestros/logistica/almacenes', orden: 33, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentMaestrosLogistica.id, codigo: 'ALMACENES', descripcion: 'Almacenes', ruta: '/maestros/logistica/almacenes', orden: 33, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'ESQUEMA_VALORACION' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'ESQUEMA_VALORACION' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentMaestrosLogistica.id, codigo: 'ESQUEMA_VALORACION', descripcion: 'Esquema de Valoración', ruta: '/maestros/logistica/esquemas-valoracion', orden: 34, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentMaestrosLogistica.id, codigo: 'ESQUEMA_VALORACION', descripcion: 'Esquema de Valoración', ruta: '/maestros/logistica/esquemas-valoracion', orden: 34, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'PROVEEDORES' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'PROVEEDORES' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentMaestrosLogistica.id, codigo: 'PROVEEDORES', descripcion: 'Proveedores', ruta: '/maestros/proveedores', orden: 35, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentMaestrosLogistica.id, codigo: 'PROVEEDORES', descripcion: 'Proveedores', ruta: '/maestros/proveedores', orden: 35, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 4, codigo: 'MATERIALES' } },
+    where: { modulo_id_codigo: { modulo_id: logisticaModulo.id, codigo: 'MATERIALES' } },
     update: {},
-    create: { modulo_id: 4, parent_id: parentMaestrosLogistica.id, codigo: 'MATERIALES', descripcion: 'Materiales', ruta: '/maestros/materiales', orden: 36, activo: true, created_by: 1 },
+    create: { modulo_id: logisticaModulo.id, parent_id: parentMaestrosLogistica.id, codigo: 'MATERIALES', descripcion: 'Materiales', ruta: '/maestros/materiales', orden: 36, activo: true, created_by: 1 },
   })
 
   // Módulo Administración
   const parentAdministracion = await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 2, codigo: 'ADMINISTRACION' } },
+    where: { modulo_id_codigo: { modulo_id: adminModulo.id, codigo: 'ADMINISTRACION' } },
     update: {},
-    create: { modulo_id: 2, codigo: 'ADMINISTRACION', descripcion: 'Administración', orden: 37, activo: true, created_by: 1 },
+    create: { modulo_id: adminModulo.id, codigo: 'ADMINISTRACION', descripcion: 'Administración', orden: 37, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 2, codigo: 'EMPRESA' } },
+    where: { modulo_id_codigo: { modulo_id: adminModulo.id, codigo: 'EMPRESA' } },
     update: {},
-    create: { modulo_id: 2, parent_id: parentAdministracion.id, codigo: 'EMPRESA', descripcion: 'Empresa', ruta: '/empresa', orden: 38, activo: true, created_by: 1 },
+    create: { modulo_id: adminModulo.id, parent_id: parentAdministracion.id, codigo: 'EMPRESA', descripcion: 'Empresa', ruta: '/empresa', orden: 38, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 2, codigo: 'USUARIOS' } },
+    where: { modulo_id_codigo: { modulo_id: adminModulo.id, codigo: 'USUARIOS' } },
     update: {},
-    create: { modulo_id: 2, parent_id: parentAdministracion.id, codigo: 'USUARIOS', descripcion: 'Usuarios', ruta: '/usuarios', orden: 39, activo: true, created_by: 1 },
+    create: { modulo_id: adminModulo.id, parent_id: parentAdministracion.id, codigo: 'USUARIOS', descripcion: 'Usuarios', ruta: '/usuarios', orden: 39, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 2, codigo: 'PARAMETROS_SISTEMA' } },
+    where: { modulo_id_codigo: { modulo_id: adminModulo.id, codigo: 'PARAMETROS_SISTEMA' } },
     update: {},
-    create: { modulo_id: 2, parent_id: parentAdministracion.id, codigo: 'PARAMETROS_SISTEMA', descripcion: 'Parámetros del Sistema', ruta: '/maestros/configuracion/parametros-sistema', orden: 40, activo: true, created_by: 1 },
+    create: { modulo_id: adminModulo.id, parent_id: parentAdministracion.id, codigo: 'PARAMETROS_SISTEMA', descripcion: 'Parámetros del Sistema', ruta: '/maestros/configuracion/parametros-sistema', orden: 40, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 2, codigo: 'INDUSTRIAS' } },
+    where: { modulo_id_codigo: { modulo_id: adminModulo.id, codigo: 'INDUSTRIAS' } },
     update: {},
-    create: { modulo_id: 2, parent_id: parentAdministracion.id, codigo: 'INDUSTRIAS', descripcion: 'Industrias', ruta: '/logistica/industrias', orden: 41, activo: true, created_by: 1 },
+    create: { modulo_id: adminModulo.id, parent_id: parentAdministracion.id, codigo: 'INDUSTRIAS', descripcion: 'Industrias', ruta: '/logistica/industrias', orden: 41, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 2, codigo: 'PAISES' } },
+    where: { modulo_id_codigo: { modulo_id: adminModulo.id, codigo: 'PAISES' } },
     update: {},
-    create: { modulo_id: 2, parent_id: parentAdministracion.id, codigo: 'PAISES', descripcion: 'Países', ruta: '/logistica/paises', orden: 42, activo: true, created_by: 1 },
+    create: { modulo_id: adminModulo.id, parent_id: parentAdministracion.id, codigo: 'PAISES', descripcion: 'Países', ruta: '/logistica/paises', orden: 42, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 2, codigo: 'DOCUMENTO_ID' } },
+    where: { modulo_id_codigo: { modulo_id: adminModulo.id, codigo: 'DOCUMENTO_ID' } },
     update: {},
-    create: { modulo_id: 2, parent_id: parentAdministracion.id, codigo: 'DOCUMENTO_ID', descripcion: 'Documentos de Identificación', ruta: '/logistica/documentos-identificacion', orden: 43, activo: true, created_by: 1 },
+    create: { modulo_id: adminModulo.id, parent_id: parentAdministracion.id, codigo: 'DOCUMENTO_ID', descripcion: 'Documentos de Identificación', ruta: '/logistica/documentos-identificacion', orden: 43, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
-    where: { modulo_id_codigo: { modulo_id: 2, codigo: 'CORRELATIVOS' } },
+    where: { modulo_id_codigo: { modulo_id: adminModulo.id, codigo: 'CORRELATIVOS' } },
     update: {},
-    create: { modulo_id: 2, parent_id: parentAdministracion.id, codigo: 'CORRELATIVOS', descripcion: 'Correltivos', ruta: '/maestros/comercial/correlativos', orden: 44, activo: true, created_by: 1 },
+    create: { modulo_id: adminModulo.id, parent_id: parentAdministracion.id, codigo: 'CORRELATIVOS', descripcion: 'Correltivos', ruta: '/maestros/comercial/correlativos', orden: 44, activo: true, created_by: 1 },
   })
 
   // Create Permisos for superadmin (full access to all menu options)
@@ -478,7 +480,7 @@ async function main() {
   // Create Parametros de Sistema
   const parametros = await Promise.all([
     prisma.parametroSistema.upsert({
-      where: { empresa_id_nivel_modulo_id_codigo: { empresa_id: empresa.id, modulo_id: 1, codigo: 'POS.PEDVTA', nivel: 'EMPRESA' } },
+      where: { empresa_id_nivel_modulo_id_codigo: { empresa_id: empresa.id, modulo_id: comercialModulo.id, codigo: 'POS.PEDVTA', nivel: 'EMPRESA' } },
       update: {},
       create: {
         nivel: 'EMPRESA',
@@ -489,11 +491,11 @@ async function main() {
         etiqueta: 'PEDVTA',
         activo: true,
         empresa: { connect: { id: empresa.id } },
-        modulo: { connect: { id: 1 } }
+        modulo: { connect: { id: comercialModulo.id } }
       },
     }),
     prisma.parametroSistema.upsert({
-      where: { empresa_id_nivel_modulo_id_codigo: { empresa_id: empresa.id, modulo_id: 1, codigo: 'POS.PREVTA', nivel: 'EMPRESA' } },
+      where: { empresa_id_nivel_modulo_id_codigo: { empresa_id: empresa.id, modulo_id: comercialModulo.id, codigo: 'POS.PREVTA', nivel: 'EMPRESA' } },
       update: {},
       create: {
         nivel: 'EMPRESA',
@@ -504,11 +506,11 @@ async function main() {
         etiqueta: 'PREVTA',
         activo: true,
         empresa: { connect: { id: empresa.id } },
-        modulo: { connect: { id: 1 } }
+        modulo: { connect: { id: comercialModulo.id } }
       },
     }),
     prisma.parametroSistema.upsert({
-      where: { empresa_id_nivel_modulo_id_codigo: { empresa_id: empresa.id, modulo_id: 1, codigo: 'POS.DCTVENTA', nivel: 'EMPRESA' } },
+      where: { empresa_id_nivel_modulo_id_codigo: { empresa_id: empresa.id, modulo_id: comercialModulo.id, codigo: 'POS.DCTVENTA', nivel: 'EMPRESA' } },
       update: {},
       create: {
         nivel: 'EMPRESA',
@@ -519,7 +521,7 @@ async function main() {
         etiqueta: 'DCTVENTA',
         activo: true,
         empresa: { connect: { id: empresa.id } },
-        modulo: { connect: { id: 1 } }
+        modulo: { connect: { id: comercialModulo.id } }
       },
     }),
   ])

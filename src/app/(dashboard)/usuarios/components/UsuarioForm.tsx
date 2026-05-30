@@ -24,7 +24,6 @@ interface Usuario {
   email: string
   telefono?: string | null
   posicion?: string | null
-  is_superadmin: boolean
   two_factor_enabled: boolean
   preferencias?: any
   last_sucursal_id?: number | null
@@ -67,7 +66,6 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
   const [telefono, setTelefono] = useState('')
   const [posicion, setPosicion] = useState('')
 
-  const [isSuperadmin, setIsSuperadmin] = useState(false)
   const [assignedRoles, setAssignedRoles] = useState<number[]>([])
   const [isSelectingRol, setIsSelectingRol] = useState(false)
 
@@ -96,14 +94,14 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
     if (!initialValuesRef.current) return
 
     const currentValues = {
-      nombre, email, telefono, posicion, isSuperadmin, assignedRoles, twoFactor,
+      nombre, email, telefono, posicion, assignedRoles, twoFactor,
       idioma, zonaHoraria, notifInventario, notifSemanal, notifChat, notifPromociones
     }
 
     const hasChanged = JSON.stringify(currentValues) !== JSON.stringify(initialValuesRef.current)
     setIsFormDirty(hasChanged)
   }, [
-    nombre, email, telefono, posicion, isSuperadmin, assignedRoles, assignedSucursales, twoFactor,
+    nombre, email, telefono, posicion, assignedRoles, assignedSucursales, twoFactor,
     idioma, zonaHoraria, notifInventario, notifSemanal, notifChat, notifPromociones
   ])
 
@@ -141,7 +139,6 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
       setEmail(usuarioToEdit.email || '')
       setTelefono(usuarioToEdit.telefono || '')
       setPosicion(usuarioToEdit.posicion || '')
-      setIsSuperadmin(usuarioToEdit.is_superadmin || false)
 
       const userRoles = [usuarioToEdit.rol_id]
       if (usuarioToEdit.roles_adicionales) {
@@ -176,7 +173,6 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
         email: usuarioToEdit.email || '',
         telefono: usuarioToEdit.telefono || '',
         posicion: usuarioToEdit.posicion || '',
-        isSuperadmin: usuarioToEdit.is_superadmin || false,
         assignedRoles: userRoles,
         twoFactor: usuarioToEdit.two_factor_enabled || false,
         lastSucursalId: usuarioToEdit.last_sucursal_id || null,
@@ -194,7 +190,6 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
         email: '',
         telefono: '',
         posicion: '',
-        isSuperadmin: false,
         assignedRoles: [],
         twoFactor: false,
         lastSucursalId: null,
@@ -246,11 +241,6 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (assignedRoles.length === 0 && !isSuperadmin) {
-      toast.error('Debe asignar al menos un rol o seleccionar Super administrador')
-      return
-    }
-
     if (newPassword && newPassword !== confirmPassword) {
       toast.error('Las contraseñas nuevas no coinciden')
       return
@@ -269,7 +259,6 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
         email: email.trim(),
         telefono: telefono ? telefono.trim() : null,
         posicion: posicion ? posicion.trim() : null,
-        is_superadmin: isSuperadmin,
         two_factor_enabled: twoFactor,
         activo: true,
         rol_id: mainRolId,
@@ -500,23 +489,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
             </button>
           </div>
 
-          <div className="mb-8 p-4 bg-orange-50 border border-orange-100 rounded-2xl">
-            <label className="flex items-center gap-4 cursor-pointer group">
-              <div className="relative flex items-center justify-center w-6 h-6">
-                <input
-                  type="checkbox"
-                  className="peer w-6 h-6 border-2 border-orange-200 rounded-lg cursor-pointer appearance-none checked:bg-orange-600 checked:border-orange-600 transition-all"
-                  checked={isSuperadmin}
-                  onChange={e => setIsSuperadmin(e.target.checked)}
-                />
-                <span className="material-symbols-outlined absolute text-white text-[16px] pointer-events-none opacity-0 peer-checked:opacity-100 transition-opacity">check</span>
-              </div>
-              <div>
-                <span className="text-sm font-bold text-orange-900">Acceso Super administrador</span>
-                <p className="text-[11px] text-orange-700 font-medium">Otorga control total sobre todos los módulos y configuraciones del sistema.</p>
-              </div>
-            </label>
-          </div>
+
 
           <div>
             <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4">Roles de Acceso Asignados</p>
