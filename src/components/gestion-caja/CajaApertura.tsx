@@ -9,12 +9,14 @@ import CajaDenominacionGrid from './CajaDenominacionGrid'
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 import { useSucursal } from '@/contexts/SucursalContext'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Props {
   onOpened: () => void
 }
 
 export default function CajaApertura({ onOpened }: Props) {
+  const permisos = usePermisos()
   const { currentSucursal } = useSucursal()
   const [formData, setFormData] = useState({
     sucursal_id: currentSucursal?.id || 0,
@@ -202,6 +204,7 @@ export default function CajaApertura({ onOpened }: Props) {
              )}
           </div>
 
+          {permisos.crear && (
           <button 
             type="submit"
             disabled={loading}
@@ -217,6 +220,7 @@ export default function CajaApertura({ onOpened }: Props) {
             )}
             <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 ease-in-out"></div>
           </button>
+          )}
         </form>
       </div>
     </div>

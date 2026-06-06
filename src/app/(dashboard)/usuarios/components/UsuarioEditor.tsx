@@ -14,6 +14,7 @@ interface Sucursal {
 interface Rol {
   id: number
   nombre: string
+  activo: boolean
 }
 
 interface Usuario {
@@ -255,7 +256,7 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
     }
   }
 
-  const availableRolesToAdd = roles.filter(r => !assignedRoles.includes(r.id))
+  const availableRolesToAdd = roles.filter(r => !assignedRoles.includes(r.id) && r.activo)
 
   return (
     <div className="max-w-4xl animate-in fade-in slide-in-from-right-4 duration-500">

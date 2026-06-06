@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import NuevoMovimientoDialog from './NuevoMovimientoDialog'
 import CajaCierre from './CajaCierre'
+import { usePermisos } from '@/contexts/PermisosContext'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import Pagination from '@/components/ui/Pagination'
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function CajaDashboard({ session, onClosed }: Props) {
+  const permisos = usePermisos()
   const [transactions, setTransactions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [showNewMov, setShowNewMov] = useState(false)
@@ -115,6 +117,7 @@ export default function CajaDashboard({ session, onClosed }: Props) {
         </div>
 
         <div className="flex items-center gap-3">
+          {permisos.crear && (
           <button
             onClick={() => setShowNewMov(true)}
             className="h-14 px-6 bg-primary text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 hover:bg-primary-dark transition-all shadow-lg shadow-primary/20 active:scale-95"
@@ -122,6 +125,8 @@ export default function CajaDashboard({ session, onClosed }: Props) {
             <span className="material-symbols-outlined text-lg">add</span>
             Nuevo Movimiento
           </button>
+          )}
+          {permisos.editar && (
           <button
             onClick={() => setShowCierre(true)}
             className="h-14 px-6 bg-slate-900 text-white rounded-2xl font-black uppercase text-[10px] tracking-widest flex items-center gap-2 hover:bg-black transition-all shadow-lg shadow-slate-900/10 active:scale-95"
@@ -129,6 +134,7 @@ export default function CajaDashboard({ session, onClosed }: Props) {
             <span className="material-symbols-outlined text-lg">lock</span>
             Cerrar Caja
           </button>
+          )}
         </div>
       </div>
 
@@ -209,7 +215,7 @@ export default function CajaDashboard({ session, onClosed }: Props) {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      {t.estado === 'P' && !t.transaccion_anula_id && (
+                      {t.estado === 'P' && !t.transaccion_anula_id && permisos.borrar && (
                         <button
                           onClick={() => handleAnnul(t.id)}
                           className="size-8 rounded-lg hover:bg-red-50 hover:text-red-500 text-slate-300 transition-all opacity-0 group-hover:opacity-100 flex items-center justify-center mx-auto -mr-1"

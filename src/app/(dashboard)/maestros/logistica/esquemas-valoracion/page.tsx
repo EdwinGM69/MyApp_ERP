@@ -8,6 +8,7 @@ import Badge from '@/components/ui/Badge'
 import Switch from '@/components/ui/Switch'
 import CrudModal from '@/components/ui/CrudModal'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Esquema {
   id?: number
@@ -62,6 +63,7 @@ const DEFAULT_REGLA: Regla = {
 }
 
 export default function EsquemasValoracionPage() {
+  const permisos = usePermisos()
   // Master List
   const [esquemas, setEsquemas] = useState<Esquema[]>([])
   const [loadingMaster, setLoadingMaster] = useState(true)
@@ -218,15 +220,17 @@ export default function EsquemasValoracionPage() {
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Listado Maestro</h3>
-              <button
-                onClick={() => {
-                  setSelectedId(null);
-                  handleOpenEditor();
-                }}
-                className="size-8 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all flex items-center justify-center shadow-sm active:scale-90"
-              >
-                <span className="material-symbols-outlined text-xl">add</span>
-              </button>
+              {permisos.crear && (
+                <button
+                  onClick={() => {
+                    setSelectedId(null);
+                    handleOpenEditor();
+                  }}
+                  className="size-8 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all flex items-center justify-center shadow-sm active:scale-90"
+                >
+                  <span className="material-symbols-outlined text-xl">add</span>
+                </button>
+              )}
             </div>
 
             <div className="relative">
@@ -444,13 +448,15 @@ export default function EsquemasValoracionPage() {
                    </p>
                  </div>
                  <div className="flex gap-2">
-                   <button
-                     onClick={() => handleOpenEditor(selectedEsquema)}
-                     className="h-10 px-6 rounded-2xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 hover:scale-[1.02] shadow-xl shadow-slate-900/10 transition-all active:scale-95 flex items-center gap-2"
-                   >
-                     <span className="material-symbols-outlined text-lg">edit</span>
-                     Editar Configuración
-                   </button>
+                    {permisos.editar && (
+                      <button
+                        onClick={() => handleOpenEditor(selectedEsquema)}
+                        className="h-10 px-6 rounded-2xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 hover:scale-[1.02] shadow-xl shadow-slate-900/10 transition-all active:scale-95 flex items-center gap-2"
+                      >
+                        <span className="material-symbols-outlined text-lg">edit</span>
+                        Editar Configuración
+                      </button>
+                    )}
                  </div>
                </div>
 
@@ -546,12 +552,14 @@ export default function EsquemasValoracionPage() {
                    <div className="space-y-6 pt-6">
                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">REGLAS AUTOMÁTICAS ASOCIADAS</p>
-                           <button 
-                               onClick={() => handleOpenRuleModal()}
-                               className="text-[10px] font-black uppercase text-primary hover:underline"
-                           >
-                               + Agregar Regla
-                           </button>
+                            {permisos.crear && (
+                                <button 
+                                    onClick={() => handleOpenRuleModal()}
+                                    className="text-[10px] font-black uppercase text-primary hover:underline"
+                                >
+                                    + Agregar Regla
+                                </button>
+                            )}
                        </div>
                        
                        <div className="bg-white dark:bg-slate-950 rounded-3xl border border-slate-100 dark:border-slate-800 overflow-hidden shadow-sm">
@@ -591,14 +599,16 @@ export default function EsquemasValoracionPage() {
                                                        {r.activo ? 'Activa' : 'Inactiva'}
                                                    </span>
                                                </td>
-                                               <td className="py-5 pr-6 text-right">
-                                                   <button 
-                                                       onClick={() => handleOpenRuleModal(r)}
-                                                       className="text-slate-400 hover:text-primary transition-colors"
-                                                   >
-                                                       <span className="material-symbols-outlined text-lg">edit</span>
-                                                   </button>
-                                               </td>
+                                                <td className="py-5 pr-6 text-right">
+                                                    {permisos.editar && (
+                                                        <button 
+                                                            onClick={() => handleOpenRuleModal(r)}
+                                                            className="text-slate-400 hover:text-primary transition-colors"
+                                                        >
+                                                            <span className="material-symbols-outlined text-lg">edit</span>
+                                                        </button>
+                                                    )}
+                                                </td>
                                            </tr>
                                        )
                                    }) : (

@@ -8,6 +8,7 @@ import DataTable, { Column } from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface TipoCambio {
   id: number
@@ -23,6 +24,7 @@ interface TipoCambio {
 
 export default function TipoCambioPage() {
   const router = useRouter()
+  const permisos = usePermisos()
   const [tiposCambio, setTiposCambio] = useState<TipoCambio[]>([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
@@ -144,13 +146,15 @@ export default function TipoCambioPage() {
       align: 'right',
       render: (tc: TipoCambio) => (
         <div className="flex items-center gap-1 justify-end">
-          <button
-            onClick={() => handleEdit(tc)}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
-            title="Editar"
-          >
-            <span className="material-symbols-outlined text-base">edit</span>
-          </button>
+          {permisos.editar && (
+            <button
+              onClick={() => handleEdit(tc)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
+              title="Editar"
+            >
+              <span className="material-symbols-outlined text-base">edit</span>
+            </button>
+          )}
         </div>
       )
     }
@@ -170,13 +174,15 @@ export default function TipoCambioPage() {
               Administra los tipos de cambio de tu empresa.
             </p>
           </div>
-          <button
-            onClick={handleCreate}
-            className="bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-primary/20 shrink-0"
-          >
-            <span className="material-symbols-outlined text-xl">add</span>
-            Nuevo Tipo de Cambio
-          </button>
+          {permisos.crear && (
+            <button
+              onClick={handleCreate}
+              className="bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-primary/20 shrink-0"
+            >
+              <span className="material-symbols-outlined text-xl">add</span>
+              Nuevo Tipo de Cambio
+            </button>
+          )}
         </div>
 
         <div className="flex gap-3 mb-4">

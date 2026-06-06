@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import Badge from '@/components/ui/Badge'
 import Switch from '@/components/ui/Switch'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 import { format, differenceInDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 
@@ -54,6 +55,7 @@ const emptyEditing = () => ({
 })
 
 export default function CuponesPage() {
+  const permisos = usePermisos()
   const [cupones, setCupones] = useState<Cupon[]>([])
   const [loadingMaster, setLoadingMaster] = useState(true)
   const [search, setSearch] = useState('')
@@ -239,12 +241,14 @@ export default function CuponesPage() {
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">
                 Listado Maestro
               </h3>
-              <button
-                onClick={() => { setSelectedId(null); handleOpenEditor() }}
-                className="size-8 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all flex items-center justify-center shadow-sm active:scale-90"
-              >
-                <span className="material-symbols-outlined text-xl">add</span>
-              </button>
+              {permisos.crear && (
+                <button
+                  onClick={() => { setSelectedId(null); handleOpenEditor() }}
+                  className="size-8 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all flex items-center justify-center shadow-sm active:scale-90"
+                >
+                  <span className="material-symbols-outlined text-xl">add</span>
+                </button>
+              )}
             </div>
 
             <div className="relative">
@@ -690,13 +694,14 @@ export default function CuponesPage() {
                     Cupón · {fmtValor(selected.tipo, selected.valor, selected.moneda?.simbolo || '$')} · {fmtDate(selected.fecha_inicio)} – {fmtDate(selected.fecha_fin)}
                   </p>
                 </div>
+              {permisos.crear && (
                 <button
-                  onClick={() => handleOpenEditor(selected)}
-                  className="h-10 px-6 rounded-2xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 hover:scale-[1.02] shadow-xl shadow-slate-900/10 transition-all active:scale-95 flex items-center gap-2"
+                  onClick={() => handleOpenEditor(null)}
+                  className="size-8 rounded-xl bg-primary text-white flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-primary/20"
                 >
-                  <span className="material-symbols-outlined text-lg">edit</span>
-                  Editar Cupón
+                  <span className="material-symbols-outlined text-base">add</span>
                 </button>
+              )}
               </div>
 
               <div className="space-y-10">

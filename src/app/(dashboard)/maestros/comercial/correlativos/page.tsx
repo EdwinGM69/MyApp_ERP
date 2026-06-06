@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import Badge from '@/components/ui/Badge'
 import Switch from '@/components/ui/Switch'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Correlativo {
   id: number
@@ -37,6 +38,7 @@ const PERIODOS = [
 ]
 
 export default function CorrelativosPage() {
+  const permisos = usePermisos()
   const [correlativos, setCorrelativos] = useState<Correlativo[]>([])
   const [loadingMaster, setLoadingMaster] = useState(true)
   const [search, setSearch] = useState('')
@@ -141,15 +143,17 @@ export default function CorrelativosPage() {
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Listado Maestro</h3>
-              <button
-                onClick={() => {
-                  setSelectedId(null)
-                  handleOpenEditor()
-                }}
-                className="size-8 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all flex items-center justify-center shadow-sm active:scale-90"
-              >
-                <span className="material-symbols-outlined text-xl">add</span>
-              </button>
+              {permisos.crear && (
+                <button
+                  onClick={() => {
+                    setSelectedId(null)
+                    handleOpenEditor()
+                  }}
+                  className="size-8 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all flex items-center justify-center shadow-sm active:scale-90"
+                >
+                  <span className="material-symbols-outlined text-xl">add</span>
+                </button>
+              )}
             </div>
 
             <div className="relative">
@@ -433,13 +437,15 @@ export default function CorrelativosPage() {
                     </h2>
                   </div>
 
-                  <button
-                    onClick={() => handleOpenEditor(selected)}
-                    className="h-14 px-8 rounded-3xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black hover:scale-[1.03] shadow-2xl shadow-slate-900/20 dark:shadow-white/5 transition-all active:scale-95 flex items-center gap-3 shrink-0 uppercase tracking-widest"
-                  >
-                    <span className="material-symbols-outlined text-xl">stylus_note</span>
-                    Ajustar Correlativo
-                  </button>
+                  {permisos.editar && (
+                    <button
+                      onClick={() => handleOpenEditor(selected)}
+                      className="h-14 px-8 rounded-3xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-black hover:scale-[1.03] shadow-2xl shadow-slate-900/20 dark:shadow-white/5 transition-all active:scale-95 flex items-center gap-3 shrink-0 uppercase tracking-widest"
+                    >
+                      <span className="material-symbols-outlined text-xl">stylus_note</span>
+                      Ajustar Correlativo
+                    </button>
+                  )}
                 </div>
               </div>
 

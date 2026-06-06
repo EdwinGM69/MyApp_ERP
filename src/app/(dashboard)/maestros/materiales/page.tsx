@@ -10,6 +10,7 @@ import { apiFetch, useAuthStore } from '@/hooks/useAuth'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { useSucursal } from '@/contexts/SucursalContext'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Material {
   id: number
@@ -43,6 +44,7 @@ export default function MaterialesPage() {
   const [saving, setSaving] = useState(false)
   const router = useRouter()
   const { currentSucursal } = useSucursal()
+  const permisos = usePermisos()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -135,12 +137,16 @@ export default function MaterialesPage() {
       key: 'actions', header: '',
       render: (r: Material) => (
         <div className="flex items-center gap-1">
-          <button onClick={() => openEdit(r)} className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10 text-blue-500 transition-colors">
-            <span className="material-symbols-outlined text-base">edit</span>
-          </button>
-          <button onClick={() => handleDelete(r)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-red-400 transition-colors">
-            <span className="material-symbols-outlined text-base">delete</span>
-          </button>
+          {permisos.editar && (
+            <button onClick={() => openEdit(r)} className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10 text-blue-500 transition-colors">
+              <span className="material-symbols-outlined text-base">edit</span>
+            </button>
+          )}
+          {permisos.borrar && (
+            <button onClick={() => handleDelete(r)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-red-400 transition-colors">
+              <span className="material-symbols-outlined text-base">delete</span>
+            </button>
+          )}
         </div>
       ),
     },
@@ -160,11 +166,13 @@ export default function MaterialesPage() {
               Gestiona productos, servicios y sus precios de costo/venta.
             </p>
           </div>
-          <button onClick={openCreate}
-            className="bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-primary/20 shrink-0">
-            <span className="material-symbols-outlined text-xl">add</span>
-            Nuevo Material
-          </button>
+          {permisos.crear && (
+            <button onClick={openCreate}
+              className="bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-primary/20 shrink-0">
+              <span className="material-symbols-outlined text-xl">add</span>
+              Nuevo Material
+            </button>
+          )}
         </div>
 
         <div className="flex gap-3 mb-4">

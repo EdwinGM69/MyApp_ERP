@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils'
 import Badge from '@/components/ui/Badge'
 import Switch from '@/components/ui/Switch'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Caja {
   id: number
@@ -30,6 +31,8 @@ export default function CajasPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [editingData, setEditingData] = useState<any>(null)
   const [saving, setSaving] = useState(false)
+
+  const permisos = usePermisos()
 
   // Fetch List
   const fetchList = useCallback(async () => {
@@ -108,15 +111,17 @@ export default function CajasPage() {
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Listado Maestro</h3>
-              <button
-                onClick={() => {
-                  setSelectedId(null);
-                  handleOpenEditor();
-                }}
-                className="size-8 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all flex items-center justify-center shadow-sm active:scale-90"
-              >
-                <span className="material-symbols-outlined text-xl">add</span>
-              </button>
+              {permisos.crear && (
+                <button
+                  onClick={() => {
+                    setSelectedId(null);
+                    handleOpenEditor();
+                  }}
+                  className="size-8 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all flex items-center justify-center shadow-sm active:scale-90"
+                >
+                  <span className="material-symbols-outlined text-xl">add</span>
+                </button>
+              )}
             </div>
 
             <div className="relative">
@@ -270,13 +275,15 @@ export default function CajasPage() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => handleOpenEditor(selected)}
-                    className="h-10 px-6 rounded-2xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 hover:scale-[1.02] shadow-xl shadow-slate-900/10 transition-all active:scale-95 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-lg">edit</span>
-                    Editar Configuración
-                  </button>
+                  {permisos.editar && (
+                    <button
+                      onClick={() => handleOpenEditor(selected)}
+                      className="h-10 px-6 rounded-2xl bg-slate-900 text-white text-xs font-black hover:bg-slate-800 hover:scale-[1.02] shadow-xl shadow-slate-900/10 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">edit</span>
+                      Editar Configuración
+                    </button>
+                  )}
                 </div>
               </div>
 

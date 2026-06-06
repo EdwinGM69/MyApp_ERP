@@ -10,6 +10,7 @@ import CrudModal from '@/components/ui/CrudModal'
 import MaterialSelect from '@/components/ui/MaterialSelect'
 import MonedaSelect from '@/components/ui/MonedaSelect'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface TipoCondicion {
   id: number
@@ -34,6 +35,7 @@ interface Condicion {
 }
 
 export default function CondicionesComercialesPage() {
+  const permisos = usePermisos()
   // Master Lists
   const [tiposCondicion, setTiposCondicion] = useState<TipoCondicion[]>([])
   const [loadingMaster, setLoadingMaster] = useState(true)
@@ -456,20 +458,24 @@ export default function CondicionesComercialesPage() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => handleOpenTipoModal(selectedTipo)}
-                    className="h-10 px-5 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-black text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-lg">edit</span>
-                    Editar Tipo
-                  </button>
-                  <button
-                    onClick={handleCreateCondicionInline}
-                    className="h-10 px-5 rounded-2xl bg-slate-950 hover:bg-black dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-black transition-all shadow-xl active:scale-95 flex items-center gap-2"
-                  >
-                    <span className="material-symbols-outlined text-lg">add</span>
-                    Nuevo Valor
-                  </button>
+                  {permisos.editar && (
+                    <button
+                      onClick={() => handleOpenTipoModal(selectedTipo)}
+                      className="h-10 px-5 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-black text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">edit</span>
+                      Editar Tipo
+                    </button>
+                  )}
+                  {permisos.crear && (
+                    <button
+                      onClick={handleCreateCondicionInline}
+                      className="h-10 px-5 rounded-2xl bg-slate-950 hover:bg-black dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 text-xs font-black transition-all shadow-xl active:scale-95 flex items-center gap-2"
+                    >
+                      <span className="material-symbols-outlined text-lg">add</span>
+                      Nuevo Valor
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -852,12 +858,14 @@ export default function CondicionesComercialesPage() {
                       <span className="material-symbols-outlined text-3xl">sell</span>
                     </div>
                     <p className="text-sm font-bold text-slate-400 uppercase tracking-widest italic leading-none mb-4">No hay valores configurados</p>
-                    <button
-                      onClick={() => handleOpenCondicionModal()}
-                      className="text-xs font-black text-primary hover:underline underline-offset-4"
-                    >
-                      + DEFINIR PRIMER VALOR
-                    </button>
+                    {permisos.crear && (
+                      <button
+                        onClick={() => handleOpenCondicionModal()}
+                        className="text-xs font-black text-primary hover:underline underline-offset-4"
+                      >
+                        + DEFINIR PRIMER VALOR
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

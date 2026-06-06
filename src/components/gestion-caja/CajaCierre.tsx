@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import { apiFetch } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 import CajaDenominacionGrid from './CajaDenominacionGrid'
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export default function CajaCierre({ session, onClose, onSuccess }: Props) {
+  const permisos = usePermisos()
   const [denominaciones, setDenominaciones] = useState<any[]>([])
   const [montoCierre, setMontoCierre] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -147,6 +149,7 @@ export default function CajaCierre({ session, onClose, onSuccess }: Props) {
                   >
                     Volver
                   </button>
+                  {permisos.editar && (
                   <button 
                   disabled={loading}
                   onClick={handleSubmit}
@@ -154,6 +157,7 @@ export default function CajaCierre({ session, onClose, onSuccess }: Props) {
                   >
                     {loading ? 'Cerrando...' : 'Confirmar y Cerrar Caja'}
                   </button>
+                  )}
                </div>
             </div>
           )}

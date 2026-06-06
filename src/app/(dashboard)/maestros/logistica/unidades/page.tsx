@@ -8,6 +8,7 @@ import DataTable, { Column } from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Unidad {
   id: number
@@ -25,6 +26,7 @@ export default function UnidadesPage() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const pageSize = 10
+  const permisos = usePermisos()
 
   const fetchUnidades = async () => {
     setLoading(true)
@@ -106,20 +108,24 @@ export default function UnidadesPage() {
       align: 'right',
       render: (item: Unidad) => (
         <div className="flex items-center justify-end gap-2">
-          <button
-            onClick={() => router.push(`/maestros/logistica/unidades/editar/${item.id}`)}
-            className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
-            title="Editar"
-          >
-            <span className="material-symbols-outlined text-[20px]">edit</span>
-          </button>
-          <button
-            onClick={() => handleDelete(item.id)}
-            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all"
-            title="Desactivar"
-          >
-            <span className="material-symbols-outlined text-[20px]">block</span>
-          </button>
+          {permisos.editar && (
+            <button
+              onClick={() => router.push(`/maestros/logistica/unidades/editar/${item.id}`)}
+              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg transition-all"
+              title="Editar"
+            >
+              <span className="material-symbols-outlined text-[20px]">edit</span>
+            </button>
+          )}
+          {permisos.borrar && (
+            <button
+              onClick={() => handleDelete(item.id)}
+              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-all"
+              title="Desactivar"
+            >
+              <span className="material-symbols-outlined text-[20px]">block</span>
+            </button>
+          )}
         </div>
       )
     }
@@ -143,13 +149,15 @@ export default function UnidadesPage() {
               />
             </div>
             
-            <button
-              onClick={() => router.push('/maestros/logistica/unidades/nuevo')}
-              className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 shrink-0"
-            >
-              <span className="material-symbols-outlined text-[20px]">add</span>
-              Nueva Unidad
-            </button>
+            {permisos.crear && (
+              <button
+                onClick={() => router.push('/maestros/logistica/unidades/nuevo')}
+                className="flex items-center justify-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold transition-all shadow-lg shadow-blue-500/20 active:scale-95 shrink-0"
+              >
+                <span className="material-symbols-outlined text-[20px]">add</span>
+                Nueva Unidad
+              </button>
+            )}
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">

@@ -10,6 +10,7 @@ import { useSucursal } from '@/contexts/SucursalContext'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { apiFetch } from '@/hooks/useAuth'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 // ── Helpers ─────────────────────────────────────────────────
 function fmtDate(dateStr?: string | null, fmt = 'dd MMM yyyy') {
@@ -166,12 +167,14 @@ function MovimientoCard({ mov, onView }: {
 
         {/* Acciones */}
         <div className="flex items-center gap-1 shrink-0 self-center">
-          <button
-            className="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all flex items-center justify-center active:scale-90"
-            title="Imprimir"
-          >
-            <span className="material-symbols-outlined text-[16px]">print</span>
-          </button>
+          {permisos.exportar && (
+            <button
+              className="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all flex items-center justify-center active:scale-90"
+              title="Imprimir"
+            >
+              <span className="material-symbols-outlined text-[16px]">print</span>
+            </button>
+          )}
           <button
             onClick={handleExpand}
             className={cn(
@@ -411,17 +414,21 @@ export default function MovimientosPage() {
               </form>
 
               <div className="flex items-center gap-3 shrink-0">
-                <button className="h-11 px-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center gap-2 shadow-sm">
-                  <span className="material-symbols-outlined text-[18px]">file_download</span>
-                  Exportar
-                </button>
-                <button
-                  onClick={() => router.push('/almacen/movimientos/nuevo')}
-                  className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2 active:scale-95"
-                >
-                  <span className="material-symbols-outlined text-[18px]">add</span>
-                  Nuevo Movimiento
-                </button>
+                {permisos.exportar && (
+                  <button className="h-11 px-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center gap-2 shadow-sm">
+                    <span className="material-symbols-outlined text-[18px]">file_download</span>
+                    Exportar
+                  </button>
+                )}
+                {permisos.crear && (
+                  <button
+                    onClick={() => router.push('/almacen/movimientos/nuevo')}
+                    className="h-11 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-lg shadow-indigo-600/20 flex items-center gap-2 active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">add</span>
+                    Nuevo Movimiento
+                  </button>
+                )}
               </div>
             </div>
 

@@ -8,6 +8,7 @@ import DataTable, { Column } from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Industria {
   id: number
@@ -17,6 +18,7 @@ interface Industria {
 
 export default function IndustriasPage() {
   const router = useRouter()
+  const permisos = usePermisos()
   const [industrias, setIndustrias] = useState<Industria[]>([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
@@ -102,20 +104,24 @@ export default function IndustriasPage() {
       align: 'right',
       render: (i: Industria) => (
         <div className="flex items-center gap-1 justify-end">
-          <button
-            onClick={() => handleEdit(i)}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
-            title="Editar"
-          >
-            <span className="material-symbols-outlined text-base">edit</span>
-          </button>
-          <button
-            onClick={() => handleDelete(i.id)}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-red-500 transition-colors"
-            title="Desactivar"
-          >
-            <span className="material-symbols-outlined text-base">delete</span>
-          </button>
+          {permisos.editar && (
+            <button
+              onClick={() => handleEdit(i)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
+              title="Editar"
+            >
+              <span className="material-symbols-outlined text-base">edit</span>
+            </button>
+          )}
+          {permisos.borrar && (
+            <button
+              onClick={() => handleDelete(i.id)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-red-500 transition-colors"
+              title="Desactivar"
+            >
+              <span className="material-symbols-outlined text-base">delete</span>
+            </button>
+          )}
         </div>
       )
     }
@@ -135,13 +141,15 @@ export default function IndustriasPage() {
               Administre los rubros industriales para categorizar sus operaciones.
             </p>
           </div>
-          <button
-            onClick={handleCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20 shrink-0 active:scale-95"
-          >
-            <span className="material-symbols-outlined text-xl">add</span>
-            Nueva Industria
-          </button>
+          {permisos.crear && (
+            <button
+              onClick={handleCreate}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20 shrink-0 active:scale-95"
+            >
+              <span className="material-symbols-outlined text-xl">add</span>
+              Nueva Industria
+            </button>
+          )}
         </div>
 
         <div className="flex gap-3 mb-4">

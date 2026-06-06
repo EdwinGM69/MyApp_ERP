@@ -29,7 +29,7 @@ interface MenuNode extends OpcionMenuAPI {
 // Helpers
 // ------------------------------------------------------------------
 
-/** Construye árbol jerárquico a partir de lista plana ordenada por `orden` */
+/** Construye árbol jerárquico a partir de lista plana ordenando por `orden` */
 function buildTree(items: OpcionMenuAPI[]): MenuNode[] {
   const map = new Map<number, MenuNode>()
   const roots: MenuNode[] = []
@@ -47,11 +47,16 @@ function buildTree(items: OpcionMenuAPI[]): MenuNode[] {
       if (parent) {
         parent.children.push(node)
       } else {
-        // Si el padre no está (filtrado por permisos), lo ponemos como raíz
         roots.push(node)
       }
     }
   })
+
+  const sortByOrden = (nodes: MenuNode[]) => {
+    nodes.sort((a, b) => a.orden - b.orden)
+    nodes.forEach((n) => sortByOrden(n.children))
+  }
+  sortByOrden(roots)
 
   return roots
 }
@@ -143,6 +148,8 @@ function inferIcon(node: MenuNode): string {
   if (desc.includes('clase') && desc.includes('pedido')) return 'description'
   if (desc.includes('tipo') && desc.includes('operaci')) return 'list_alt'
   if (desc.includes('stock')) return 'rule'
+  if (desc.includes('maestros')) return 'fact_check'
+
   return 'chevron_right'
 }
 

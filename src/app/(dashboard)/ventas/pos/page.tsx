@@ -8,6 +8,7 @@ import { apiFetch, useAuthStore, getAuthStore } from '@/hooks/useAuth'
 import { formatCurrency, generateOrderNumber } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { useSucursal } from '@/contexts/SucursalContext'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Material {
   id: number
@@ -71,6 +72,7 @@ export default function POSPage() {
   const [search, setSearch] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   const [loading, setLoading] = useState(true)
+  const permisos = usePermisos()
   const [processing, setProcessing] = useState(false)
   const [cupon, setCupon] = useState('')
   const [descuentoCupon, setDescuentoCupon] = useState(0)
@@ -2854,6 +2856,7 @@ export default function POSPage() {
 
               {/* Action buttons */}
               <div className="grid grid-cols-1 gap-2">
+                {permisos.crear && (
                 <button onClick={() => procesarVenta('procesada')} disabled={processing}
                   className="py-2 rounded-xl bg-primary text-white text-xs font-bold hover:bg-primary-dark transition-colors shadow-lg shadow-primary/20 disabled:opacity-60 flex items-center justify-center gap-1">
                   {processing ? (
@@ -2863,6 +2866,7 @@ export default function POSPage() {
                   )}
                   Cobrar
                 </button>
+                )}
               </div>
             </div>
           )}

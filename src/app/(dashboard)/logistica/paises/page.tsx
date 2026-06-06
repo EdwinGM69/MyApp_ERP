@@ -8,6 +8,7 @@ import DataTable, { Column } from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Pais {
   id: number
@@ -25,6 +26,7 @@ export default function PaisesPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [search, setSearch] = useState('')
+  const permisos = usePermisos()
 
   const fetchPaises = async () => {
     setLoading(true)
@@ -115,20 +117,24 @@ export default function PaisesPage() {
       width: 'w-28',
       render: (p) => (
         <div className="flex items-center gap-1 justify-end">
-          <button
-            onClick={() => handleEdit(p)}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
-            title="Editar"
-          >
-            <span className="material-symbols-outlined text-base">edit</span>
-          </button>
-          <button
-            onClick={() => handleDelete(p.id)}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-red-500 transition-colors"
-            title="Desactivar"
-          >
-            <span className="material-symbols-outlined text-base">delete</span>
-          </button>
+          {permisos.editar && (
+            <button
+              onClick={() => handleEdit(p)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
+              title="Editar"
+            >
+              <span className="material-symbols-outlined text-base">edit</span>
+            </button>
+          )}
+          {permisos.borrar && (
+            <button
+              onClick={() => handleDelete(p.id)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-red-500 transition-colors"
+              title="Desactivar"
+            >
+              <span className="material-symbols-outlined text-base">delete</span>
+            </button>
+          )}
         </div>
       )
     }
@@ -148,13 +154,15 @@ export default function PaisesPage() {
               Administre el catálogo de países para validaciones internacionales.
             </p>
           </div>
-          <button
-            onClick={handleCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20 shrink-0 active:scale-95 text-sm"
-          >
-            <span className="material-symbols-outlined text-xl">add</span>
-            Nuevo País
-          </button>
+          {permisos.crear && (
+            <button
+              onClick={handleCreate}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20 shrink-0 active:scale-95 text-sm"
+            >
+              <span className="material-symbols-outlined text-xl">add</span>
+              Nuevo País
+            </button>
+          )}
         </div>
 
         <div className="flex gap-3 mb-4">

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { apiFetch, useAuthStore } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
+import { usePermisos } from '@/contexts/PermisosContext'
 import MonedaSelect from '@/components/ui/MonedaSelect'
 import IndustriaSelect from '@/components/ui/IndustriaSelect'
 import SucursalesAlmacenesSection from './SucursalesAlmacenesSection'
@@ -26,6 +27,7 @@ interface Empresa {
 }
 
 export default function EmpresaForm() {
+  const permisos = usePermisos()
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -121,6 +123,7 @@ export default function EmpresaForm() {
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">Configuración de la Empresa</h1>
             <p className="text-slate-500 font-medium text-sm mt-1">Gestione la información general, identidad y parámetros regionales de su organización.</p>
           </div>
+          {permisos.editar && (
           <button
             type="submit"
             form="empresa-form"
@@ -136,6 +139,7 @@ export default function EmpresaForm() {
               </>
             )}
           </button>
+          )}
         </div>
 
         <form id="empresa-form" onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8">

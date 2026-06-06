@@ -12,6 +12,7 @@ import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
 import SucursalGuard from '@/components/SucursalGuard'
 import { useSucursal } from '@/contexts/SucursalContext'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 // ── Interfaces ─────────────────────────────────────────────
 interface VentaDetalleCondicion {
@@ -126,10 +127,12 @@ function getStatusVariant(estado: string): keyof typeof STATUS_COLORS {
 }
 
 // ── VentaCard ────────────────────────────────────────────────
-function VentaCard({ venta, monedaSimbolo, onAnular }: {
+function VentaCard({ venta, monedaSimbolo, onAnular, puedeExportar, puedeAnular }: {
   venta: Venta
   monedaSimbolo: string
   onAnular: (id: string) => void
+  puedeExportar?: boolean
+  puedeAnular?: boolean
 }) {
   const [expanded, setExpanded] = useState(false)
   const sv = getStatusVariant(venta.estado)
@@ -211,20 +214,24 @@ function VentaCard({ venta, monedaSimbolo, onAnular }: {
 
         {/* Acciones */}
         <div className="flex items-center gap-1 shrink-0 self-center">
-          <button className="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all flex items-center justify-center active:scale-90" title="Imprimir">
-            <span className="material-symbols-outlined text-[16px]">print</span>
-          </button>
-          <button
-            onClick={() => onAnular(venta.id)}
-            disabled={venta.estado === 'anulada'}
-            className={cn(
-              "w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all flex items-center justify-center active:scale-90",
-              venta.estado === 'anulada' && "opacity-50 cursor-not-allowed hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
-            )}
-            title="Anular"
-          >
-            <span className="material-symbols-outlined text-[16px]">block</span>
-          </button>
+          {puedeExportar && (
+            <button className="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all flex items-center justify-center active:scale-90" title="Imprimir">
+              <span className="material-symbols-outlined text-[16px]">print</span>
+            </button>
+          )}
+          {puedeAnular && (
+            <button
+              onClick={() => onAnular(venta.id)}
+              disabled={venta.estado === 'anulada'}
+              className={cn(
+                "w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all flex items-center justify-center active:scale-90",
+                venta.estado === 'anulada' && "opacity-50 cursor-not-allowed hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+              )}
+              title="Anular"
+            >
+              <span className="material-symbols-outlined text-[16px]">block</span>
+            </button>
+          )}
           <button
             onClick={() => setExpanded(v => !v)}
             className={cn(
@@ -430,6 +437,7 @@ export default function VentasPage() {
   const [ventas, setVentas] = useState<Venta[]>([])
   const [loading, setLoading] = useState(true)
   const monedaSimbolo = useAuthStore(state => state.user?.monedaSimbolo || '$')
+  const permisos = usePermisos()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [total, setTotal] = useState(0)
@@ -499,14 +507,18 @@ export default function VentasPage() {
               </form>
 
               <div className="flex items-center gap-3 shrink-0">
-                <button className="h-11 px-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center gap-2 shadow-sm">
-                  <span className="material-symbols-outlined text-[18px]">file_download</span>
-                  Exportar
-                </button>
-                <Link href="/ventas/nueva" className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2 active:scale-95">
-                  <span className="material-symbols-outlined text-[18px]">add</span>
-                  Nueva Venta
-                </Link>
+                {permisos.exportar && (
+                  <button className="h-11 px-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-[10px] font-black uppercase tracking-[0.15em] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all flex items-center gap-2 shadow-sm">
+                    <span className="material-symbols-outlined text-[18px]">file_download</span>
+                    Exportar
+                  </button>
+                )}
+                {permisos.crear && (
+                  <Link href="/ventas/nueva" className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2 active:scale-95">
+                    <span className="material-symbols-outlined text-[18px]">add</span>
+                    Nueva Venta
+                  </Link>
+                )}
               </div>
             </div>
 
@@ -531,6 +543,8 @@ export default function VentasPage() {
                     venta={venta}
                     monedaSimbolo={monedaSimbolo}
                     onAnular={handleAnular}
+                    puedeExportar={permisos.exportar}
+                    puedeAnular={permisos.borrar}
                   />
                 ))
               )}

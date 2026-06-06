@@ -8,6 +8,7 @@ import DataTable from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface EsquemaCalculo {
   id: number
@@ -24,6 +25,7 @@ export default function EsquemasCalculoPage() {
   const [pageSize, setPageSize] = useState(10)
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(true)
+  const permisos = usePermisos()
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -84,12 +86,16 @@ export default function EsquemasCalculoPage() {
       width: 'w-24',
       render: (r: EsquemaCalculo) => (
         <div className="flex items-center gap-1 justify-end">
-          <button onClick={() => openEdit(r)} className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10 text-blue-500 transition-colors">
-            <span className="material-symbols-outlined text-base">edit</span>
-          </button>
-          <button onClick={() => handleDelete(r)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-red-400 transition-colors">
-            <span className="material-symbols-outlined text-base">delete</span>
-          </button>
+          {permisos.editar && (
+            <button onClick={() => openEdit(r)} className="p-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-500/10 text-blue-500 transition-colors">
+              <span className="material-symbols-outlined text-base">edit</span>
+            </button>
+          )}
+          {permisos.borrar && (
+            <button onClick={() => handleDelete(r)} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-red-400 transition-colors">
+              <span className="material-symbols-outlined text-base">delete</span>
+            </button>
+          )}
         </div>
       ),
     },
@@ -109,11 +115,13 @@ export default function EsquemasCalculoPage() {
               Gestione los flujos de cálculo comercial para ventas y compras.
             </p>
           </div>
-          <button onClick={openCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 shrink-0">
-            <span className="material-symbols-outlined text-xl">add_circle</span>
-            Nuevo Esquema
-          </button>
+          {permisos.crear && (
+            <button onClick={openCreate}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-500/20 shrink-0">
+              <span className="material-symbols-outlined text-xl">add_circle</span>
+              Nuevo Esquema
+            </button>
+          )}
         </div>
 
         <div className="flex gap-3 mb-6">

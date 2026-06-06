@@ -8,6 +8,7 @@ import DataTable, { Column } from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Banco {
   id: number
@@ -20,6 +21,7 @@ interface Banco {
 
 export default function BancosPage() {
   const router = useRouter()
+  const permisos = usePermisos()
   const [bancos, setBancos] = useState<Banco[]>([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
@@ -124,20 +126,24 @@ export default function BancosPage() {
       width: 'w-28',
       render: (b) => (
         <div className="flex items-center gap-1 justify-end">
-          <button
-            onClick={() => handleEdit(b)}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
-            title="Editar"
-          >
-            <span className="material-symbols-outlined text-base">edit</span>
-          </button>
-          <button
-            onClick={() => handleDelete(b.id)}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-red-500 transition-colors"
-            title="Desactivar"
-          >
-            <span className="material-symbols-outlined text-base">delete</span>
-          </button>
+          {permisos.editar && (
+            <button
+              onClick={() => handleEdit(b)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
+              title="Editar"
+            >
+              <span className="material-symbols-outlined text-base">edit</span>
+            </button>
+          )}
+          {permisos.borrar && (
+            <button
+              onClick={() => handleDelete(b.id)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-red-500 transition-colors"
+              title="Desactivar"
+            >
+              <span className="material-symbols-outlined text-base">delete</span>
+            </button>
+          )}
         </div>
       )
     }
@@ -157,13 +163,15 @@ export default function BancosPage() {
               Gestione las entidades bancarias y sus configuraciones.
             </p>
           </div>
-          <button
-            onClick={handleCreate}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20 shrink-0 active:scale-95 text-sm"
-          >
-            <span className="material-symbols-outlined text-xl">add</span>
-            Nuevo Banco
-          </button>
+          {permisos.crear && (
+            <button
+              onClick={handleCreate}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20 shrink-0 active:scale-95 text-sm"
+            >
+              <span className="material-symbols-outlined text-xl">add</span>
+              Nuevo Banco
+            </button>
+          )}
         </div>
 
         <div className="flex gap-3 mb-4">

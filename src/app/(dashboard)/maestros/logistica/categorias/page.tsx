@@ -8,6 +8,7 @@ import DataTable, { Column } from '@/components/ui/DataTable'
 import Pagination from '@/components/ui/Pagination'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Categoria {
   id: number
@@ -24,6 +25,7 @@ export default function CategoriasPage() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [search, setSearch] = useState('')
+  const permisos = usePermisos()
 
   const fetchCategorias = async () => {
     setLoading(true)
@@ -102,20 +104,24 @@ export default function CategoriasPage() {
       align: 'right',
       render: (c: Categoria) => (
         <div className="flex items-center gap-1 justify-end">
-          <button
-            onClick={() => handleEdit(c)}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
-            title="Editar"
-          >
-            <span className="material-symbols-outlined text-base">edit</span>
-          </button>
-          <button
-            onClick={() => handleDelete(c.id)}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-red-500 transition-colors"
-            title="Desactivar"
-          >
-            <span className="material-symbols-outlined text-base">delete</span>
-          </button>
+          {permisos.editar && (
+            <button
+              onClick={() => handleEdit(c)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-blue-500 transition-colors"
+              title="Editar"
+            >
+              <span className="material-symbols-outlined text-base">edit</span>
+            </button>
+          )}
+          {permisos.borrar && (
+            <button
+              onClick={() => handleDelete(c.id)}
+              className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-red-500 transition-colors"
+              title="Desactivar"
+            >
+              <span className="material-symbols-outlined text-base">delete</span>
+            </button>
+          )}
         </div>
       )
     }
@@ -135,13 +141,15 @@ export default function CategoriasPage() {
               Administra las categorías de materiales para organizar tu catálogo de productos.
             </p>
           </div>
-          <button
-            onClick={handleCreate}
-            className="bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-primary/20 shrink-0"
-          >
-            <span className="material-symbols-outlined text-xl">add</span>
-            Nueva Categoría
-          </button>
+          {permisos.crear && (
+            <button
+              onClick={handleCreate}
+              className="bg-primary hover:bg-primary-dark text-white font-bold py-2.5 px-5 rounded-xl flex items-center gap-2 transition-all shadow-lg shadow-primary/20 shrink-0"
+            >
+              <span className="material-symbols-outlined text-xl">add</span>
+              Nueva Categoría
+            </button>
+          )}
         </div>
 
         <div className="flex gap-3 mb-4">

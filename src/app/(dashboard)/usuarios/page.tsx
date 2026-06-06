@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 import UsuarioDetailView from './components/UsuarioDetailView'
 import UsuarioEditor from './components/UsuarioEditor'
+import { usePermisos } from '@/contexts/PermisosContext'
 
 interface Usuario {
   id: number
@@ -35,6 +36,7 @@ interface Usuario {
 }
 
 export default function UsuariosPage() {
+  const permisos = usePermisos()
   // Master List State
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [loadingMaster, setLoadingMaster] = useState(true)
@@ -158,12 +160,14 @@ export default function UsuariosPage() {
           <div className="p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] ml-1">Listado Maestro</h3>
-              <button
-                onClick={handleOpenNew}
-                className="size-8 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all flex items-center justify-center shadow-sm active:scale-90"
-              >
-                <span className="material-symbols-outlined text-xl">add</span>
-              </button>
+              {permisos.crear && (
+                <button
+                  onClick={handleOpenNew}
+                  className="size-8 rounded-full bg-primary/10 hover:bg-primary text-primary hover:text-white transition-all flex items-center justify-center shadow-sm active:scale-90"
+                >
+                  <span className="material-symbols-outlined text-xl">add</span>
+                </button>
+              )}
             </div>
 
             <div className="relative">
@@ -224,7 +228,7 @@ export default function UsuariosPage() {
                 </button>
 
                 {/* Delete button - only show on hover or when selected */}
-                {usuario.activo && (selectedId === usuario.id || true) && (
+                {usuario.activo && (selectedId === usuario.id || true) && permisos.borrar && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
