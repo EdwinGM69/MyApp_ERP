@@ -64,6 +64,7 @@ function MovimientoCard({ mov, onView }: {
   onView: (id: number) => void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const permisos = usePermisos()
   const [detail, setDetail] = useState<any>(null)
   const [loadingDetail, setLoadingDetail] = useState(false)
   const variant = getOpVariant(mov.tipo_operacion?.signo_origen)
@@ -353,6 +354,7 @@ function MovimientoCard({ mov, onView }: {
 export default function MovimientosPage() {
   const router = useRouter()
   const { currentSucursal } = useSucursal()
+  const permisos = usePermisos()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [data, setData] = useState<any[]>([])

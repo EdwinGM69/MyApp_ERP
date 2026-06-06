@@ -696,7 +696,7 @@ export default function CuponesPage() {
                 </div>
               {permisos.crear && (
                 <button
-                  onClick={() => handleOpenEditor(null)}
+                  onClick={() => handleOpenEditor(undefined)}
                   className="size-8 rounded-xl bg-primary text-white flex items-center justify-center active:scale-90 transition-all shadow-lg shadow-primary/20"
                 >
                   <span className="material-symbols-outlined text-base">add</span>

@@ -466,7 +466,7 @@ export default function ParametrosSistemaPage() {
                 <div className="flex gap-2">
                     {permisos.editar && (
                       <button
-                        onClick={() => handleEdit(param)}
+                        onClick={() => handleOpenEditor(selected)}
                         className="size-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all flex items-center justify-center active:scale-90"
                       >
                         <span className="material-symbols-outlined text-lg">edit</span>
