@@ -415,7 +415,7 @@ async function main() {
   await prisma.opcionMenu.upsert({
     where: { modulo_id_codigo: { modulo_id: adminModulo.id, codigo: 'ROL_USUARIO' } },
     update: {},
-    create: { modulo_id: adminModulo.id, parent_id: parentAdministracion.id, codigo: 'ROL_USUARIO', descripcion: 'Rol de Usuario', ruta: '/roles', orden: 42 activo: true, created_by: 1 },
+    create: { modulo_id: adminModulo.id, parent_id: parentAdministracion.id, codigo: 'ROL_USUARIO', descripcion: 'Rol de Usuario', ruta: '/roles', orden: 42, activo: true, created_by: 1 },
   })
 
   await prisma.opcionMenu.upsert({
