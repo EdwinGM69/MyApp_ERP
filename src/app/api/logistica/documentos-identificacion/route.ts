@@ -8,6 +8,7 @@ const documentoSchema = z.object({
   abreviatura: z.string().min(1, 'La abreviatura es requerida'),
   tipo: z.string(),
   activo: z.boolean().optional(),
+  ruta_API: z.string().optional(),
 })
 
 export async function GET(req: NextRequest) {

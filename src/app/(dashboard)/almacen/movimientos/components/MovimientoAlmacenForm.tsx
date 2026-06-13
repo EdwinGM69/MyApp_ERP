@@ -1,12 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { apiFetch } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import MaterialSelect from '@/components/ui/MaterialSelect'
 import { useSucursal } from '@/contexts/SucursalContext'
+import * as XLSX from 'xlsx'
 
 interface Distribucion {
   id: string
@@ -76,6 +77,8 @@ export default function MovimientoAlmacenForm() {
 
   // Lines state
   const [lineas, setLineas] = useState<ProductoLinea[]>([])
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Derivados
   const selectedTipo = tiposOperacion.find(t => t.id === Number(tipoOperacionId))
@@ -383,6 +386,280 @@ export default function MovimientoAlmacenForm() {
     fetchUbicacionesDisponibles(index, newLineas[index])
   }
 
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const buffer = await file.arrayBuffer()
+      const workbook = XLSX.read(buffer, { type: 'array' })
+      const sheet = workbook.Sheets['Datos'] || workbook.Sheets[workbook.SheetNames[0]]
+      if (!sheet) {
+        toast.error('El archivo no contiene una hoja de datos.')
+        return
+      }
+
+      const rows = XLSX.utils.sheet_to_json<any>(sheet, { header: 1 }) as any[][]
+
+      if (rows.length < 4) {
+        toast.error('El archivo debe tener al menos 4 filas (encabezados en fila 3, datos desde fila 4).')
+        return
+      }
+
+      const headers = rows[2] as string[]
+      const fieldIndex: Record<string, number> = {}
+      headers.forEach((h, idx) => {
+        if (h) fieldIndex[String(h).trim().toLowerCase()] = idx
+      })
+
+      const codigoIdx = fieldIndex['codigo']
+      const cantidadIdx = fieldIndex['cantidad']
+      const costoIdx = fieldIndex['costo_promedio']
+
+      if (codigoIdx === undefined || cantidadIdx === undefined) {
+        toast.error('La plantilla debe contener las columnas "codigo" y "cantidad".')
+        return
+      }
+
+      const rawRows: { codigo: string; cantidad: number; costo_promedio?: number; rowNum: number }[] = []
+      const codigosSeen = new Set<string>()
+
+      for (let i = 3; i < rows.length; i++) {
+        const row = rows[i]
+        if (!row || row.every((cell: any) => cell === undefined || cell === null || cell === '')) continue
+
+        const codigo = String(row[codigoIdx] ?? '').trim()
+        if (!codigo) {
+          toast.error(`Fila ${i + 1}: el código no puede estar vacío.`)
+          return
+        }
+
+        if (codigosSeen.has(codigo.toLowerCase())) {
+          toast.error(`Código duplicado en el Excel: "${codigo}" (fila ${i + 1}).`)
+          return
+        }
+        codigosSeen.add(codigo.toLowerCase())
+
+        const cantidad = Number(row[cantidadIdx])
+        if (isNaN(cantidad) || cantidad <= 0) {
+          toast.error(`Fila ${i + 1}: cantidad inválida para el código "${codigo}".`)
+          return
+        }
+
+        const costo_promedio = costoIdx !== undefined ? Number(row[costoIdx]) : undefined
+
+        rawRows.push({ codigo, cantidad, costo_promedio: isNaN(costo_promedio ?? NaN) ? undefined : costo_promedio, rowNum: i + 1 })
+      }
+
+      if (rawRows.length === 0) {
+        toast.error('No se encontraron datos para importar.')
+        return
+      }
+
+      // Look up materials by unique codigos
+      const uniqueCodigos = [...new Set(rawRows.map(r => r.codigo))]
+      const materialMap = new Map<string, any>()
+      const presentacionesMap = new Map<number, any[]>()
+      const unidadMultiploMap = new Map<number, number>()
+
+      for (const codigo of uniqueCodigos) {
+        const res = await apiFetch(`/api/materiales?search=${encodeURIComponent(codigo)}&pageSize=1`)
+        if (!res.ok) {
+          toast.error(`Error al buscar material con código "${codigo}".`)
+          return
+        }
+        const json = await res.json()
+        const data = Array.isArray(json) ? json : (json.data || [])
+        const material = data.find((m: any) => m.codigo?.toLowerCase() === codigo.toLowerCase())
+        if (!material) {
+          toast.error(`Material con código "${codigo}" no encontrado en el sistema.`)
+          return
+        }
+        materialMap.set(codigo.toLowerCase(), material)
+
+        // Fetch presentaciones for this material
+        let presentaciones: any[] = []
+        try {
+          const presRes = await apiFetch(`/api/materiales/presentaciones?materialId=${material.id}`)
+          if (presRes.ok) {
+            const presJson = await presRes.json()
+            presentaciones = Array.isArray(presJson) ? presJson : (presJson.data || [])
+          }
+        } catch { /* swallow */ }
+        presentacionesMap.set(material.id, presentaciones)
+
+        // Fetch unidad_multiplo
+        const umId = material.unidad_medida_rel?.id || material.unidad_medida_id
+        if (umId) {
+          try {
+            const umRes = await apiFetch(`/api/logistica/unidades?id=${umId}`)
+            if (umRes.ok) {
+              const umJson = await umRes.json()
+              unidadMultiploMap.set(material.id, Number(umJson.data?.unidad_multiplo) || 1)
+            }
+          } catch { /* swallow */ }
+        }
+      }
+
+      const estaIngreso = selectedTipo?.signo_origen === '+'
+      const esSalida = selectedTipo?.signo_origen === '-'
+      const disponible = estadosStock.find(e => e.descripcion.toLowerCase() === 'disponible' || e.codigo.toLowerCase() === 'disponible')
+      const defaultEstadoId = selectedTipo?.estado_stock_id || (disponible ? disponible.id : 1)
+
+      // Pre-fetch stock for all unique materials (same as fetchStockLinea)
+      const stockActualMap = new Map<number, number>()
+      for (const [, material] of materialMap) {
+        try {
+          const umControlId = material.unidad_medida_rel?.id || material.unidad_medida_id
+          const params = new URLSearchParams({
+            summary: 'true',
+            sucursalId: String(sucursalId),
+            almacenId: '1',
+            estadoStockId: String(defaultEstadoId),
+            materialId: String(material.id),
+            ...(umControlId ? { unidadMedidaId: String(umControlId) } : {}),
+          })
+          const stockRes = await apiFetch(`/api/stock?${params}`)
+          if (stockRes.ok) {
+            const stockJson = await stockRes.json()
+            stockActualMap.set(material.id, stockJson.total ?? 0)
+          }
+        } catch { /* swallow */ }
+      }
+
+      const nuevasLineas: ProductoLinea[] = []
+      let stockInsuficiente = false
+
+      for (const row of rawRows) {
+        const material = materialMap.get(row.codigo.toLowerCase())!
+
+        // Determine cost
+        let costoValue = '0.00'
+        if (esSalida) {
+          // Salida: always fetch last active cost from MaterialCosto (same as handleMaterialSelect)
+          try {
+            const costRes = await apiFetch(`/api/materiales/costo?materialId=${material.id}`)
+            if (costRes.ok) {
+              const costJson = await costRes.json()
+              costoValue = Number(costJson.costo ?? 0).toFixed(2)
+            }
+          } catch { /* swallow */ }
+        } else {
+          // Ingreso: use Excel's costo_promedio if operation allows cost
+          if (selectedTipo?.permite_precio_costo && row.costo_promedio !== undefined) {
+            costoValue = Number(row.costo_promedio).toFixed(2)
+          }
+        }
+
+        // Build distributions
+        let distribuciones: Distribucion[]
+        let stockRecords: any[] = []
+
+        if (esSalida) {
+          // Fetch stock records for this material
+          try {
+            const params = new URLSearchParams({
+              summary: 'false',
+              sucursalId: String(sucursalId),
+              almacenId: '1',
+              estadoStockId: String(defaultEstadoId),
+              materialId: String(material.id),
+              pageSize: '1000',
+            })
+            const stockRes = await apiFetch(`/api/stock?${params}`)
+            if (stockRes.ok) {
+              const stockJson = await stockRes.json()
+              const stockData = Array.isArray(stockJson) ? stockJson : (stockJson.data || [])
+              stockRecords = stockData.filter((s: any) => Number(s.cantidad) > 0)
+            }
+          } catch { /* swallow */ }
+
+          let remaining = row.cantidad
+          distribuciones = []
+
+          for (const stock of stockRecords) {
+            const take = Math.min(remaining, Number(stock.cantidad))
+            if (take <= 0) continue
+            remaining -= take
+            distribuciones.push({
+              id: Math.random().toString(36).substring(2, 11),
+              ubicacion_id: stock.ubicacion_id,
+              cantidad: take,
+              numero_lote: stock.numero_lote || '---',
+              fecha_expiracion: undefined,
+            })
+          }
+
+          if (distribuciones.length === 0) {
+            // No stock found — create placeholder so user can assign manually
+            distribuciones.push({
+              id: Math.random().toString(36).substring(2, 11),
+              ubicacion_id: material.ubicacion_default_id || 0,
+              cantidad: 0,
+              numero_lote: '---',
+            })
+          }
+
+          if (remaining > 0) {
+            stockInsuficiente = true
+          }
+        } else {
+          // Ingreso: single distribution from material defaults
+          distribuciones = [{
+            id: Math.random().toString(36).substring(2, 11),
+            ubicacion_id: material.ubicacion_default_id || 0,
+            cantidad: row.cantidad,
+            numero_lote: (estaIngreso && material.stock_lote) ? '' : '---',
+            fecha_expiracion: (estaIngreso && material.perecible) ? '' : undefined,
+          }]
+        }
+
+        const presentaciones = presentacionesMap.get(material.id) || []
+        const unidadMultiplo = unidadMultiploMap.get(material.id) || 1
+
+        nuevasLineas.push({
+          id: Math.random().toString(36).substring(2, 11),
+          material_id: material.id,
+          material_codigo: material.codigo,
+          material_descripcion: material.descripcion,
+          um: material.unidad_medida_rel?.descripcion || material.unidad_medida || 'UND',
+          unidad_medida_id: material.unidad_medida_rel?.id || material.unidad_medida_id,
+          unidad_medida_control_id: material.unidad_medida_rel?.id || material.unidad_medida_id,
+          lote: (estaIngreso && material.stock_lote) ? '' : '',
+          vencimiento: '',
+          cantidad: row.cantidad,
+          valor: costoValue,
+          moneda: 'PEN',
+          almacen_id: 1,
+          estado_stock_id: defaultEstadoId,
+          stock_lote: material.stock_lote,
+          esquema_id: material.esquema_id,
+          ubicacion_default_id: material.ubicacion_default_id,
+          perecible: material.perecible,
+          stock_actual: stockActualMap.get(material.id) ?? null,
+          distribuciones,
+          expandido: false,
+          presentaciones,
+          unidad_multiplo: unidadMultiplo,
+          ubicaciones_disponibles: esSalida
+            ? ubicaciones.filter(u => stockRecords.some((s: any) => s.ubicacion_id === u.id))
+            : undefined,
+        })
+      }
+
+      setLineas(prev => [...prev, ...nuevasLineas])
+      let msg = `Se importaron ${nuevasLineas.length} línea(s) correctamente.`
+      if (stockInsuficiente) {
+        msg += ' Algunos materiales tienen stock insuficiente para cubrir la cantidad solicitada.'
+      }
+      toast.success(msg)
+    } catch (err: any) {
+      toast.error(`Error al procesar el archivo: ${err.message}`)
+    } finally {
+      if (e.target) e.target.value = ''
+    }
+  }
+
   const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault()
     if (lineas.length === 0) {
@@ -587,6 +864,12 @@ export default function MovimientoAlmacenForm() {
                 <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-[0.2em] leading-none mb-1">Materiales Seleccionados</h3>
                 <p className="text-[10px] text-slate-400 font-medium tracking-tight">Registre los materiales y productos para este movimiento.</p>
               </div>
+               <button type="button" onClick={() => fileInputRef.current?.click()}
+                 className="px-6 h-11 rounded-2xl bg-emerald-600 text-white font-black text-[11px] hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-600/20 uppercase tracking-widest">
+                 <span className="material-symbols-outlined text-[20px]">file_upload</span>
+                 Importar
+               </button>
+               <input type="file" ref={fileInputRef} accept=".xlsx,.xls" onChange={handleImportFile} className="hidden" />
                <button type="button" onClick={addLinea}
                  className="px-6 h-11 rounded-2xl bg-slate-800 text-white font-black text-[11px] hover:bg-slate-700 transition-all flex items-center gap-2 shadow-lg shadow-slate-800/20 uppercase tracking-widest">
                  <span className="material-symbols-outlined text-[20px]">add_circle</span>

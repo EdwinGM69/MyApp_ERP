@@ -16,6 +16,7 @@ interface Documento {
   abreviatura: string
   tipo: string
   activo: boolean
+  ruta_API?: string
 }
 
 export default function DocumentosIdentificacionPage() {
@@ -92,6 +93,15 @@ export default function DocumentosIdentificacionPage() {
             <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider">{d.abreviatura}</span>
           </div>
         </div>
+      )
+    },
+    {
+      key: 'ruta_API',
+      header: 'RUTA API',
+      render: (d: Documento) => (
+        <span className="text-xs font-mono text-slate-500">
+          {d.ruta_API || '—'}
+        </span>
       )
     },
     {

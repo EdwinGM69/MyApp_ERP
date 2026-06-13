@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Topbar from '@/components/layout/Topbar'
 import Badge from '@/components/ui/Badge'
 import DocumentoIdentificacionSelect from '@/components/ui/DocumentoIdentificacionSelect'
@@ -94,6 +94,10 @@ export default function POSPage() {
   const [departamento, setDepartamento] = useState('')
   const [provincia, setProvincia] = useState('')
   const [distrito, setDistrito] = useState('')
+  const [esNuevoCliente, setEsNuevoCliente] = useState(false)
+  const [consultandoAPI, setConsultandoAPI] = useState(false)
+  const consultandoAPIRef = useRef(false)
+  const consultadoRef = useRef(false)
   const [observaciones, setObservaciones] = useState('')
   const [promociones, setPromociones] = useState<PromotionData[]>([])
   const [promocionesAplicadas, setPromocionesAplicadas] = useState<Map<number, { promoId: number; nombre: string; cantidad_regalo: number; valor_descuento: number }>>(new Map())
@@ -711,28 +715,78 @@ export default function POSPage() {
   }, [nif])
 
   const handleBuscarCliente = async () => {
-    if (!numeroIdentificacion) return
+    if (!numeroIdentificacion || !docIdentificacion) return
+    if (consultandoAPIRef.current) return
+    if (consultadoRef.current) return
+    consultandoAPIRef.current = true
     try {
       const res = await apiFetch(`/api/clientes?search=${numeroIdentificacion}&pageSize=50`)
       if (res.ok) {
         const body = await res.json()
         const match = body.data?.find((c: any) => c.nif?.toString()?.toLowerCase() === numeroIdentificacion.toLowerCase())
         if (match) {
+          consultadoRef.current = true
+          consultandoAPIRef.current = false
+          setEsNuevoCliente(false)
           setClienteId(match.id)
           setClienteNombreFull(match.nombre || '')
           setNombresCompletos(match.nombres_completos || '')
           setApellidosCompletos(match.apellidos_completos || '')
           setDireccion(match.direccion || '')
+          setUbigeo(match.ubigeo || '')
           setDepartamento(match.departamento || '')
           setProvincia(match.provincia || '')
           setDistrito(match.distrito || '')
-          setUbigeo(match.ubigeo || '')
           toast.success('Cliente encontrado')
-        } else {
-          setClienteId(null)
+          return
         }
       }
+
+      setEsNuevoCliente(true)
+      setConsultandoAPI(true)
+      try {
+        const apiRes = await apiFetch('/api/factiliza/consultar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            numero: numeroIdentificacion,
+            documentoIdentificacionId: docIdentificacion.id
+          })
+        })
+
+        if (apiRes.ok) {
+          const json = await apiRes.json()
+          const data = json.data
+          if (data) {
+            consultadoRef.current = true
+            if (docIdentificacion.abreviatura === 'RUC') {
+              setClienteNombreFull(data.nombre_o_razon_social || '')
+              setNombresCompletos('')
+              setApellidosCompletos('')
+            } else {
+              setNombresCompletos(data.nombres || '')
+              setApellidosCompletos(`${data.apellido_paterno || ''} ${data.apellido_materno || ''}`.trim())
+              setClienteNombreFull(data.nombre_completo || '')
+            }
+            setDireccion(data.direccion || '')
+            setUbigeo(data.ubigeo_sunat || '')
+            setDepartamento(data.departamento || '')
+            setProvincia(data.provincia || '')
+            setDistrito(data.distrito || '')
+            toast.success('Datos cargados desde Factiliza')
+          }
+        } else {
+          toast.error('Cliente no encontrado. Complete los datos manualmente.')
+        }
+      } catch (error) {
+        console.error('Error consultando API externa:', error)
+        toast.error('Error al consultar servicio externo. Complete los datos manualmente.')
+      } finally {
+        consultandoAPIRef.current = false
+        setConsultandoAPI(false)
+      }
     } catch (error) {
+      consultandoAPIRef.current = false
       console.error('Error buscando cliente:', error)
     }
   }
@@ -2492,11 +2546,15 @@ export default function POSPage() {
                     <input
                       type="text"
                       value={numeroIdentificacion}
-                      onChange={(e) => setNumeroIdentificacion(e.target.value)}
+                      onChange={(e) => { consultadoRef.current = false; setNumeroIdentificacion(e.target.value) }}
                       onBlur={handleBuscarCliente}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
                       placeholder="Número de documento"
                       className="flex-1 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs bg-white dark:bg-slate-800 focus:ring-2 focus:ring-primary/20 outline-none"
                     />
+                    {consultandoAPI && (
+                      <span className="text-[10px] text-blue-600 font-bold mt-1 block">Consultando Factiliza...</span>
+                    )}
                   </div>
                 </div>
                 {docIdentificacion?.abreviatura === 'RUC' ? (

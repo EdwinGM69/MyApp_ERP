@@ -442,12 +442,16 @@ export default function VentasPage() {
   const [pageSize, setPageSize] = useState(10)
   const [total, setTotal] = useState(0)
   const [search, setSearch] = useState('')
+  const [fechaDesde, setFechaDesde] = useState(() => format(new Date(), 'yyyy-MM-dd'))
+  const [fechaHasta, setFechaHasta] = useState(() => format(new Date(), 'yyyy-MM-dd'))
+  const [filtroFechaActivo, setFiltroFechaActivo] = useState(true)
 
   const fetchVentas = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize), search })
       if (currentSucursal?.id) params.set('sucursalId', String(currentSucursal.id))
+      if (filtroFechaActivo) { params.set('fecha_desde', fechaDesde); params.set('fecha_hasta', fechaHasta) }
       const res = await apiFetch(`/api/ventas?${params}`)
       if (!res.ok) throw new Error('Error fetching sales')
       const json = await res.json()
@@ -458,7 +462,7 @@ export default function VentasPage() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize, search, currentSucursal])
+  }, [page, pageSize, search, currentSucursal, fechaDesde, fechaHasta, filtroFechaActivo])
 
   useEffect(() => { fetchVentas() }, [fetchVentas])
 
@@ -493,7 +497,33 @@ export default function VentasPage() {
 
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <form onSubmit={handleSearchSubmit} className="flex flex-1 max-w-2xl gap-2">
+              <form onSubmit={handleSearchSubmit} className="flex flex-1 max-w-4xl gap-2 items-center">
+                <label className="flex items-center gap-1.5 text-xs whitespace-nowrap text-slate-500 shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={filtroFechaActivo}
+                    onChange={(e) => setFiltroFechaActivo(e.target.checked)}
+                    className="rounded border-slate-300 dark:border-slate-700"
+                  />
+                  <span>Fechas</span>
+                </label>
+                <input
+                  type="date"
+                  value={fechaDesde}
+                  onChange={(e) => setFechaDesde(e.target.value)}
+                  max={fechaHasta}
+                  disabled={!filtroFechaActivo}
+                  className="w-36 h-11 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <span className="text-slate-400 text-xs shrink-0">—</span>
+                <input
+                  type="date"
+                  value={fechaHasta}
+                  onChange={(e) => setFechaHasta(e.target.value)}
+                  min={fechaDesde}
+                  disabled={!filtroFechaActivo}
+                  className="w-36 h-11 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                />
                 <div className="relative flex-1">
                   <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
                   <input

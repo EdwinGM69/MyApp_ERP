@@ -14,6 +14,7 @@ interface Documento {
   abreviatura: string
   tipo: string
   activo: boolean
+  ruta_API?: string
   created_at?: string
   updated_at?: string
   usuario_creador?: { nombre: string }
@@ -32,6 +33,7 @@ export default function DocumentoIdentificacionForm({ documentoToEdit }: Documen
   const [descripcion, setDescripcion] = useState('')
   const [abreviatura, setAbreviatura] = useState('')
   const [tipo, setTipo] = useState('Natural')
+  const [ruta_API, setRuta_API] = useState('')
   const [activo, setActivo] = useState(true)
 
   useEffect(() => {
@@ -39,6 +41,7 @@ export default function DocumentoIdentificacionForm({ documentoToEdit }: Documen
       setDescripcion(documentoToEdit.descripcion)
       setAbreviatura(documentoToEdit.abreviatura)
       setTipo(documentoToEdit.tipo)
+      setRuta_API(documentoToEdit.ruta_API ?? '')
       setActivo(documentoToEdit.activo)
     }
   }, [documentoToEdit])
@@ -52,6 +55,7 @@ export default function DocumentoIdentificacionForm({ documentoToEdit }: Documen
       descripcion,
       abreviatura,
       tipo,
+      ruta_API,
       activo,
     }
 
@@ -145,6 +149,14 @@ export default function DocumentoIdentificacionForm({ documentoToEdit }: Documen
                     type="text" required value={abreviatura} onChange={e => setAbreviatura(e.target.value)}
                     className="w-full px-6 py-2 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400"
                     placeholder="Ej: CC, NIT, PAS, etc."
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider mb-4">Ruta API</label>
+                  <input
+                    type="text" value={ruta_API} onChange={e => setRuta_API(e.target.value)}
+                    className="w-full px-6 py-2 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all placeholder:text-slate-400 font-mono"
+                    placeholder="Ej: /api/validar/cedula"
                   />
                 </div>
                 <div>

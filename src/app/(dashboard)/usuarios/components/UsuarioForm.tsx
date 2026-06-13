@@ -74,6 +74,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
   const [confirmPassword, setConfirmPassword] = useState('')
   const [twoFactor, setTwoFactor] = useState(false)
   const [lastSucursalId, setLastSucursalId] = useState<number | null>(null)
+  const [activo, setActivo] = useState(true)
 
   const [idioma, setIdioma] = useState(defaultPreferences.idioma)
   const [zonaHoraria, setZonaHoraria] = useState(defaultPreferences.zona_horaria)
@@ -94,14 +95,14 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
     if (!initialValuesRef.current) return
 
     const currentValues = {
-      nombre, email, telefono, posicion, assignedRoles, twoFactor,
+      nombre, email, telefono, posicion, assignedRoles, twoFactor, activo,
       idioma, zonaHoraria, notifInventario, notifSemanal, notifChat, notifPromociones
     }
 
     const hasChanged = JSON.stringify(currentValues) !== JSON.stringify(initialValuesRef.current)
     setIsFormDirty(hasChanged)
   }, [
-    nombre, email, telefono, posicion, assignedRoles, assignedSucursales, twoFactor,
+    nombre, email, telefono, posicion, assignedRoles, assignedSucursales, twoFactor, activo,
     idioma, zonaHoraria, notifInventario, notifSemanal, notifChat, notifPromociones
   ])
 
@@ -149,6 +150,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
       setAssignedRoles(userRoles)
 
       setTwoFactor(usuarioToEdit.two_factor_enabled || false)
+      setActivo(usuarioToEdit.activo ?? true)
 
       // Cargar sucursales asignadas
       if (usuarioToEdit.usuario_sucursales) {
@@ -175,6 +177,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
         posicion: usuarioToEdit.posicion || '',
         assignedRoles: userRoles,
         twoFactor: usuarioToEdit.two_factor_enabled || false,
+        activo: usuarioToEdit.activo ?? true,
         lastSucursalId: usuarioToEdit.last_sucursal_id || null,
         idioma: prefs.idioma || defaultPreferences.idioma,
         zonaHoraria: prefs.zona_horaria || defaultPreferences.zona_horaria,
@@ -192,6 +195,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
         posicion: '',
         assignedRoles: [],
         twoFactor: false,
+        activo: true,
         lastSucursalId: null,
         idioma: defaultPreferences.idioma,
         zonaHoraria: defaultPreferences.zona_horaria,
@@ -249,10 +253,13 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
     setLoading(true)
 
     try {
-      const mainRolId = assignedRoles.length > 0 ? assignedRoles[0] : roles[0]?.id
+      if (assignedRoles.length === 0) {
+        toast.error('Debe asignar al menos un rol al usuario')
+        setLoading(false)
+        return
+      }
+      const mainRolId = assignedRoles[0]
       const additionalRoles = assignedRoles.slice(1)
-
-      if (!mainRolId) throw new Error("No hay roles disponibles en el sistema.")
 
       const payload: any = {
         nombre: nombre.trim(),
@@ -260,7 +267,7 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
         telefono: telefono ? telefono.trim() : null,
         posicion: posicion ? posicion.trim() : null,
         two_factor_enabled: twoFactor,
-        activo: true,
+        activo,
         rol_id: mainRolId,
         roles_adicionales: additionalRoles,
         last_sucursal_id: lastSucursalId,
@@ -476,6 +483,27 @@ export default function UsuarioForm({ usuarioToEdit, onSuccess, onCancel }: Usua
               <span className="material-symbols-outlined text-sm">info</span>
               Las sucursales asignadas determinan desde qué ubicaciones puede operar este usuario.
             </p>
+          </div>
+        </div>
+
+        {/* Estado de la Cuenta */}
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-8 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-5">
+              <div className="w-12 h-12 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl flex items-center justify-center text-emerald-600 shrink-0 shadow-sm">
+                <span className="material-symbols-outlined text-[24px]">toggle_on</span>
+              </div>
+              <div>
+                <p className="text-sm font-black text-slate-900 dark:text-white">Estado de la Cuenta</p>
+                <p className="text-xs font-medium text-slate-500">
+                  {activo ? 'Usuario activo — puede iniciar sesión en el sistema' : 'Usuario inactivo — no puede acceder al sistema'}
+                </p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" className="sr-only peer" checked={activo} onChange={e => setActivo(e.target.checked)} />
+              <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-[20px] after:w-[22px] after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
+            </label>
           </div>
         </div>
 

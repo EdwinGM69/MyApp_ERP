@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, Calculator, ShoppingCart, Trash2, CheckCircle2, ArrowLeft, BarChart2 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
@@ -118,6 +118,11 @@ export default function VentaForm() {
   const [departamento, setDepartamento] = useState('')
   const [provincia, setProvincia] = useState('')
   const [distrito, setDistrito] = useState('')
+  const [ubigeo, setUbigeo] = useState('')
+  const [esNuevoCliente, setEsNuevoCliente] = useState(false)
+  const [consultandoAPI, setConsultandoAPI] = useState(false)
+  const consultandoAPIRef = useRef(false)
+  const consultadoRef = useRef(false)
 
   const [mediosPagoOptions, setMediosPagoOptions] = useState<any[]>([])
   const [mediosPagoSeleccionados, setMediosPagoSeleccionados] = useState<Record<number, { selected: boolean, importe: string }>>({})
@@ -1435,31 +1440,78 @@ return l
   }
 
   const handleNumeroDocBlur = async () => {
-    if (!numeroIdentificacion) return
+    if (!numeroIdentificacion || !docIdentificacion) return
+    if (consultandoAPIRef.current) return
+    if (consultadoRef.current) return
+    consultandoAPIRef.current = true
     try {
       const res = await apiFetch(`/api/clientes?search=${numeroIdentificacion}&pageSize=50`)
       if (res.ok) {
         const body = await res.json()
-        console.log('DEBUG: Clientes encontrados:', body.data?.length, 'buscando:', numeroIdentificacion)
-        console.log('DEBUG: Datos recibidos:', JSON.stringify(body.data))
         const match = body.data?.find((c: any) => c.nif?.toString()?.toLowerCase() === numeroIdentificacion.toLowerCase())
-        console.log('DEBUG: Cliente match:', match)
         if (match) {
+          consultadoRef.current = true
+          consultandoAPIRef.current = false
+          setEsNuevoCliente(false)
           setCliente(match)
           setNombre(match.nombre || '')
           setNombresCompletos(match.nombres_completos || '')
           setApellidosCompletos(match.apellidos_completos || '')
           setDireccion(match.direccion || '')
+          setUbigeo(match.ubigeo || '')
           setDepartamento(match.departamento || '')
           setProvincia(match.provincia || '')
           setDistrito(match.distrito || '')
-          console.log('DEBUG: Departamento asignado:', match.departamento)
-          console.log('DEBUG: Provincia asignado:', match.provincia)
-          console.log('DEBUG: Distrito asignado:', match.distrito)
           toast.success('Cliente encontrado y cargado')
+          return
         }
       }
+
+      setEsNuevoCliente(true)
+      setConsultandoAPI(true)
+      try {
+        const apiRes = await apiFetch('/api/factiliza/consultar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            numero: numeroIdentificacion,
+            documentoIdentificacionId: docIdentificacion.id
+          })
+        })
+
+        if (apiRes.ok) {
+          const json = await apiRes.json()
+          const data = json.data
+          if (data) {
+            consultadoRef.current = true
+            if (docIdentificacion.abreviatura === 'RUC') {
+              setNombre(data.nombre_o_razon_social || '')
+              setNombresCompletos('')
+              setApellidosCompletos('')
+            } else {
+              setNombresCompletos(data.nombres || '')
+              setApellidosCompletos(`${data.apellido_paterno || ''} ${data.apellido_materno || ''}`.trim())
+              setNombre(data.nombre_completo || '')
+            }
+            setDireccion(data.direccion || '')
+            setUbigeo(data.ubigeo_sunat || '')
+            setDepartamento(data.departamento || '')
+            setProvincia(data.provincia || '')
+            setDistrito(data.distrito || '')
+            toast.success('Datos cargados desde Factiliza')
+          }
+        } else {
+          toast.error('Cliente no encontrado. Complete los datos manualmente.')
+        }
+      } catch (error) {
+        console.error('Error consultando API externa:', error)
+        toast.error('Error al consultar servicio externo. Complete los datos manualmente.')
+      } finally {
+        consultandoAPIRef.current = false
+        setConsultandoAPI(false)
+      }
     } catch (error) {
+      consultandoAPIRef.current = false
       console.error('Error buscando cliente:', error)
     }
   }
@@ -1524,6 +1576,7 @@ return l
         nombres_completos: nombresCompletos,
         apellidos_completos: apellidosCompletos,
         direccion: direccion,
+        ubigeo: ubigeo,
         departamento: departamento,
         provincia: provincia,
         distrito: distrito,
@@ -1752,9 +1805,13 @@ return l
                     type="text"
                     value={numeroIdentificacion}
                     onBlur={handleNumeroDocBlur}
-                    onChange={(e) => setNumeroIdentificacion(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+                    onChange={(e) => { consultadoRef.current = false; setNumeroIdentificacion(e.target.value) }}
                     className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
                   />
+                  {consultandoAPI && (
+                    <span className="text-[10px] text-blue-600 font-bold mt-1 block">Consultando Factiliza...</span>
+                  )}
                 </div>
                 {docIdentificacion?.abreviatura === 'RUC' ? (
                   <div className="space-y-1">
@@ -1795,6 +1852,16 @@ return l
                     type="text"
                     value={direccion}
                     onChange={(e) => setDireccion(e.target.value)}
+                    className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 ml-1">UBIGEO</label>
+                  <input
+                    type="text"
+                    value={ubigeo}
+                    onChange={(e) => setUbigeo(e.target.value)}
                     className="w-full h-10 px-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:border-blue-500 outline-none"
                   />
                 </div>

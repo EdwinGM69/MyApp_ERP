@@ -1169,6 +1169,7 @@ model DocumentoIdentificacion {
   descripcion         String
   abreviatura         String
   tipo                String      @default("natural")
+  ruta_API            String      @default("")
   activo              Boolean     @default(true)
   created_at          DateTime    @default(now())
   updated_at          DateTime    @updatedAt

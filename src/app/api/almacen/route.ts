@@ -75,10 +75,18 @@ export async function GET(req: NextRequest) {
     const pageSize = parseInt(searchParams.get('pageSize') ?? '10');
     const search = searchParams.get('search') ?? '';
     const sucursalId = searchParams.get('sucursalId');
+    const fechaDesde = searchParams.get('fecha_desde');
+    const fechaHasta = searchParams.get('fecha_hasta');
 
-    const where = {
+    const where: any = {
       empresa_id: empresaId,
       ...(sucursalId ? { sucursal_id: parseInt(sucursalId) } : {}),
+      ...(fechaDesde || fechaHasta ? {
+        fecha: {
+          ...(fechaDesde ? { gte: new Date(`${fechaDesde}T00:00:00.000Z`) } : {}),
+          ...(fechaHasta ? { lte: new Date(`${fechaHasta}T23:59:59.999Z`) } : {}),
+        }
+      } : {}),
       ...(search ? {
         OR: [
           { numero_mov: { contains: search, mode: 'insensitive' as const } },

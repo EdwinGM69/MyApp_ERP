@@ -68,11 +68,19 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') ?? ''
     const clienteId = searchParams.get('clienteId')
     const sucursalId = searchParams.get('sucursalId')
+    const fechaDesde = searchParams.get('fecha_desde')
+    const fechaHasta = searchParams.get('fecha_hasta')
 
-    const where = {
+    const where: any = {
       empresa_id: empresaId,
       ...(clienteId ? { cliente_id: parseInt(clienteId) } : {}),
       ...(sucursalId ? { sucursal_id: parseInt(sucursalId) } : {}),
+      ...(fechaDesde || fechaHasta ? {
+        fecha_venta: {
+          ...(fechaDesde ? { gte: new Date(`${fechaDesde}T00:00:00.000Z`) } : {}),
+          ...(fechaHasta ? { lte: new Date(`${fechaHasta}T23:59:59.999Z`) } : {}),
+        }
+      } : {}),
       ...(search ? {
         OR: [
           { numero_pedido: { contains: search, mode: 'insensitive' as const } },

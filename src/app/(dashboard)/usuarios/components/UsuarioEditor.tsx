@@ -83,6 +83,7 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
   const [notifSemanal, setNotifSemanal] = useState(defaultPreferences.notificaciones.resumen_semanal)
   const [notifChat, setNotifChat] = useState(defaultPreferences.notificaciones.chat_interno)
   const [notifPromociones, setNotifPromociones] = useState(defaultPreferences.notificaciones.nuevas_promociones)
+  const [activo, setActivo] = useState(true)
 
   // Load auxiliary data
   useEffect(() => {
@@ -129,6 +130,7 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
       }
       setAssignedRoles(userRoles)
       setTwoFactor(usuario.two_factor_enabled || false)
+      setActivo(usuario.activo ?? true)
 
       if (usuario.usuario_sucursales && Array.isArray(usuario.usuario_sucursales)) {
         setAssignedSucursales(usuario.usuario_sucursales.map((s: any) => s.sucursal_id))
@@ -196,10 +198,13 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
     setLoading(true)
 
     try {
-      const mainRolId = assignedRoles.length > 0 ? assignedRoles[0] : roles[0]?.id
+      if (assignedRoles.length === 0) {
+        toast.error('Debe asignar al menos un rol al usuario')
+        setLoading(false)
+        return
+      }
+      const mainRolId = assignedRoles[0]
       const additionalRoles = assignedRoles.slice(1)
-
-      if (!mainRolId) throw new Error("No hay roles disponibles en el sistema.")
 
       const payload: any = {
         nombre: nombre.trim(),
@@ -207,7 +212,7 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
         telefono: telefono ? telefono.trim() : null,
         posicion: posicion ? posicion.trim() : null,
         two_factor_enabled: twoFactor,
-        activo: true,
+        activo,
         rol_id: mainRolId,
         roles_adicionales: additionalRoles,
         sucursales_asignadas: assignedSucursales,
@@ -310,6 +315,25 @@ export default function UsuarioEditor({ usuario, onCancel, onSuccess }: UsuarioE
               placeholder="Gerente de Ventas"
             />
           </div>
+        </div>
+
+        {/* Estado de la Cuenta */}
+        <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-4">
+            <div className="size-11 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl flex items-center justify-center text-emerald-600 shrink-0">
+              <span className="material-symbols-outlined text-[22px]">toggle_on</span>
+            </div>
+            <div>
+              <p className="text-sm font-black text-slate-900 dark:text-white">Estado de la Cuenta</p>
+              <p className="text-xs font-medium text-slate-500">
+                {activo ? 'Activo — puede iniciar sesión' : 'Inactivo — no puede acceder'}
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input type="checkbox" className="sr-only peer" checked={activo} onChange={e => setActivo(e.target.checked)} />
+            <div className="w-14 h-7 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-[20px] after:w-[22px] after:transition-all dark:border-gray-600 peer-checked:bg-emerald-500"></div>
+          </label>
         </div>
 
         {/* 2. Roles de Usuario */}
