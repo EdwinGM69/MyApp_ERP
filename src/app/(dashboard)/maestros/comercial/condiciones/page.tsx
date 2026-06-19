@@ -1048,8 +1048,14 @@ export default function CondicionesComercialesPage() {
                   type="text"
                   value={editingTipo.codigo}
                   onChange={(e) => setEditingTipo({ ...editingTipo, codigo: e.target.value })}
+                  disabled={!!editingTipo?.id}
                   placeholder="Ej: LPRC"
-                  className="w-full h-11 px-5 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none text-sm font-black uppercase"
+                  className={cn(
+                    "w-full h-11 px-5 border rounded-2xl outline-none text-sm font-black uppercase",
+                    editingTipo?.id
+                      ? "bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-500 cursor-not-allowed"
+                      : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                  )}
                 />
               </div>
               <div className="space-y-2">

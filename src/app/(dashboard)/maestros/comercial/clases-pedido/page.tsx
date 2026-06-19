@@ -320,8 +320,14 @@ export default function ClasesPedidoPage() {
                           type="text"
                           value={editingData.codigo}
                           onChange={(e) => setEditingData({ ...editingData, codigo: e.target.value.toUpperCase() })}
+                          disabled={!!editingData?.id}
                           placeholder="EJ: VENTA_LOCAL"
-                          className="w-full h-14 px-6 border border-slate-100 dark:border-slate-800 rounded-2xl outline-none text-sm font-black uppercase bg-slate-50/50 dark:bg-slate-950 focus:ring-4 focus:ring-primary/5 transition-all text-primary"
+                          className={cn(
+                            "w-full h-14 px-6 border rounded-2xl outline-none text-sm font-black uppercase transition-all",
+                            editingData?.id
+                              ? "bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-500 cursor-not-allowed"
+                              : "bg-slate-50/50 dark:bg-slate-950 border-slate-100 dark:border-slate-800 focus:ring-4 focus:ring-primary/5 text-primary"
+                          )}
                         />
                       </div>
                       <div className="space-y-2">

@@ -132,7 +132,13 @@ export default function CategoriaForm({ categoriaToEdit }: CategoriaFormProps) {
                   <label className="block text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider mb-4">Código</label>
                   <input
                     type="text" required value={codigo} onChange={e => setCodigo(e.target.value.toUpperCase())}
-                    className="w-full px-6 py-2 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all font-mono placeholder:text-slate-400"
+                    disabled={!!categoriaToEdit}
+                    className={cn(
+                      "w-full px-6 py-2 border rounded-xl text-base font-medium outline-none transition-all font-mono placeholder:text-slate-400",
+                      categoriaToEdit
+                        ? "bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-500 cursor-not-allowed"
+                        : "bg-slate-50/50 dark:bg-slate-900/50 border-slate-200 dark:border-slate-700 focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500"
+                    )}
                     placeholder="Ej: CAT-001"
                   />
                   <p className="mt-2 text-[10px] text-slate-400 font-medium">Identificador único alfanumérico para la categoría.</p>

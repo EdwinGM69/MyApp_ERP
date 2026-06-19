@@ -178,10 +178,10 @@ export default function TiposOperacionPage() {
               >
                 <div className="flex items-center gap-3">
                   <div className={cn(
-                    "size-10 rounded-xl flex items-center justify-center shrink-0 transition-colors font-black text-xs",
+                    "size-10 rounded-xl flex items-center justify-center shrink-0 transition-colors",
                     selectedId === t.id ? "bg-primary text-white" : "bg-slate-100 dark:bg-slate-800 text-slate-400"
                   )}>
-                    {t.codigo.slice(0, 2)}
+                    <span className="material-symbols-outlined text-xl">swap_horiz</span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <span className={cn(
@@ -227,8 +227,14 @@ export default function TiposOperacionPage() {
                       type="text"
                       value={editingData.codigo}
                       onChange={(e) => setEditingData({ ...editingData, codigo: e.target.value })}
+                      disabled={!!editingData?.id}
                       placeholder="Ej: FACV"
-                      className="w-full h-12 px-5 border border-slate-200 dark:border-slate-700 rounded-2xl outline-none text-sm font-black uppercase bg-slate-50/50 dark:bg-slate-900 focus:ring-2 focus:ring-primary/20 transition-all"
+                      className={cn(
+                        "w-full h-12 px-5 border rounded-2xl outline-none text-sm font-black uppercase transition-all",
+                        editingData?.id
+                          ? "bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-500 cursor-not-allowed"
+                          : "bg-slate-50/50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-primary/20"
+                      )}
                     />
                   </div>
                   <div className="space-y-2">
@@ -436,14 +442,14 @@ export default function TiposOperacionPage() {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                    {permisos.editar && (
-                      <button
-                        onClick={() => handleOpenEditor(selected)}
-                        className="size-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all flex items-center justify-center active:scale-90"
-                      >
-                        <span className="material-symbols-outlined text-lg">edit</span>
-                      </button>
-                    )}
+                  {permisos.editar && (
+                    <button
+                      onClick={() => handleOpenEditor(selected)}
+                      className="size-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 transition-all flex items-center justify-center active:scale-90"
+                    >
+                      <span className="material-symbols-outlined text-lg">edit</span>
+                    </button>
+                  )}
                 </div>
               </div>
 

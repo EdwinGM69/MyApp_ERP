@@ -262,7 +262,13 @@ export default function ProveedorForm({ proveedorToEdit }: ProveedorFormProps) {
               <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2">Código</label>
               <input
                 type="text" required value={codigo} onChange={e => setCodigo(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-slate-900 dark:text-white"
+                disabled={!!proveedorToEdit}
+                className={cn(
+                  "w-full px-4 py-2.5 border rounded-xl text-sm font-medium outline-none transition-all",
+                  proveedorToEdit
+                    ? "bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-500 cursor-not-allowed"
+                    : "bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-slate-900 dark:text-white"
+                )}
                 placeholder="PROV-001"
               />
             </div>

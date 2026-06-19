@@ -345,7 +345,13 @@ export default function EsquemaCalculoForm({ esquemaToEdit }: EsquemaCalculoForm
             <input
               value={codigo} onChange={e => setCodigo(e.target.value)}
               placeholder="CÓDIGO"
-              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-blue-500 rounded-lg px-4 py-2 text-xs font-mono outline-none transition-all w-32 shadow-sm"
+              disabled={!!esquemaToEdit}
+              className={cn(
+                "bg-white dark:bg-slate-800 border rounded-lg px-4 py-2 text-xs font-mono outline-none transition-all w-32 shadow-sm",
+                esquemaToEdit
+                  ? "bg-slate-100 dark:bg-slate-950 border-slate-200 dark:border-slate-700 text-slate-500 cursor-not-allowed"
+                  : "border-slate-200 dark:border-slate-700 focus:border-blue-500"
+              )}
             />
             <input
               value={descripcion} onChange={e => setDescripcion(e.target.value)}
