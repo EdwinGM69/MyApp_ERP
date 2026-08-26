@@ -434,15 +434,31 @@ export default function Sidebar() {
         )}
       </nav>
 
-      {/* User / Logout */}
+      {/* User / Subscription / Logout */}
       <div className="p-3 border-t border-slate-800">
         <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700">
-          <div className="flex items-start gap-2 mb-2">
-            <span className="material-symbols-outlined text-primary text-xl shrink-0">schedule</span>
-            <p className="text-[11px] text-slate-300 leading-tight">
-              Tu prueba del plan Premium vence en 14 días.
-            </p>
-          </div>
+          {mounted && user?.subscriptionAlert && user.subscriptionAlert.nivelAlerta !== 'none' && (
+            <div className="flex items-start gap-2 mb-2">
+              <span className={`material-symbols-outlined text-xl shrink-0 ${
+                user.subscriptionAlert.nivelAlerta === 'critical' ? 'text-red-500' :
+                user.subscriptionAlert.nivelAlerta === 'danger' ? 'text-orange-400' :
+                user.subscriptionAlert.nivelAlerta === 'warning' ? 'text-amber-400' :
+                'text-blue-400'
+              }`}>
+                {user.subscriptionAlert.vencida ? 'error' :
+                 user.subscriptionAlert.diasRestantes !== null && user.subscriptionAlert.diasRestantes <= 3 ? 'warning' :
+                 'schedule'}
+              </span>
+              <p className="text-[11px] text-slate-300 leading-tight">
+                {user.subscriptionAlert.vencida
+                  ? `Su plan ${user.subscriptionAlert.planName || ''} ha expirado.`
+                  : user.subscriptionAlert.enPeriodoGracia
+                    ? `Plan ${user.subscriptionAlert.planName || ''} vencido. Gracia: ${user.subscriptionAlert.diasGraciaRestantes} día(s).`
+                    : `Tu plan ${user.subscriptionAlert.planName || ''} vence en ${user.subscriptionAlert.diasRestantes} día(s).`
+                }
+              </p>
+            </div>
+          )}
           <div className="flex gap-2">
             <button className="flex-1 text-[10px] font-bold bg-primary text-white py-1.5 rounded-lg hover:bg-primary-dark transition-colors uppercase tracking-tight">
               Actualizar Ahora

@@ -20,8 +20,9 @@ function getDbUrl(): string {
     }
   }
   
-  // Fallback: usar DB_DIRECT_URL con reemplazo de marcadores
-  const fallbackUrl = process.env.DB_DIRECT_URL || process.env.DIRECT_URL || ''
+  // Fallback: usar DB_DIRECT_URL con reemplazo de marcadores o cadena por defecto
+  const defaultDevUrl = 'postgres://postgres.jileukbohzeapbwbxmae:jdC0lXzFQFvuZ4Vd@aws-1-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require'
+  const fallbackUrl = process.env.DB_DIRECT_URL || process.env.DIRECT_URL || defaultDevUrl
   return fallbackUrl
     .replace('YOUR_PROJECT_REF', 'postgres.jileukbohzeapbwbxmae')
     .replace('YOUR_PASSWORD', 'jdC0lXzFQFvuZ4Vd')

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getSubscriptionStatus } from '@/lib/subscription'
 
 export async function GET(req: NextRequest) {
   try {
@@ -81,6 +82,8 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const subscriptionAlert = await getSubscriptionStatus(user.empresa.id)
+
     const authUser = {
       id: user.id,
       nombre: user.nombre,
@@ -94,7 +97,8 @@ export async function GET(req: NextRequest) {
       monedaSimbolo: moneda?.simbolo || '$',
       hasSucursales: activeSucursales.length > 0,
       currentSucursal: currentSucursal,
-      userSucursales: activeSucursales
+      userSucursales: activeSucursales,
+      subscriptionAlert,
     }
 
     return NextResponse.json({ user: authUser })

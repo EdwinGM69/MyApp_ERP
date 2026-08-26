@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { signAccessToken, signRefreshToken } from '@/lib/jwt'
+import { getSubscriptionStatus } from '@/lib/subscription'
 import { z } from 'zod'
 
 // Simple in-memory rate limiter
@@ -131,6 +132,7 @@ export async function POST(req: NextRequest) {
         monedaDefault: usuario.empresa.moneda_default || null,
         monedaId: moneda?.id || null,
         monedaSimbolo: moneda?.simbolo || '$',
+        subscriptionAlert: await getSubscriptionStatus(usuario.empresa_id),
       },
     })
 

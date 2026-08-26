@@ -41,7 +41,18 @@ export default function LoginPage() {
           email: form.email.toLowerCase().trim(),
         }),
       })
-      const data = await res.json()
+
+      const contentType = res.headers.get('content-type') || ''
+      let data: any = {}
+
+      if (contentType.includes('application/json')) {
+        data = await res.json()
+      } else {
+        const text = await res.text()
+        console.error('[LOGIN] Respuesta no-JSON recibida:', res.status, text.substring(0, 300))
+        throw new Error(`Error en el servidor (${res.status}). Por favor intente más tarde.`)
+      }
+
       if (!res.ok) throw new Error(data.error || 'Error al iniciar sesión')
       setAuth(data.accessToken, data.user)
       toast.success('Bienvenido, ' + data.user.nombre)
@@ -54,7 +65,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="bg-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl">
+    <div className="max-w-md mx-auto bg-slate-800 rounded-2xl p-8 border border-slate-700 shadow-2xl">
       {/* Logo */}
       <div className="flex items-center gap-3 mb-8">
         <div className="bg-primary rounded-xl p-2.5 flex items-center justify-center">
@@ -149,6 +160,16 @@ export default function LoginPage() {
             </>
           )}
         </button>
+        {/* Register link */}
+        <p className="text-center text-sm text-slate-400 mt-4">
+          ¿No tienes una cuenta?{' '}
+          <a
+            href="/register"
+            className="text-primary hover:text-blue-400 font-semibold transition-colors"
+          >
+            Registrarse
+          </a>
+        </p>
       </form>
 
       <p className="text-center text-slate-500 text-xs mt-6">

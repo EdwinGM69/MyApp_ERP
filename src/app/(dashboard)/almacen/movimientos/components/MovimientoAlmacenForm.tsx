@@ -1094,7 +1094,7 @@ export default function MovimientoAlmacenForm() {
                                 }}
                                   className="w-full bg-slate-50 dark:bg-slate-900 border-none px-3 py-1.5 rounded-lg text-[12px] font-bold outline-none uppercase focus:ring-1 focus:ring-blue-500">
                                   <option value="0">- SELECCIONAR -</option>
-                                  {(selectedTipo?.signo_origen === '-' ? (linea.ubicaciones_disponibles || []) : ubicaciones).map(u => <option key={u.id} value={u.id}>{u.descripcion}</option>)}
+                                  {(selectedTipo?.signo_origen === '-' ? (linea.ubicaciones_disponibles || []) : ubicaciones).map(u => <option key={u.id} value={u.id}>[{u.codigo}] {u.descripcion}</option>)}
                                 </select>
                               </div>
                               <div className="space-y-1">

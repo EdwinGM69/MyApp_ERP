@@ -34,7 +34,8 @@ export default function UnidadesPage() {
       const res = await apiFetch(`/api/logistica/unidades?page=${page}&pageSize=${pageSize}&search=${search}`)
       if (!res.ok) throw new Error('Error al obtener unidades')
       const json = await res.json()
-      setUnidades(json.data)
+      //setUnidades(json.data)
+      setUnidades(json.data.sort((a: Unidad, b: Unidad) => a.id - b.id))
       setTotal(json.total)
     } catch (error) {
       toast.error('Error al cargar unidades de medida')
@@ -64,6 +65,15 @@ export default function UnidadesPage() {
   }
 
   const columns: Column<Unidad>[] = [
+    {
+      key: 'id',
+      header: 'ID',
+      render: (item: Unidad) => (
+        <span className="font-mono font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-lg text-xs">
+          {item.id}
+        </span>
+      )
+    },
     {
       key: 'abreviatura',
       header: 'Abreviatura',
@@ -134,7 +144,7 @@ export default function UnidadesPage() {
   return (
     <div className="flex flex-col flex-1 overflow-hidden min-h-0">
       <Topbar title="Unidades de Medida" />
-      
+
       <div className="flex-1 overflow-auto p-8">
         <div className="max-w-[1400px] mx-auto space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
@@ -148,7 +158,7 @@ export default function UnidadesPage() {
                 className="w-full pl-12 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all font-medium"
               />
             </div>
-            
+
             {permisos.crear && (
               <button
                 onClick={() => router.push('/maestros/logistica/unidades/nuevo')}
@@ -161,21 +171,21 @@ export default function UnidadesPage() {
           </div>
 
           <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-          <DataTable
-            columns={columns}
-            data={unidades}
-            loading={loading}
-            emptyMessage="No se encontraron unidades de medida"
-          />
+            <DataTable
+              columns={columns}
+              data={unidades}
+              loading={loading}
+              emptyMessage="No se encontraron unidades de medida"
+            />
 
-          <Pagination
-            page={page}
-            totalPages={Math.ceil(total / pageSize)}
-            onPage={setPage}
-            pageSize={pageSize}
-            onPageSize={() => {}} // Handle it if needed
-            total={total}
-          />
+            <Pagination
+              page={page}
+              totalPages={Math.ceil(total / pageSize)}
+              onPage={setPage}
+              pageSize={pageSize}
+              onPageSize={() => { }} // Handle it if needed
+              total={total}
+            />
           </div>
         </div>
       </div>

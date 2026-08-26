@@ -63,14 +63,35 @@ export async function POST(req: NextRequest) {
           results.errors.push({ row: rowNumber, codigo: parsed.codigo, descripcion: parsed.descripcion, error: razon })
           continue
         }
+        /*
+                await prisma.material.create({
+                  data: {
+                    ...parsed,
+                    empresa_id: empresaId,
+                    created_by: userId,
+                  },
+                })
+        */
 
-        await prisma.material.create({
+        const materialCreado = await prisma.material.create({
           data: {
             ...parsed,
             empresa_id: empresaId,
-            created_by: userId,
-          },
+            created_by: userId
+          }
         })
+
+        if (parsed.unidad_medida_id) {
+          await prisma.materialPresentacion.create({
+            data: {
+              material_id: materialCreado.id,
+              unidad_medida_id: parsed.unidad_medida_id,
+              unidad_control: true,
+              activo: true,
+              created_by: userId
+            }
+          })
+        }
 
         results.created++
       } catch (err: any) {

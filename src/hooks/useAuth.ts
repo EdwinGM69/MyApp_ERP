@@ -16,6 +16,18 @@ interface AuthUser {
   hasSucursales: boolean
   currentSucursal: any | null
   userSucursales: any[]
+  subscriptionAlert?: {
+    nivelAlerta: string
+    diasRestantes: number | null
+    diasGraciaRestantes: number | null
+    enPeriodoGracia: boolean
+    vencida: boolean
+    planName: string | null
+    planType: string | null
+    periodicity: string | null
+    fechaFin: string | null
+    subscriptionId: number | null
+  } | null
 }
 
 interface AuthStore {

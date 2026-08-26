@@ -3,11 +3,14 @@ import { verifyAccessToken } from './lib/jwt'
 
 const PUBLIC_PATHS = [
   '/api/auth/login',
+  '/api/auth/register',
+  '/api/auth/check-email',
   '/api/auth/csrf',
   '/api/auth/refresh',
   '/api/auth/forgot-password',
   '/api/auth/me', // Allow session check to reach the handler
   '/login',
+  '/register',
   '/forgot-password',
   '/_next',
   '/favicon.ico',
