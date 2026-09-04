@@ -100,6 +100,7 @@ export async function getSubscriptionStatus(empresaId: number): Promise<Subscrip
     diasGraciaRestantes,
     enPeriodoGracia,
     vencida,
+    sinSuscripcion: false,
     planName: suscripcion.plan?.descripcion ?? null,
     planType: suscripcion.plan?.tipo_plan ?? null,
     periodicity: suscripcion.plan?.tipo_plan ?? null,
