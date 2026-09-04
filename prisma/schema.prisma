@@ -1884,6 +1884,7 @@ model Plan {
   id                  Int                  @id @default(autoincrement())
   descripcion         String
   tipo_plan           String
+  dias_duracion       Int
   activo              Boolean              @default(true)
   orden_visual        Int
   created_at          DateTime             @default(now())
@@ -1901,10 +1902,10 @@ model Plan {
 model PlanPrecio {
   id                  Int           @id @default(autoincrement())
   plan_id             Int
-  periodicidad        String
   precio              Decimal       @db.Decimal(12, 2)
   moneda              String
-  dias_duracion       Int
+  mejor_valor         Boolean       @default(false)
+  mensaje_promocion   String?       @db.Text
   activo              Boolean       @default(true)
   inicio_vigencia     DateTime?
   fin_vigencia        DateTime?

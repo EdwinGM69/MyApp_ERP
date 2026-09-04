@@ -1,11 +1,12 @@
 import { prisma } from '@/lib/prisma'
 
 export interface SubscriptionAlert {
-  nivelAlerta: 'none' | 'info' | 'warning' | 'danger' | 'critical' | 'expired'
+  nivelAlerta: 'none' | 'info' | 'warning' | 'danger' | 'critical' | 'expired' | 'sin_suscripcion'
   diasRestantes: number | null
   diasGraciaRestantes: number | null
   enPeriodoGracia: boolean
   vencida: boolean
+  sinSuscripcion: boolean
   planName: string | null
   planType: string | null
   periodicity: string | null
@@ -34,6 +35,7 @@ const NO_ALERT: SubscriptionAlert = {
   diasGraciaRestantes: null,
   enPeriodoGracia: false,
   vencida: false,
+  sinSuscripcion: false,
   planName: null,
   planType: null,
   periodicity: null,
@@ -52,18 +54,19 @@ export async function getSubscriptionStatus(empresaId: number): Promise<Subscrip
         select: {
           descripcion: true,
           tipo_plan: true,
-        },
-      },
-      plan_precio: {
-        select: {
           dias_duracion: true,
-          periodicidad: true,
         },
       },
     },
   })
 
-  if (!suscripcion) return NO_ALERT
+  if (!suscripcion) {
+    return {
+      ...NO_ALERT,
+      nivelAlerta: 'sin_suscripcion',
+      sinSuscripcion: true,
+    }
+  }
 
   const fechaFin = suscripcion.fecha_fin
   if (!fechaFin) {
@@ -99,7 +102,7 @@ export async function getSubscriptionStatus(empresaId: number): Promise<Subscrip
     vencida,
     planName: suscripcion.plan?.descripcion ?? null,
     planType: suscripcion.plan?.tipo_plan ?? null,
-    periodicity: suscripcion.plan_precio?.periodicidad ?? null,
+    periodicity: suscripcion.plan?.tipo_plan ?? null,
     fechaFin: fechaFin.toISOString(),
     subscriptionId: suscripcion.id,
   }

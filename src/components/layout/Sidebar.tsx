@@ -437,7 +437,7 @@ export default function Sidebar() {
       {/* User / Subscription / Logout */}
       <div className="p-3 border-t border-slate-800">
         <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700">
-          {mounted && user?.subscriptionAlert && user.subscriptionAlert.nivelAlerta !== 'none' && (
+          {mounted && user?.subscriptionAlert && !user.subscriptionAlert.sinSuscripcion && user.subscriptionAlert.nivelAlerta !== 'none' && (
             <div className="flex items-start gap-2 mb-2">
               <span className={`material-symbols-outlined text-xl shrink-0 ${
                 user.subscriptionAlert.nivelAlerta === 'critical' ? 'text-red-500' :

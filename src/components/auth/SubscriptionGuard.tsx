@@ -10,6 +10,7 @@ interface SubscriptionAlert {
   diasGraciaRestantes: number | null
   enPeriodoGracia: boolean
   vencida: boolean
+  sinSuscripcion: boolean
   planName: string | null
   planType: string | null
   periodicity: string | null
@@ -28,7 +29,13 @@ function formatFecha(fecha: string | null): string {
   })
 }
 
-function BlockedOverlay({ alert }: { alert: SubscriptionAlert }) {
+interface BlockedOverlayProps {
+  title: string
+  message: ReactNode
+  note?: string
+}
+
+function BlockedOverlay({ title, message, note }: BlockedOverlayProps) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm" />
@@ -40,18 +47,13 @@ function BlockedOverlay({ alert }: { alert: SubscriptionAlert }) {
         </div>
 
         <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
-          Suscripción Vencida
+          {title}
         </h2>
         <p className="text-slate-500 dark:text-slate-400 font-medium text-sm leading-relaxed mb-6">
-          {alert.planName && (
-            <>Su plan <strong>{alert.planName}</strong> ha expirado.</>
-          )}
-          {alert.fechaFin && (
-            <> La fecha de vencimiento fue el <strong>{formatFecha(alert.fechaFin)}</strong>.</>
-          )}
+          {message}
         </p>
         <p className="text-slate-400 dark:text-slate-500 text-xs mb-8">
-          Para continuar usando el sistema, comuníquese con su administrador o soporte técnico.
+          {note ?? 'Para continuar usando el sistema, comuníquese con su administrador o soporte técnico.'}
         </p>
 
         <button
@@ -107,8 +109,36 @@ export function SubscriptionGuard({ children }: { children: ReactNode }) {
 
   if (!currentAlert) return <>{children}</>
 
+  if (currentAlert.sinSuscripcion) {
+    return (
+      <BlockedOverlay
+        title="Sin Plan de Suscripción"
+        message={
+          <>
+            Su empresa no cuenta con un plan de suscripción activo.
+          </>
+        }
+        note="Para acceder al sistema, contrate un plan o comuníquese con su administrador o soporte técnico."
+      />
+    )
+  }
+
   if (currentAlert.vencida) {
-    return <BlockedOverlay alert={currentAlert} />
+    return (
+      <BlockedOverlay
+        title="Suscripción Vencida"
+        message={
+          <>
+            {currentAlert.planName && (
+              <>Su plan <strong>{currentAlert.planName}</strong> ha expirado.</>
+            )}
+            {currentAlert.fechaFin && (
+              <> La fecha de vencimiento fue el <strong>{formatFecha(currentAlert.fechaFin)}</strong>.</>
+            )}
+          </>
+        }
+      />
+    )
   }
 
   return <>{children}</>

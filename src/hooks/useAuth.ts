@@ -22,6 +22,7 @@ interface AuthUser {
     diasGraciaRestantes: number | null
     enPeriodoGracia: boolean
     vencida: boolean
+    sinSuscripcion: boolean
     planName: string | null
     planType: string | null
     periodicity: string | null

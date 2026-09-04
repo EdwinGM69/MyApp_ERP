@@ -9,6 +9,7 @@ const PUBLIC_PATHS = [
   '/api/auth/refresh',
   '/api/auth/forgot-password',
   '/api/auth/me', // Allow session check to reach the handler
+  '/api/planes', // Public: plan selection cards during registration
   '/login',
   '/register',
   '/forgot-password',

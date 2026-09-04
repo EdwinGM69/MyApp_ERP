@@ -31,7 +31,7 @@ const registerSchema = z.object({
   nombre: z.string().trim().min(3).max(120),
   email: z.string().email().max(254).toLowerCase().trim(),
   password: z.string().min(8).max(128),
-  plan: z.enum(['free', 'monthly', 'annual']).default('free'),
+  plan: z.coerce.number().int().positive().optional(),
 })
 
 export async function POST(req: NextRequest) {
@@ -87,6 +87,53 @@ export async function POST(req: NextRequest) {
         { status: 500 }
       )
     }
+
+    // Resolve selected plan (fallback to the trial plan)
+    const defaultPlan = await prisma.plan.findFirst({
+      where: { activo: true, tipo_plan: 'TRIAL' },
+      orderBy: { orden_visual: 'asc' },
+      include: {
+        precios: { where: { activo: true }, orderBy: { id: 'asc' } },
+        configuracion: true,
+      },
+    })
+
+    const selectedPlan = plan
+      ? await prisma.plan.findUnique({
+          where: { id: plan },
+          include: {
+            precios: { where: { activo: true }, orderBy: { id: 'asc' } },
+            configuracion: true,
+          },
+        })
+      : defaultPlan
+
+    if (!selectedPlan) {
+      return NextResponse.json(
+        { error: 'El plan seleccionado no existe' },
+        { status: 400 }
+      )
+    }
+
+    const precioSeleccionado =
+      selectedPlan.precios.find((p) => p.mejor_valor) ?? selectedPlan.precios[0]
+
+    if (!precioSeleccionado) {
+      return NextResponse.json(
+        { error: 'El plan seleccionado no tiene precio configurado' },
+        { status: 400 }
+      )
+    }
+
+    const monedaId = parseInt(precioSeleccionado.moneda, 10) || 1
+
+    const fechaInicio = new Date()
+    const fechaFin = new Date(fechaInicio)
+    fechaFin.setDate(fechaFin.getDate() + selectedPlan.dias_duracion)
+    const inicioGracia = new Date(fechaFin)
+    inicioGracia.setDate(inicioGracia.getDate() + 1)
+    const finGracia = new Date(inicioGracia)
+    finGracia.setDate(finGracia.getDate() + (selectedPlan.configuracion?.dias_gracia ?? 0))
 
     const passwordHash = await bcrypt.hash(password, 12)
 
@@ -153,6 +200,45 @@ export async function POST(req: NextRequest) {
           descripcion,
           created_by: nuevoUsuario.id,
         })),
+      })
+
+      // Create subscription for the selected plan
+      const suscripcion = await tx.suscripcion.create({
+        data: {
+          empresa_id: empresa.id,
+          plan_id: selectedPlan.id,
+          plan_precio_id: precioSeleccionado.id,
+          estado: 'ACTIVO',
+          fecha_inicio: fechaInicio,
+          fecha_fin: fechaFin,
+          inicio_gracia: inicioGracia,
+          fin_gracia: finGracia,
+          renovacion_automatica: false,
+          created_by: nuevoUsuario.id,
+          updated_by: nuevoUsuario.id,
+        },
+      })
+
+      await tx.suscripcionPeriodo.create({
+        data: {
+          suscripcion_id: suscripcion.id,
+          numero_periodo: 1,
+          fecha_inicio: fechaInicio,
+          activo: true,
+          importe: precioSeleccionado.precio,
+          moneda_id: monedaId,
+          created_by: nuevoUsuario.id,
+        },
+      })
+
+      await tx.suscripcionHistorial.create({
+        data: {
+          suscripcion_id: suscripcion.id,
+          estado_anterior: '',
+          estado_nuevo: 'ACTIVO',
+          fecha_evento: fechaInicio,
+          created_by: nuevoUsuario.id,
+        },
       })
 
       return tx.usuario.findFirst({

@@ -6,8 +6,6 @@ import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '@/hooks/useAuth'
 
-type PlanId = 'free' | 'monthly' | 'annual'
-
 interface FormErrors {
   nombre?: string
   email?: string
@@ -19,7 +17,7 @@ function SignupForm() {
   const searchParams = useSearchParams()
   const setAuth = useAuthStore((s) => s.setAuth)
 
-  const plan = (searchParams.get('plan') || 'free') as PlanId
+  const plan = searchParams.get('plan') || ''
 
   const [form, setForm] = useState({ nombre: '', email: '', password: '' })
   const [errors, setErrors] = useState<FormErrors>({})
