@@ -60,7 +60,7 @@ function createPrismaClient(): PrismaClient {
       rejectUnauthorized: false
     },
     max: poolMax,
-    idleTimeoutMillis: isServerless ? 10000 : 30000,
+    idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
   })
 

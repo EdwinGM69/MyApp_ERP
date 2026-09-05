@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { useAuthStore } from '@/hooks/useAuth'
 
@@ -163,12 +164,13 @@ export default function LoginPage() {
         {/* Register link */}
         <p className="text-center text-sm text-slate-400 mt-4">
           ¿No tienes una cuenta?{' '}
-          <a
+          <Link
             href="/register"
+            prefetch
             className="text-primary hover:text-blue-400 font-semibold transition-colors"
           >
             Registrarse
-          </a>
+          </Link>
         </p>
       </form>
 
