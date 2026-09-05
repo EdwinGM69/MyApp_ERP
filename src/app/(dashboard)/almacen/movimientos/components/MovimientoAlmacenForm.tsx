@@ -79,6 +79,21 @@ export default function MovimientoAlmacenForm() {
   const [lineas, setLineas] = useState<ProductoLinea[]>([])
 
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const [showAddMenu, setShowAddMenu] = useState(false)
+  const addMenuRef = useRef<HTMLDivElement>(null)
+
+  // Close add-line dropdown on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (addMenuRef.current && !addMenuRef.current.contains(e.target as Node)) {
+        setShowAddMenu(false)
+      }
+    }
+    if (showAddMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showAddMenu])
 
   // Derivados
   const selectedTipo = tiposOperacion.find(t => t.id === Number(tipoOperacionId))
@@ -864,17 +879,56 @@ export default function MovimientoAlmacenForm() {
                 <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-[0.2em] leading-none mb-1">Materiales Seleccionados</h3>
                 <p className="text-[10px] text-slate-400 font-medium tracking-tight">Registre los materiales y productos para este movimiento.</p>
               </div>
-               <button type="button" onClick={() => fileInputRef.current?.click()}
-                 className="px-6 h-11 rounded-2xl bg-emerald-600 text-white font-black text-[11px] hover:bg-emerald-700 transition-all flex items-center gap-2 shadow-lg shadow-emerald-600/20 uppercase tracking-widest">
-                 <span className="material-symbols-outlined text-[20px]">file_upload</span>
-                 Importar
-               </button>
-               <input type="file" ref={fileInputRef} accept=".xlsx,.xls" onChange={handleImportFile} className="hidden" />
-               <button type="button" onClick={addLinea}
-                 className="px-6 h-11 rounded-2xl bg-slate-800 text-white font-black text-[11px] hover:bg-slate-700 transition-all flex items-center gap-2 shadow-lg shadow-slate-800/20 uppercase tracking-widest">
-                 <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                 Añadir Línea
-               </button>
+               <div ref={addMenuRef} className="relative shrink-0">
+                 <div className="flex items-center">
+                   <button type="button" onClick={() => { setShowAddMenu(false); addLinea() }}
+                     className="h-11 pl-5 pr-4 rounded-l-2xl bg-slate-800 text-white font-black text-[11px] hover:bg-slate-700 transition-all flex items-center gap-2 shadow-lg shadow-slate-800/20 uppercase tracking-widest">
+                     <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                     Añadir Línea
+                   </button>
+                   <button type="button" onClick={() => setShowAddMenu(v => !v)}
+                     className="h-11 px-2.5 rounded-r-2xl bg-slate-800 hover:bg-slate-700 text-white font-black transition-all border-l border-white/10 shadow-lg shadow-slate-800/20 flex items-center">
+                     <span className={`material-symbols-outlined text-[20px] transition-transform ${showAddMenu ? 'rotate-180' : ''}`}>expand_more</span>
+                   </button>
+                 </div>
+
+                 {showAddMenu && (
+                   <div className="absolute right-0 top-full mt-2 w-72 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-black/30 z-50 py-2 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                     <div className="px-4 py-2">
+                       <p className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-400">Forma de captura</p>
+                     </div>
+
+                     <button
+                       type="button"
+                       onClick={() => { setShowAddMenu(false); addLinea() }}
+                       className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-start gap-3 group">
+                       <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-xl mt-0.5">edit_note</span>
+                       <div className="flex-1 min-w-0">
+                         <div className="flex items-center gap-2">
+                           <span className="font-bold text-sm text-slate-900 dark:text-white">Añadir manualmente</span>
+                           <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 uppercase tracking-tight">Línea</span>
+                         </div>
+                         <p className="text-xs text-slate-400 mt-0.5">Registra material, cantidad y costos uno a uno…</p>
+                       </div>
+                     </button>
+
+                     <button
+                       type="button"
+                       onClick={() => { setShowAddMenu(false); fileInputRef.current?.click() }}
+                       className="w-full text-left px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors flex items-start gap-3 group">
+                       <span className="material-symbols-outlined text-blue-600 dark:text-blue-400 text-xl mt-0.5">file_upload</span>
+                       <div className="flex-1 min-w-0">
+                         <div className="flex items-center gap-2">
+                           <span className="font-bold text-sm text-slate-900 dark:text-white">Importar</span>
+                           <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 uppercase tracking-tight">Excel</span>
+                         </div>
+                         <p className="text-xs text-slate-400 mt-0.5">Carga masiva de líneas desde una plantilla…</p>
+                       </div>
+                     </button>
+                   </div>
+                 )}
+                 <input type="file" ref={fileInputRef} accept=".xlsx,.xls" onChange={handleImportFile} className="hidden" />
+               </div>
             </div>
 
             <div className="flex-1 overflow-auto space-y-4 pb-12 pr-1 custom-scrollbar">

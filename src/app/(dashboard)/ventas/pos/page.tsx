@@ -2295,7 +2295,8 @@ export default function POSPage() {
       toast.error('Seleccione el tipo de documento de identificación')
       return
     }
-    if (!clienteNombreFull || clienteNombreFull.trim() === '') {
+    const nombreCliente = clienteNombreFull.trim() || `${nombresCompletos} ${apellidosCompletos}`.trim()
+    if (!nombreCliente) {
       toast.error('Ingrese el nombre del cliente')
       return
     }
@@ -2321,7 +2322,7 @@ export default function POSPage() {
         moneda_id: defaultMonedaId,
         documento_identificacion_id: docIdentificacion?.id,
         numero_identificacion: numeroIdentificacion,
-        nombre: clienteNombreFull,
+        nombre: nombreCliente,
         nombres_completos: nombresCompletos,
         apellidos_completos: apellidosCompletos,
         direccion: direccion,
