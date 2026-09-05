@@ -11,10 +11,23 @@ const correlativoSchema = z.object({
   serie: z.string().min(1, 'La serie es requerida').max(10, 'La serie no puede exceder 10 caracteres'),
   numero_actual: z.number().int().min(0, 'El número actual debe ser >= 0'),
   periodo_reinicio: z.enum(['ANUAL', 'MENSUAL', 'NUNCA']),
-  year: z.number().int().min(2000).max(2100),
+  year: z.number().int().min(0).max(2100),
   month: z.number().int().min(0).max(12).default(0),
   ceros_relleno: z.number().int().min(1).max(20).default(8),
   activo: z.boolean().optional(),
+}).superRefine((data, ctx) => {
+  if (data.periodo_reinicio === 'NUNCA' && (data.year !== 0 || data.month !== 0)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Para reinicio NUNCA, año y mes deben ser 0', path: ['year'] })
+  }
+  if (data.periodo_reinicio !== 'NUNCA' && data.year < 2000) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Año debe ser mayor o igual a 2000 para este periodo de reinicio', path: ['year'] })
+  }
+  if (data.periodo_reinicio === 'MENSUAL' && (!data.month || data.month < 1)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Para reinicio MENSUAL, el mes debe ser mayor a 0', path: ['month'] })
+  }
+  if (data.periodo_reinicio === 'ANUAL' && data.month !== 0) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Para reinicio ANUAL, el mes debe ser 0', path: ['month'] })
+  }
 })
 
 export async function GET(req: NextRequest) {

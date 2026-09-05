@@ -14,7 +14,23 @@ export async function POST(req: NextRequest) {
       denominaciones // Array of { denominacion_id, cantidad, subtotal }
     } = body
 
-    // 1. Check if user already has an active session for this sucursal
+    // 1. Check if the selected cash register (sucursal + caja) is already open
+    const cajaAbierta = await prisma.cajaGestion.findFirst({
+      where: {
+        sucursal_id: sucursal_id,
+        caja_id: caja_id,
+        estado: 'Aperturada'
+      },
+      include: {
+        usuario_apertura: true
+      }
+    })
+    if (cajaAbierta) {
+      const nombre = cajaAbierta.usuario_apertura?.nombre || `ID ${cajaAbierta.usuario_apertura_id}`
+      return NextResponse.json({ error: `La caja seleccionada ya está aperturada por ${nombre}.` }, { status: 400 })
+    }
+
+    // 2. Check if user already has an active session for this sucursal
     const active = await prisma.cajaGestion.findFirst({
       where: { 
         usuario_apertura_id: userId, 
@@ -24,7 +40,7 @@ export async function POST(req: NextRequest) {
     })
     if (active) return NextResponse.json({ error: 'Ya tienes una sesión activa en esta sucursal' }, { status: 400 })
 
-    // 2. Create session and optional denominations in a transaction
+    // 3. Create session and optional denominations in a transaction
     const session = await prisma.$transaction(async (tx) => {
       const s = await tx.cajaGestion.create({
         data: {

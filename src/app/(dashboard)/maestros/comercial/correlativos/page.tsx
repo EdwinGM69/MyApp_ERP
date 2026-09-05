@@ -95,8 +95,18 @@ export default function CorrelativosPage() {
   const handleSave = async () => {
     if (!editingData) return
 
-    if (!editingData.tipo_documento || !editingData.serie || !editingData.year) {
+    if (!editingData.tipo_documento || !editingData.serie) {
       toast.error('Complete todos los campos requeridos')
+      return
+    }
+
+    if (editingData.periodo_reinicio === 'MENSUAL' && (!editingData.year || !editingData.month)) {
+      toast.error('Para el reinicio mensual debe indicar año y mes mayor a cero')
+      return
+    }
+
+    if (editingData.periodo_reinicio === 'ANUAL' && !editingData.year) {
+      toast.error('Debe indicar el año del reinicio anual')
       return
     }
 
@@ -119,6 +129,19 @@ export default function CorrelativosPage() {
       toast.error('Error de conexión')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handlePeriodoChange = (periodo: 'ANUAL' | 'MENSUAL' | 'NUNCA') => {
+    if (!editingData) return
+    const currentYear = new Date().getFullYear()
+    const base = { ...editingData, periodo_reinicio: periodo }
+    if (periodo === 'ANUAL') {
+      setEditingData({ ...base, year: base.year || currentYear, month: 0 })
+    } else if (periodo === 'MENSUAL') {
+      setEditingData({ ...base, year: base.year || currentYear, month: base.month || 1 })
+    } else {
+      setEditingData({ ...base, year: 0, month: 0 })
     }
   }
 
@@ -308,30 +331,6 @@ export default function CorrelativosPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Año</label>
-                        <input
-                          type="number"
-                          value={editingData.year}
-                          onChange={(e) => setEditingData({ ...editingData, year: parseInt(e.target.value) || new Date().getFullYear() })}
-                          min="2000"
-                          max="2100"
-                          className="w-full h-14 px-6 border border-slate-100 dark:border-slate-800 rounded-2xl outline-none text-sm font-bold bg-slate-50/50 dark:bg-slate-950 focus:ring-4 focus:ring-primary/5 transition-all"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Mes (0 = anual)</label>
-                        <input
-                          type="number"
-                          value={editingData.month}
-                          onChange={(e) => setEditingData({ ...editingData, month: parseInt(e.target.value) || 0 })}
-                          min="0"
-                          max="12"
-                          className="w-full h-14 px-6 border border-slate-100 dark:border-slate-800 rounded-2xl outline-none text-sm font-bold bg-slate-50/50 dark:bg-slate-950 focus:ring-4 focus:ring-primary/5 transition-all"
-                        />
-                      </div>
-
-                      <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Ceros de Relleno</label>
                         <input
                           type="number"
@@ -353,18 +352,105 @@ export default function CorrelativosPage() {
 
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Periodo de Reinicio</label>
-                      <div className="relative group">
-                        <select
-                          value={editingData.periodo_reinicio}
-                          onChange={(e) => setEditingData({ ...editingData, periodo_reinicio: e.target.value })}
-                          className="w-full h-14 pl-6 pr-12 bg-slate-50/50 dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-2xl text-[11px] font-black outline-none focus:ring-4 focus:ring-primary/5 uppercase appearance-none transition-all"
-                        >
-                          {PERIODOS.map(periodo => (
-                            <option key={periodo.value} value={periodo.value}>{periodo.label}</option>
-                          ))}
-                        </select>
-                        <span className="material-symbols-outlined absolute right-5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none group-hover:text-amber-500 transition-colors">calendar_month</span>
+                      <div className="grid grid-cols-3 gap-3">
+                        {PERIODOS.map((periodo) => {
+                          const active = editingData.periodo_reinicio === periodo.value
+                          const icon = periodo.value === 'ANUAL' ? 'calendar_today' : periodo.value === 'MENSUAL' ? 'calendar_month' : 'block'
+                          return (
+                            <button
+                              key={periodo.value}
+                              type="button"
+                              onClick={() => handlePeriodoChange(periodo.value as any)}
+                              className={cn(
+                                "relative p-4 rounded-2xl border transition-all duration-300 flex flex-col items-center gap-2 group",
+                                active
+                                  ? "bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400 shadow-lg shadow-amber-500/5"
+                                  : "bg-slate-50/50 dark:bg-slate-950 border-slate-100 dark:border-slate-800 text-slate-400 hover:border-slate-300 dark:hover:border-slate-700"
+                              )}
+                            >
+                              <span className="material-symbols-outlined text-xl transition-transform group-hover:scale-110">{icon}</span>
+                              <span className="text-[10px] font-black uppercase tracking-widest">{periodo.label}</span>
+                              {active && (
+                                <span className="absolute top-2 right-2 size-2 rounded-full bg-amber-500 animate-pulse" />
+                              )}
+                            </button>
+                          )
+                        })}
                       </div>
+                    </div>
+
+                    <div className={cn(
+                      "p-6 rounded-2xl border transition-all",
+                      editingData.periodo_reinicio === 'NUNCA'
+                        ? "bg-slate-50/50 dark:bg-slate-950 border-slate-100 dark:border-slate-800"
+                        : "bg-amber-500/5 border-amber-500/20"
+                    )}>
+                      {editingData.periodo_reinicio === 'NUNCA' ? (
+                        <div className="flex items-center gap-4">
+                          <div className="size-12 rounded-xl bg-slate-200/60 dark:bg-slate-800 text-slate-400 flex items-center justify-center shrink-0">
+                            <span className="material-symbols-outlined text-xl">block</span>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Secuencia Continua</p>
+                            <p className="text-sm font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">
+                              Sin reinicio · Año y mes no aplican
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Año</label>
+                            <div className="relative group">
+                              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">event</span>
+                              <input
+                                type="number"
+                                value={editingData.year || ''}
+                                onChange={(e) => setEditingData({ ...editingData, year: parseInt(e.target.value) || 0 })}
+                                min="2000"
+                                max="2100"
+                                placeholder="AAAA"
+                                className={cn(
+                                  "w-full h-14 pl-11 pr-4 border rounded-2xl outline-none text-sm font-bold transition-all",
+                                  editingData.periodo_reinicio === 'ANUAL'
+                                    ? "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-4 focus:ring-amber-500/10 focus:border-amber-400"
+                                    : "bg-slate-100 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-amber-600 dark:text-amber-400 focus:ring-4 focus:ring-amber-500/10 focus:border-amber-400"
+                                )}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between ml-1">
+                              <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Mes</label>
+                              {editingData.periodo_reinicio === 'ANUAL' && (
+                                <span className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+                                  <span className="size-1.5 rounded-full bg-slate-400" />
+                                  Fijo anual
+                                </span>
+                              )}
+                            </div>
+                            <div className="relative group">
+                              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none">calendar_month</span>
+                              <input
+                                type="number"
+                                value={editingData.month === 0 ? '' : editingData.month}
+                                onChange={(e) => setEditingData({ ...editingData, month: parseInt(e.target.value) || 0 })}
+                                min="1"
+                                max="12"
+                                placeholder="1 - 12"
+                                disabled={editingData.periodo_reinicio === 'ANUAL'}
+                                className={cn(
+                                  "w-full h-14 pl-11 pr-4 border rounded-2xl outline-none text-sm font-bold transition-all",
+                                  editingData.periodo_reinicio === 'ANUAL'
+                                    ? "bg-slate-100 dark:bg-slate-900/60 border-slate-200 dark:border-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
+                                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white focus:ring-4 focus:ring-amber-500/10 focus:border-amber-400"
+                                )}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <div className="p-6 bg-slate-50/50 dark:bg-slate-950 rounded-2xl border border-slate-100 dark:border-slate-800">
