@@ -50,6 +50,10 @@ export async function GET(req: NextRequest) {
         descripcion: true,
         ruta: true,
         orden: true,
+        area_trabajo: true,
+        grupo: true,
+        visible_menu: true,
+        roles_permitidos: true,
         modulo: {
           select: { icono: true }
         }
@@ -96,14 +100,20 @@ export async function GET(req: NextRequest) {
 
     const opcionesFiltradas = filtrarOpciones(opcionesMenu)
 
-    // Serializar eliminando campos internos innecesarios
+    // Serializar eliminando campos internos innecesarios.
+    // La representación visual queda desacoplada de la jerarquía técnica:
+    // el frontend agrupa por `modulo` (área de trabajo) + `grupo`.
     const result = opcionesFiltradas.map((o) => ({
       id: o.id,
       parent_id: o.parent_id,
-      descripcion: o.descripcion,
+      label: o.descripcion,
       ruta: o.ruta,
       orden: o.orden,
       icono: o.modulo?.icono ?? null,
+      modulo: o.area_trabajo, // área de trabajo: ventas | caja | inventario | tesoreria | administracion | null
+      grupo: o.grupo, // 'operaciones' | 'configuracion' | null
+      visible_menu: o.visible_menu,
+      roles_permitidos: o.roles_permitidos,
     }))
 
     return NextResponse.json({ menu: result })

@@ -454,6 +454,99 @@ async function main() {
     create: { modulo_id: adminModulo.id, parent_id: parentAdministracion.id, codigo: 'CORRELATIVOS', descripcion: 'Correlativos', ruta: '/maestros/comercial/correlativos', orden: 48, activo: true, created_by: 1 },
   })
 
+  // ───────────────────────────────────────────────────────────────────────
+  // Configuración visual por "Áreas de Trabajo" (UX)
+  // Desacopla la representación del sidebar de la jerarquía técnica.
+  //   area    → área de trabajo: ventas | caja | inventario | tesoreria | administracion
+  //             (null = nivel raíz, ej: Inicio/Dashboard)
+  //   grupo   → bloque visual dentro del área: operaciones (Frecuentes) | configuracion
+  //   visible → false oculta nodos técnicos/agrupadores del sidebar (se conservan
+  //             en la matriz de permisos del RolEditor)
+  // ───────────────────────────────────────────────────────────────────────
+  type MenuVisualConfig = {
+    modulo: string
+    codigo: string
+    area: string | null
+    grupo: string | null
+    visible: boolean
+    etiqueta?: string
+  }
+
+  const MENU_VISUAL_CONFIG: MenuVisualConfig[] = [
+    // ── Nivel raíz ────────────────────────────────────────────────────────
+    { modulo: 'ADMINISTRACION', codigo: 'DASHBOARD', area: null, grupo: null, visible: true, etiqueta: 'Inicio' },
+    // ── Nodos técnicos (ocultos del sidebar) ──────────────────────────────
+    { modulo: 'COMERCIAL', codigo: 'COMERCIAL', area: null, grupo: null, visible: false },
+    { modulo: 'COMERCIAL', codigo: 'MAESTROS_COM', area: null, grupo: null, visible: false },
+    { modulo: 'COMERCIAL', codigo: 'REPORTES', area: null, grupo: null, visible: false },
+    { modulo: 'COMERCIAL', codigo: 'REPORTE_VENTA', area: null, grupo: null, visible: false },
+    { modulo: 'TESORERIA', codigo: 'TESORERIA', area: null, grupo: null, visible: false },
+    { modulo: 'TESORERIA', codigo: 'MAESTROS_TES', area: null, grupo: null, visible: false },
+    { modulo: 'LOGISTICA', codigo: 'LOGISTICA', area: null, grupo: null, visible: false },
+    { modulo: 'LOGISTICA', codigo: 'MAESTROS_LOG', area: null, grupo: null, visible: false },
+    { modulo: 'ADMINISTRACION', codigo: 'ADMINISTRACION', area: null, grupo: null, visible: false },
+    // Legado: fila duplicada de ROL_USUARIO (ruta /roles) sin área → se oculta
+    { modulo: 'ADMINISTRACION', codigo: 'ROLES', area: null, grupo: null, visible: false },
+    // ── Área: VENTAS ──────────────────────────────────────────────────────
+    { modulo: 'COMERCIAL', codigo: 'VENTAS', area: 'ventas', grupo: 'operaciones', visible: true },
+    { modulo: 'COMERCIAL', codigo: 'PUNTO_VENTA', area: 'ventas', grupo: 'operaciones', visible: true },
+    { modulo: 'COMERCIAL', codigo: 'CLIENTES', area: 'ventas', grupo: 'operaciones', visible: true },
+    { modulo: 'COMERCIAL', codigo: 'CONDICION_COMERCIAL', area: 'ventas', grupo: 'configuracion', visible: true },
+    { modulo: 'COMERCIAL', codigo: 'PROMOCIONES', area: 'ventas', grupo: 'configuracion', visible: true },
+    { modulo: 'COMERCIAL', codigo: 'CUPONES', area: 'ventas', grupo: 'configuracion', visible: true },
+    { modulo: 'COMERCIAL', codigo: 'ESQUEMA_CALCULO', area: 'ventas', grupo: 'configuracion', visible: true },
+    { modulo: 'COMERCIAL', codigo: 'CLASE_PEDIDO', area: 'ventas', grupo: 'configuracion', visible: true },
+    // ── Área: CAJA (incluye Tesorería fusionada en Configuración) ─────────
+    { modulo: 'TESORERIA', codigo: 'GESTION_CAJA', area: 'caja', grupo: 'operaciones', visible: true, etiqueta: 'Gestión de Caja' },
+    { modulo: 'TESORERIA', codigo: 'HISTORIAL_TRN', area: 'caja', grupo: 'operaciones', visible: true, etiqueta: 'Movimientos de Caja' },
+    { modulo: 'TESORERIA', codigo: 'CAJAS', area: 'caja', grupo: 'operaciones', visible: true },
+    { modulo: 'TESORERIA', codigo: 'BANCOS', area: 'caja', grupo: 'configuracion', visible: true },
+    { modulo: 'TESORERIA', codigo: 'MONEDAS', area: 'caja', grupo: 'configuracion', visible: true },
+    { modulo: 'TESORERIA', codigo: 'TIPO_CAMBIO', area: 'caja', grupo: 'configuracion', visible: true },
+    { modulo: 'TESORERIA', codigo: 'MEDIO_PAGO', area: 'caja', grupo: 'configuracion', visible: true },
+    { modulo: 'TESORERIA', codigo: 'CONCEPTO_CAJA', area: 'caja', grupo: 'configuracion', visible: true },
+    // ── Área: INVENTARIO ──────────────────────────────────────────────────
+    { modulo: 'LOGISTICA', codigo: 'STOCK_MATERIAL', area: 'inventario', grupo: 'operaciones', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'MOVIMIENTO', area: 'inventario', grupo: 'operaciones', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'KARDEX', area: 'inventario', grupo: 'operaciones', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'MATERIALES', area: 'inventario', grupo: 'operaciones', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'CATEGORIAS', area: 'inventario', grupo: 'configuracion', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'MARCAS', area: 'inventario', grupo: 'configuracion', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'TIPO_MATERIAL', area: 'inventario', grupo: 'configuracion', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'UNIDAD_MEDIDA', area: 'inventario', grupo: 'configuracion', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'ALMACENES', area: 'inventario', grupo: 'configuracion', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'UBICACIONES', area: 'inventario', grupo: 'configuracion', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'ESTADO_STOCK', area: 'inventario', grupo: 'configuracion', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'TIPO_OPERACION', area: 'inventario', grupo: 'configuracion', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'ESQUEMA_VALORACION', area: 'inventario', grupo: 'configuracion', visible: true },
+    { modulo: 'LOGISTICA', codigo: 'PROVEEDORES', area: 'inventario', grupo: 'configuracion', visible: true },
+    // ── Área: ADMINISTRACIÓN ──────────────────────────────────────────────
+    { modulo: 'ADMINISTRACION', codigo: 'EMPRESA', area: 'administracion', grupo: 'operaciones', visible: true },
+    { modulo: 'ADMINISTRACION', codigo: 'USUARIOS', area: 'administracion', grupo: 'operaciones', visible: true },
+    { modulo: 'ADMINISTRACION', codigo: 'ROL_USUARIO', area: 'administracion', grupo: 'operaciones', visible: true, etiqueta: 'Roles y Permisos' },
+    { modulo: 'ADMINISTRACION', codigo: 'PARAMETROS_SISTEMA', area: 'administracion', grupo: 'configuracion', visible: true },
+    { modulo: 'ADMINISTRACION', codigo: 'PAISES', area: 'administracion', grupo: 'configuracion', visible: true },
+    { modulo: 'ADMINISTRACION', codigo: 'INDUSTRIAS', area: 'administracion', grupo: 'configuracion', visible: true },
+    { modulo: 'ADMINISTRACION', codigo: 'DOCUMENTO_ID', area: 'administracion', grupo: 'configuracion', visible: true },
+    { modulo: 'ADMINISTRACION', codigo: 'CORRELATIVOS', area: 'administracion', grupo: 'configuracion', visible: true },
+  ]
+
+  const moduloPorCodigo = new Map(modulos.map((m) => [m.codigo, m.id]))
+
+  for (const cfg of MENU_VISUAL_CONFIG) {
+    const moduloId = moduloPorCodigo.get(cfg.modulo)
+    if (!moduloId) continue
+    await prisma.opcionMenu.updateMany({
+      where: { modulo_id: moduloId, codigo: cfg.codigo },
+      data: {
+        area_trabajo: cfg.area,
+        grupo: cfg.grupo,
+        visible_menu: cfg.visible,
+        ...(cfg.etiqueta ? { descripcion: cfg.etiqueta } : {}),
+      },
+    })
+  }
+
   // Create Permisos for superadmin (full access to all menu options)
   const allOpcionesMenu = await prisma.opcionMenu.findMany()
   await Promise.all(
