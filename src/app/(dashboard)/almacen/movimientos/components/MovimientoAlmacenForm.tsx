@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import { localToday, parseLocalNoon } from '@/lib/dates'
 import { apiFetch } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import MaterialSelect from '@/components/ui/MaterialSelect'
@@ -242,7 +243,7 @@ export default function MovimientoAlmacenForm() {
 
   useEffect(() => {
     setMounted(true)
-    setFecha(new Date().toISOString().split('T')[0])
+    setFecha(localToday())
   }, [])
 
   useEffect(() => {
@@ -697,6 +698,7 @@ export default function MovimientoAlmacenForm() {
         observaciones,
         cliente_id: clienteId,
         proveedor_id: proveedorId,
+        fecha: parseLocalNoon(fecha || localToday()).toISOString(),
         numero_pedido: numeroPedido,
         detalles: lineas.map((l, idx) => ({
           linea: (idx + 1).toString(),

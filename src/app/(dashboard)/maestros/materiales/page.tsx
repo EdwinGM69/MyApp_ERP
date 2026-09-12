@@ -8,6 +8,7 @@ import Pagination from '@/components/ui/Pagination'
 import Badge from '@/components/ui/Badge'
 import { apiFetch, useAuthStore } from '@/hooks/useAuth'
 import { formatCurrency } from '@/lib/utils'
+import { localToday } from '@/lib/dates'
 import toast from 'react-hot-toast'
 import { useSucursal } from '@/contexts/SucursalContext'
 import { usePermisos } from '@/contexts/PermisosContext'
@@ -247,7 +248,7 @@ export default function MaterialesPage() {
 
       const wbOut = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
       const blob = new Blob([wbOut], { type: 'application/octet-stream' })
-      saveAs(blob, `materiales_${new Date().toISOString().slice(0, 10)}.xlsx`)
+      saveAs(blob, `materiales_${localToday()}.xlsx`)
     } catch (err: any) {
       toast.error(`Error al exportar: ${err.message}`)
     } finally {

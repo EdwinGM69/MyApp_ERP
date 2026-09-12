@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { dayRangeUtc } from '@/lib/dates'
 
 export async function GET(req: NextRequest) {
   try {
@@ -20,8 +21,8 @@ export async function GET(req: NextRequest) {
       if (cajaId) where.caja_id = parseInt(cajaId)
       if (fechaDesde || fechaHasta) {
         where.fecha_apertura = {}
-        if (fechaDesde) where.fecha_apertura.gte = new Date(`${fechaDesde}T00:00:00.000Z`)
-        if (fechaHasta) where.fecha_apertura.lte = new Date(`${fechaHasta}T23:59:59.999Z`)
+        if (fechaDesde) where.fecha_apertura.gte = dayRangeUtc(fechaDesde).gte
+        if (fechaHasta) where.fecha_apertura.lt = dayRangeUtc(fechaHasta).lt
       }
 
       const [data, total] = await Promise.all([
@@ -74,8 +75,8 @@ export async function GET(req: NextRequest) {
     if (cajaId) where.caja_id = parseInt(cajaId)
     if (fechaDesde || fechaHasta) {
       where.fecha_documento = {}
-      if (fechaDesde) where.fecha_documento.gte = new Date(`${fechaDesde}T00:00:00.000Z`)
-      if (fechaHasta) where.fecha_documento.lte = new Date(`${fechaHasta}T23:59:59.999Z`)
+      if (fechaDesde) where.fecha_documento.gte = dayRangeUtc(fechaDesde).gte
+      if (fechaHasta) where.fecha_documento.lt = dayRangeUtc(fechaHasta).lt
     }
 
     const [data, total] = await Promise.all([

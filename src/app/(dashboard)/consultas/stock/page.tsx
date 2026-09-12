@@ -12,6 +12,7 @@ import MultiSelect from '@/components/ui/MultiSelect'
 import SucursalGuard from '@/components/SucursalGuard'
 import { apiFetch } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
+import { localToday } from '@/lib/dates'
 
 interface Material {
   codigo: string
@@ -330,7 +331,7 @@ export default function ConsultaStockPage() {
       const a = document.createElement('a')
       a.href = url
       const prefix = activeTab === 'stock' ? 'stock_actual' : 'historial_stock'
-      a.download = `${prefix}_${new Date().toISOString().slice(0, 10)}.xlsx`
+      a.download = `${prefix}_${localToday()}.xlsx`
       a.click()
       URL.revokeObjectURL(url)
     } catch (err: any) {

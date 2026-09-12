@@ -7,6 +7,7 @@ import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { cn } from '@/lib/utils'
+import { localToday } from '@/lib/dates'
 
 interface Material {
   id: number
@@ -91,7 +92,7 @@ export default function PromocionForm({ promocionToEdit }: PromocionFormProps) {
     fetchCategorias()
     setMounted(true)
     if (!promocionToEdit) {
-      setFechaInicio(new Date().toISOString().split('T')[0])
+      setFechaInicio(localToday())
     }
   }, [fetchMateriales, fetchCategorias, promocionToEdit])
 

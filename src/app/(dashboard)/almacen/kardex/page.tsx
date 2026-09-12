@@ -12,6 +12,7 @@ import MultiSelect from '@/components/ui/MultiSelect'
 import SucursalGuard from '@/components/SucursalGuard'
 import { apiFetch } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
+import { localToday } from '@/lib/dates'
 
 const OP_STYLES = {
   ingreso: {
@@ -402,7 +403,7 @@ export default function KardexPage() {
 
       const a = document.createElement('a')
       a.href = url
-      a.download = `kardex_${new Date().toISOString().slice(0, 10)}.xlsx`
+      a.download = `kardex_${localToday()}.xlsx`
       a.click()
       URL.revokeObjectURL(url)
     } catch (err: any) {

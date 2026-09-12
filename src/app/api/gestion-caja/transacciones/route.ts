@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { businessToday, dayRangeUtc } from '@/lib/dates'
 
 export async function GET(req: NextRequest) {
   try {
@@ -9,7 +10,7 @@ export async function GET(req: NextRequest) {
     const sucursalId = searchParams.get('sucursalId')
     const cajaId = searchParams.get('cajaId')
     const sesionCajaId = searchParams.get('sesionCajaId')
-    const date = searchParams.get('date') || new Date().toISOString().split('T')[0]
+    const date = searchParams.get('date') || businessToday()
     const page = parseInt(searchParams.get('page') || '1')
     const pageSize = parseInt(searchParams.get('pageSize') || '10')
     const skip = (page - 1) * pageSize
@@ -19,10 +20,7 @@ export async function GET(req: NextRequest) {
       ...(sesionCajaId ? { sesion_caja_id: parseInt(sesionCajaId) } : {
         ...(sucursalId ? { sucursal_id: parseInt(sucursalId) } : {}),
         ...(cajaId ? { caja_id: parseInt(cajaId) } : {}),
-        fecha_documento: {
-          gte: new Date(`${date}T00:00:00.000Z`),
-          lte: new Date(`${date}T23:59:59.999Z`)
-        }
+        fecha_documento: dayRangeUtc(date),
       })
     }
 

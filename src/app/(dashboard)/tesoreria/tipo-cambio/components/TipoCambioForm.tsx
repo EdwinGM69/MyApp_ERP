@@ -6,6 +6,7 @@ import { apiFetch } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
+import { localToday } from '@/lib/dates'
 
 interface Moneda {
   id: number
@@ -72,7 +73,7 @@ export default function TipoCambioForm({ tipoCambioToEdit }: TipoCambioFormProps
 
         // Default dates for new records
         if (!tipoCambioToEdit) {
-          const today = new Date().toISOString().split('T')[0]
+          const today = localToday()
           setFechaPublicacion(today)
           setInicioVigencia(today)
         }

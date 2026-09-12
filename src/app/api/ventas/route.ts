@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
 import { generateMovNumber } from '@/lib/utils'
+import { businessToday, dayRangeUtc } from '@/lib/dates'
 
 const ventaSchema = z.object({
   numero_pedido: z.string(),
@@ -77,8 +78,8 @@ export async function GET(req: NextRequest) {
       ...(sucursalId ? { sucursal_id: parseInt(sucursalId) } : {}),
       ...(fechaDesde || fechaHasta ? {
         fecha_venta: {
-          ...(fechaDesde ? { gte: new Date(`${fechaDesde}T00:00:00.000Z`) } : {}),
-          ...(fechaHasta ? { lte: new Date(`${fechaHasta}T23:59:59.999Z`) } : {}),
+          ...(fechaDesde ? { gte: dayRangeUtc(fechaDesde).gte } : {}),
+          ...(fechaHasta ? { lt: dayRangeUtc(fechaHasta).lt } : {}),
         }
       } : {}),
       ...(search ? {
@@ -300,6 +301,7 @@ export async function POST(req: NextRequest) {
         provincia: ventaData.provincia || null,
         distrito: ventaData.distrito || null,
         estado: ventaData.estado || 'procesada',
+        fecha_venta: ventaData.fecha_venta ? new Date(ventaData.fecha_venta) : new Date(),
         moneda_id: moneda_id,
         subtotal: Number(ventaData.subtotal) || 0,
         impuesto: Number(ventaData.impuesto) || 0,
@@ -422,7 +424,7 @@ export async function POST(req: NextRequest) {
             tipo_operacion_id: clasePedido.tipo_operacion_id,
             cliente_id: finalClienteId ?? undefined,
             numero_pedido: numeroPedido,
-            fecha: new Date(),
+            fecha: v.fecha_venta,
             created_by: userId,
             observaciones: `Movimiento generado desde venta ${numeroPedido}`
           }
@@ -492,23 +494,30 @@ export async function POST(req: NextRequest) {
 
           let cantidadRestante = cantidadConvertida
           const estadoStockId = clasePedido.estado_stock_id || 0
-          const today = new Date().toISOString().split('T')[0]
+          const { gte: histDesde, lt: histHasta } = dayRangeUtc(businessToday())
 
           // Usar unidad_medida_id del material para buscar stock
           const unidadStockMaterial = materialDataMap.get(d.material_id)
 
-          const stocks = await tx.stockMaterial.findMany({
-            where: {
-              empresa_id: empresaId,
-              sucursal_id: sucursal_id,
-              almacen_id: d.almacen_id,
-              estado_stock_id: estadoStockId,
-              material_id: d.material_id,
-              unidad_medida_id: unidadStockMaterial,
-              ...(signoOrigen === '-' ? { cantidad: { gt: 0 } } : {})
-            },
+          const stockWhere: any = {
+            empresa_id: empresaId,
+            sucursal_id: sucursal_id,
+            estado_stock_id: estadoStockId,
+            material_id: d.material_id,
+            unidad_medida_id: unidadStockMaterial,
+            ...(signoOrigen === '-' ? { cantidad: { gt: 0 } } : {})
+          }
+
+          let stocks = await tx.stockMaterial.findMany({
+            where: { ...stockWhere, almacen_id: d.almacen_id },
             orderBy: { id: 'asc' }
           })
+          if (stocks.length === 0) {
+            stocks = await tx.stockMaterial.findMany({
+              where: stockWhere,
+              orderBy: { id: 'asc' }
+            })
+          }
 
           for (const stockRec of stocks) {
             if (cantidadRestante <= 0) break
@@ -545,8 +554,8 @@ export async function POST(req: NextRequest) {
                 numero_lote: stockRec.numero_lote,
                 unidad_medida_id: stockRec.unidad_medida_id,
                 updated_at: {
-                  gte: new Date(today + 'T00:00:00.000Z'),
-                  lt: new Date(today + 'T23:59:59.999Z')
+                  gte: histDesde,
+                  lt: histHasta
                 }
               }
             })
@@ -567,7 +576,7 @@ export async function POST(req: NextRequest) {
                   material_id: stockRec.material_id,
                   numero_lote: stockRec.numero_lote,
                   unidad_medida_id: stockRec.unidad_medida_id,
-                  updated_at: { lt: new Date(today + 'T00:00:00.000Z') }
+                  updated_at: { lt: histDesde }
                 },
                 orderBy: { updated_at: 'desc' }
               })
@@ -590,6 +599,10 @@ export async function POST(req: NextRequest) {
 
             cantidadRestante -= aTomar
           }
+
+          if (signoOrigen === '-' && cantidadRestante > 0) {
+            throw new Error(`Stock insuficiente para el material ${d.material_id} en la sucursal ${sucursal_id}`)
+          }
         }
       } else if (ventaData.estado === 'procesada') {
         const tipoOp = await tx.tipoOperacion.findUnique({
@@ -599,16 +612,19 @@ export async function POST(req: NextRequest) {
         const signo = tipoOp?.signo_origen || '-'
 
         for (const d of detalles) {
-          const stocksToUpdate = await tx.stockMaterial.findMany({
-            where: {
-              empresa_id: empresaId,
-              sucursal_id: sucursal_id,
-              almacen_id: d.almacen_id,
-              material_id: d.material_id,
-              unidad_medida_id: d.unidad_medida_id,
-              ...(signo === '-' ? { cantidad: { gt: 0 } } : {})
-            }
+          const stockWhere: any = {
+            empresa_id: empresaId,
+            sucursal_id: sucursal_id,
+            material_id: d.material_id,
+            unidad_medida_id: d.unidad_medida_id,
+            ...(signo === '-' ? { cantidad: { gt: 0 } } : {})
+          }
+          let stocksToUpdate = await tx.stockMaterial.findMany({
+            where: { ...stockWhere, almacen_id: d.almacen_id }
           })
+          if (stocksToUpdate.length === 0) {
+            stocksToUpdate = await tx.stockMaterial.findMany({ where: stockWhere })
+          }
           for (const stock of stocksToUpdate) {
             const adjustment = signo === '+' ? Number(d.cantidad) : -Number(d.cantidad)
             await tx.stockMaterial.update({
@@ -836,7 +852,7 @@ export async function PATCH(req: NextRequest) {
                 })
               }
 
-              const today = now.toISOString().split('T')[0]
+              const todayRange = dayRangeUtc(businessToday(now))
               const existingHistorial = det.estado_stock_id ? await tx.stockMaterialHistorial.findFirst({
                 where: {
                   empresa_id: empresaId,
@@ -847,8 +863,8 @@ export async function PATCH(req: NextRequest) {
                   material_id: det.material_id,
                   numero_lote: dist.numero_lote,
                   updated_at: {
-                    gte: new Date(today + 'T00:00:00.000Z'),
-                    lt: new Date(today + 'T23:59:59.999Z')
+                    gte: todayRange.gte,
+                    lt: todayRange.lt
                   }
                 }
               }) : null

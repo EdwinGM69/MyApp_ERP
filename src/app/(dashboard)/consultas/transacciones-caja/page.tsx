@@ -11,6 +11,7 @@ import Pagination from '@/components/ui/Pagination'
 import SucursalGuard from '@/components/SucursalGuard'
 import { apiFetch } from '@/hooks/useAuth'
 import { cn, formatCurrency } from '@/lib/utils'
+import { localToday } from '@/lib/dates'
 
 const OP_STYLES = {
   ingreso: {
@@ -200,7 +201,7 @@ export default function ConsultaTransaccionesCajaPage() {
       const a = document.createElement('a')
       a.href = url
       const prefix = isTransacciones ? 'transacciones_caja' : 'historial_caja'
-      a.download = `${prefix}_${new Date().toISOString().slice(0, 10)}.xlsx`
+      a.download = `${prefix}_${localToday()}.xlsx`
       a.click()
       URL.revokeObjectURL(url)
     } catch (err: any) {

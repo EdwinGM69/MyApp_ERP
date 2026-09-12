@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { businessToday, dayStartUtc } from '@/lib/dates'
 
 export async function GET(req: NextRequest) {
   try {
     const { empresaId } = await requireAuth(req)
 
-    const now = new Date()
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const today = businessToday()
+    const startOfDay = dayStartUtc(today)
+    const startOfMonth = dayStartUtc(`${today.slice(0, 7)}-01`)
 
     const [
       inventarioValue,

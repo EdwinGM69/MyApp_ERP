@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Topbar from '@/components/layout/Topbar'
 import { apiFetch } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
+import { localToday } from '@/lib/dates'
 import Badge from '@/components/ui/Badge'
 import Switch from '@/components/ui/Switch'
 import CrudModal from '@/components/ui/CrudModal'
@@ -118,7 +119,7 @@ export default function CondicionesComercialesPage() {
     if (mounted && !newCondicionData.fecha_desde) {
       setNewCondicionData(prev => ({
         ...prev,
-        fecha_desde: new Date().toISOString().split('T')[0]
+        fecha_desde: localToday()
       }))
     }
   }, [mounted, newCondicionData.fecha_desde])
@@ -155,7 +156,7 @@ export default function CondicionesComercialesPage() {
       moneda_id: defaultMonedaId,
       porcentaje: false,
       valor: 0,
-      fecha_desde: new Date().toISOString().split('T')[0],
+      fecha_desde: localToday(),
       fecha_hasta: null,
       activo: true
     })
@@ -169,7 +170,7 @@ export default function CondicionesComercialesPage() {
       moneda_id: defaultMonedaId,
       porcentaje: false,
       valor: 0,
-      fecha_desde: new Date().toISOString().split('T')[0],
+      fecha_desde: localToday(),
       fecha_hasta: null,
       activo: true
     })

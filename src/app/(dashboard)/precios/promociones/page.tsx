@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Topbar from '@/components/layout/Topbar'
 import { apiFetch } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
+import { localToday } from '@/lib/dates'
 import Badge from '@/components/ui/Badge'
 import Switch from '@/components/ui/Switch'
 import toast from 'react-hot-toast'
@@ -82,7 +83,7 @@ const emptyEditing = () => ({
   nombre: '',
   descripcion: '',
   activo: true,
-  fecha_inicio: new Date().toISOString().split('T')[0],
+  fecha_inicio: localToday(),
   fecha_fin: '',
   cantidad_compra: 2,
   cantidad_regalo: 1,

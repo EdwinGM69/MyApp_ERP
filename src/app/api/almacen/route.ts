@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { requireAuth } from '@/lib/auth';
+import { businessToday, dayRangeUtc } from '@/lib/dates';
 
 const movDetailSchema = z.object({
   linea: z.string(),
@@ -34,6 +35,7 @@ const movSchema = z.object({
   cliente_id: z.number().nullable().optional(),
   proveedor_id: z.number().nullable().optional(),
   numero_pedido: z.string().nullable().optional(),
+  fecha: z.string().nullable().optional(),
   detalles: z.array(movDetailSchema),
 });
 
@@ -83,8 +85,8 @@ export async function GET(req: NextRequest) {
       ...(sucursalId ? { sucursal_id: parseInt(sucursalId) } : {}),
       ...(fechaDesde || fechaHasta ? {
         fecha: {
-          ...(fechaDesde ? { gte: new Date(`${fechaDesde}T00:00:00.000Z`) } : {}),
-          ...(fechaHasta ? { lte: new Date(`${fechaHasta}T23:59:59.999Z`) } : {}),
+          ...(fechaDesde ? { gte: dayRangeUtc(fechaDesde).gte } : {}),
+          ...(fechaHasta ? { lt: dayRangeUtc(fechaHasta).lt } : {}),
         }
       } : {}),
       ...(search ? {
@@ -226,6 +228,7 @@ export async function POST(req: NextRequest) {
           numero_pedido: movData.numero_pedido || null,
           empresa: { connect: { id: empresaId } },
           numero_mov: numeroMov,
+          fecha: movData.fecha ? new Date(movData.fecha) : new Date(),
           created_by: userId,
           detalles: {
             create: resolvedDetalles.map((d) => ({
@@ -375,8 +378,7 @@ export async function POST(req: NextRequest) {
           });
 
           const now = new Date();
-          const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
-          const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+          const { gte: histDesde, lt: histHasta } = dayRangeUtc(businessToday(now));
 
           const existingHist = await tx.stockMaterialHistorial.findFirst({
             where: {
@@ -389,8 +391,8 @@ export async function POST(req: NextRequest) {
               numero_lote: item.numero_lote ?? null,
               unidad_medida_id: unidadMedidaControl,
               updated_at: {
-                gte: startOfDay,
-                lte: endOfDay
+                gte: histDesde,
+                lt: histHasta
               }
             }
           });

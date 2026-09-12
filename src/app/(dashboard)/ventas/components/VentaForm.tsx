@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { ChevronDown, ChevronUp, Calculator, ShoppingCart, Trash2, CheckCircle2, ArrowLeft, BarChart2 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
+import { localToday, parseLocalNoon } from '@/lib/dates'
 import { apiFetch, useAuthStore } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
 import MaterialSelect from '@/components/ui/MaterialSelect'
@@ -92,7 +93,7 @@ export default function VentaForm() {
   const [fechaVenta, setFechaVenta] = useState('')
   useEffect(() => {
     setMounted(true)
-    setFechaVenta(new Date().toISOString().split('T')[0])
+    setFechaVenta(localToday())
 
     // Set default currency from user if available
     const user = getAuthStore().user
@@ -535,7 +536,7 @@ export default function VentaForm() {
       console.log('DEBUG: Starting calculation for line', index, 'Material:', materialId, 'Qty:', cantidad)
 
       // Use the document date for condition filtering
-      const dateForFiltering = new Date(fechaVenta || new Date())
+      const dateForFiltering = new Date(fechaVenta || localToday())
       console.log('DEBUG: Filtering with date:', dateForFiltering.toISOString())
 
       const [resSpecific, resGeneral] = await Promise.all([
@@ -1072,7 +1073,7 @@ export default function VentaForm() {
   ) => {
     if (!materialId) return
     try {
-      const fechaParam = fechaVenta || new Date().toISOString().split('T')[0]
+      const fechaParam = fechaVenta || localToday()
       console.log(`DEBUG: Checking promotion for index ${index}, material ${materialId}, category ${categoriaId}, date ${fechaParam}`)
 
       // Use updated lines if provided, otherwise use state
@@ -1568,7 +1569,7 @@ return l
       const payload = {
         numero_pedido: `PED-${Date.now().toString().slice(-6)}`,
         comprobante,
-        fecha_venta: new Date(fechaVenta).toISOString(),
+        fecha_venta: parseLocalNoon(fechaVenta).toISOString(),
         cliente_id: cliente?.id || null,
         documento_identificacion_id: docIdentificacion.id,
         numero_identificacion: numeroIdentificacion,

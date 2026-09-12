@@ -6,6 +6,7 @@ import Badge from '@/components/ui/Badge'
 import DocumentoIdentificacionSelect from '@/components/ui/DocumentoIdentificacionSelect'
 import { apiFetch, useAuthStore, getAuthStore } from '@/hooks/useAuth'
 import { formatCurrency, generateOrderNumber } from '@/lib/utils'
+import { localToday, parseLocalNoon } from '@/lib/dates'
 import toast from 'react-hot-toast'
 import { useSucursal } from '@/contexts/SucursalContext'
 import { usePermisos } from '@/contexts/PermisosContext'
@@ -156,7 +157,7 @@ export default function POSPage() {
       params.set('categoriaId', String(categoriaSeleccionada))
     }
     console.log('[POS] Calling API with params:', params.toString())
-    const res = await apiFetch(`/api/materiales?${params}`)
+    const res = await apiFetch(`/api/materiales?${params}`, { cache: 'no-store' })
     const json = await res.json()
     console.log('[POS] API response:', json.data?.length, 'materials')
     setMateriales((json.data ?? []).filter((m: Material) => m.stock_actual > 0))
@@ -171,6 +172,19 @@ export default function POSPage() {
       fetchMateriales()
     }
   }, [fetchMateriales, currentSucursal])
+
+  // Clear catalog and cart when the sucursal changes so stock of the previous
+  // sucursal is never shown for the new one.
+  const prevSucursalIdRef = useRef<number | null>(null)
+  useEffect(() => {
+    const id = currentSucursal?.id ?? null
+    if (prevSucursalIdRef.current !== null && prevSucursalIdRef.current !== id) {
+      setMateriales([])
+      setCart([])
+      setPromocionTotal(null)
+    }
+    if (id !== null) prevSucursalIdRef.current = id
+  }, [currentSucursal])
 
   // Fetch precios dinámicos
   const fetchPreciosDinamicos = useCallback(async (materialIds: number[]) => {
@@ -273,7 +287,7 @@ export default function POSPage() {
     if (materialIds.length === 0) return
     console.log('[POS] fetchPromociones called with:', materialIds)
     try {
-      const res = await apiFetch(`/api/pos/promociones?materialIds=${materialIds.join(',')}`)
+      const res = await apiFetch(`/api/pos/promociones?materialIds=${materialIds.join(',')}&fecha=${localToday()}`)
       const json = await res.json()
       console.log('[POS] promociones response:', json.data)
       if (json.data) {
@@ -2316,6 +2330,7 @@ export default function POSPage() {
     try {
       const payload = {
         numero_pedido: generateOrderNumber(),
+        fecha_venta: parseLocalNoon(localToday()).toISOString(),
         cliente_id: clienteId,
         sucursal_id: currentSucursal.id,
         clase_pedido_id: clasePedidoId,
