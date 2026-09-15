@@ -5,17 +5,6 @@ import { z } from 'zod'
 
 async function getParametroPrecioVenta(empresaId: number, userId: number): Promise<string | null> {
   try {
-    console.log('[POS] getParametroPrecioVenta empresaId:', empresaId, 'userId:', userId)
-    
-    // Debug: ver todos los parametros para esta empresa
-    const allParams = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT id, codigo, nivel, tipo_dato, valor_string, empresa_id, created_by, activo
-      FROM "ParametroSistema" 
-      WHERE empresa_id = $1 OR empresa_id IS NULL
-      LIMIT 20
-    `, empresaId)
-    console.log('[POS] All parametros for empresa:', JSON.stringify(allParams))
-    
     const result = await prisma.$queryRawUnsafe<any[]>(`
       SELECT
         p.tipo_dato,
@@ -34,7 +23,7 @@ async function getParametroPrecioVenta(empresaId: number, userId: number): Promi
         AND p.activo = true
         AND (
           (p.nivel = 'USUARIO' AND p.empresa_id = $1 AND p.created_by = $2)
-          OR (p.nivel = 'EMPRESA' AND p.empresa_id = $1)
+          OR (p.nivel = 'EMPRESA' AND (p.empresa_id = $1 OR p.empresa_id IS NULL))
           OR (p.nivel = 'MODULO' AND p.empresa_id IS NULL)
           OR (p.nivel = 'SISTEMA' AND p.empresa_id IS NULL)
         )
@@ -47,44 +36,10 @@ async function getParametroPrecioVenta(empresaId: number, userId: number): Promi
         END
       LIMIT 1
     `, empresaId, userId)
-    console.log('[POS] POS.PREVTA parametro result:', JSON.stringify(result))
-    if (!result || result.length === 0) {
-      console.log('[POS] No parametro found for POS.PREVTA')
-      return null
-    }
+    if (!result || result.length === 0) return null
     return result[0]?.valor ?? null
   } catch (e) {
     console.error('[POS] Error getting parametro precio venta:', e)
-    return null
-  }
-}
-
-async function getDynamicPrice(
-  empresaId: number,
-  materialId: number,
-  monedaId: number,
-  tipoCondicionCodigo: string
-): Promise<number | null> {
-  try {
-    console.log('[POS] getDynamicPrice params:', { empresaId, materialId, monedaId, tipoCondicionCodigo })
-    const result = await prisma.$queryRawUnsafe<any[]>(`
-      SELECT c.valor
-      FROM "Condicion" c
-      JOIN "TipoCondicion" tc ON tc.id = c.tipo_condicion_id
-      WHERE tc.empresa_id = $1
-        AND tc.codigo = $2
-        AND c.moneda_id = $3
-        AND c.activo = true
-        AND c.fecha_desde <= NOW()
-        AND (c.fecha_hasta IS NULL OR c.fecha_hasta >= NOW())
-        AND (c.material_id = $4 OR c.material_id IS NULL)
-      ORDER BY c.material_id DESC NULLS LAST, c.fecha_desde DESC
-      LIMIT 1
-    `, empresaId, tipoCondicionCodigo, monedaId, materialId)
-    console.log('[POS] getDynamicPrice result:', result)
-    return result[0]?.valor ? Number(result[0].valor) : null
-  } catch (e) {
-    console.error('Error getting dynamic price:', e)
     return null
   }
 }
@@ -148,6 +103,7 @@ export async function GET(req: NextRequest) {
     const categoriaId = searchParams.get('categoriaId')
     const tipoId = searchParams.get('tipoId')
     const sucursalId = searchParams.get('sucursalId')
+    const monedaIdParam = searchParams.get('monedaId')
 
     let estadoStockId: number | null = null
     console.log('[materiales API] Starting stock logic, empresaId:', empresaId)
@@ -318,6 +274,48 @@ export async function GET(req: NextRequest) {
         m.unidad_medida = m.unidad_medida_rel?.descripcion || 'und'
         m.unidad_medida_id = m.unidad_medida_rel?.id || 1
       })
+    }
+
+    if (ids.length > 0) {
+      try {
+        // Effective sale price from Condicion system (POS.PREVTA)
+        const precioVentaCodigo = await getParametroPrecioVenta(empresaId, userId)
+        if (precioVentaCodigo) {
+          const monedaIdNum = monedaIdParam ? parseInt(monedaIdParam) : null
+          const monedaOrder = monedaIdNum ? '(c.moneda_id = $4) DESC, ' : ''
+
+          const precioConditions = await prisma.$queryRawUnsafe<any[]>(`
+            SELECT c.material_id, c.valor
+            FROM "Condicion" c
+            JOIN "TipoCondicion" tc ON tc.id = c.tipo_condicion_id
+            WHERE tc.empresa_id = $1
+              AND tc.codigo = $2
+              AND c.activo = true
+              AND c.fecha_desde <= NOW()
+              AND (c.fecha_hasta IS NULL OR c.fecha_hasta >= NOW())
+              AND (c.material_id = ANY($3::int[]) OR c.material_id IS NULL)
+            ORDER BY ${monedaOrder} c.material_id DESC NULLS LAST, c.fecha_desde DESC
+          `, ...(monedaIdNum
+            ? [empresaId, precioVentaCodigo, ids, monedaIdNum]
+            : [empresaId, precioVentaCodigo, ids]))
+
+          const precioMap = new Map<number | null, number>()
+          for (const cond of precioConditions) {
+            const materialIdKey = cond.material_id === null ? null : Number(cond.material_id)
+            if (!precioMap.has(materialIdKey)) {
+              precioMap.set(materialIdKey, Number(cond.valor))
+            }
+          }
+
+          materiales.forEach((m: any) => {
+            let effectivePrice = precioMap.get(Number(m.id))
+            if (effectivePrice === undefined) effectivePrice = precioMap.get(null) ?? undefined
+            if (effectivePrice !== undefined) m.precio_venta = effectivePrice
+          })
+        }
+      } catch (e) {
+        console.error('[materiales API] Error applying effective price:', e)
+      }
     }
 
     return NextResponse.json({ data: materiales, total, page, pageSize, totalPages: Math.ceil(total / pageSize) })

@@ -423,7 +423,9 @@ export default function Sidebar() {
               <p className="text-[11px] text-slate-300 leading-tight flex-1">
                 {user.subscriptionAlert.vencida
                   ? `Su plan ${user.subscriptionAlert.planName || ''} ha expirado.`
-                  : `Tú ${user.subscriptionAlert.planName || ''} vence en ${user.subscriptionAlert.diasRestantes} día(s).`}
+                  : user.subscriptionAlert.enPeriodoGracia
+                    ? `Período de gracia: quedan ${user.subscriptionAlert.diasGraciaRestantes} día(s).`
+                    : `Tu ${user.subscriptionAlert.planName || ''} vence en ${user.subscriptionAlert.diasRestantes} día(s).`}
               </p>
               <button className="text-[10px] font-bold bg-primary text-white px-2 py-1 rounded-md hover:bg-primary-dark transition-colors uppercase">
                 Actualizar

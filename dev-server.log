@@ -1,0 +1,504 @@
+$ next dev
+▲ Next.js 16.3.5 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.1.16:3000
+- Environments: .env
+✓ Ready in 1633ms
+✓ Running next.config.js took 71ms
+
+[PROXY] GET /
+[PROXY] PAGE Redirect: No token for /, redirecting to /login
+[PROXY] GET /login
+○ Compiling /login ...
+ GET /login 200 in 6.9s (next.js: 6.3s, proxy.ts: 17ms, application-code: 625ms)
+[PROXY] GET /login-hero.jpg
+[PROXY] GET /api/auth/me
+[PRISMA] Environment: development
+[PRISMA] Using connection string: postgres://postgres.jileukbohzeapbwbxmae:****@aws-1-us-east-1.pooler.supabase.com:5432/postgres
+[PRISMA] Pool max connections: 10 (standard)
+[AUTH] Using cookie token, length: 0
+[AUTH] No token found
+[AUTH] No valid token found in request
+ GET /api/auth/me 200 in 925ms (next.js: 525ms, proxy.ts: 9ms, application-code: 391ms)
+[PROXY] GET /api/auth/me
+[AUTH] Using cookie token, length: 0
+[AUTH] No token found
+[AUTH] No valid token found in request
+ GET /api/auth/me 200 in 40ms (next.js: 9ms, proxy.ts: 17ms, application-code: 14ms)
+[PROXY] POST /api/auth/login
+[LOGIN] Attempting login for email: egabanchom@gmail.com
+[LOGIN] Usuario found: yes 2
+[LOGIN] Tokens generated, looking up moneda
+[LOGIN] Querying moneda for empresa_id: 1 moneda_default: PEN
+[LOGIN] Moneda found: yes
+[LOGIN] Setting cookies: {
+  accessTokenLength: 200,
+  refreshTokenLength: 200,
+  cookieOptions: { httpOnly: true, secure: false, sameSite: 'strict', path: '/' },
+  environment: 'development'
+}
+ POST /api/auth/login 200 in 3.8s (next.js: 664ms, proxy.ts: 12ms, application-code: 3.1s)
+[PROXY] GET /dashboard
+ GET /dashboard 200 in 1042ms (next.js: 948ms, proxy.ts: 16ms, application-code: 78ms)
+[PROXY] GET /api/menu
+[PROXY] GET /api/dashboard
+[PROXY] GET /api/usuario/sucursales
+[PROXY] GET /api/mis-permisos
+[AUTH] Using cookie token, length: 200
+[AUTH] Using cookie token, length: 200
+[AUTH] Using cookie token, length: 200
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[AUTH] Token verified successfully for user: 2
+[AUTH] Token verified successfully for user: 2
+[AUTH] Token verified successfully for user: 2
+ GET /api/menu 200 in 1566ms (next.js: 401ms, proxy.ts: 34ms, application-code: 1131ms)
+[PROXY] GET /api/menu
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/menu 200 in 752ms (next.js: 7ms, proxy.ts: 10ms, application-code: 736ms)
+ GET /api/usuario/sucursales 200 in 2.3s (next.js: 611ms, proxy.ts: 29ms, application-code: 1676ms)
+[PROXY] GET /api/usuario/sucursales
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/dashboard 200 in 2.3s (next.js: 516ms, proxy.ts: 30ms, application-code: 1801ms)
+[PROXY] GET /api/dashboard
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[PROXY] GET /null
+ GET /api/mis-permisos 200 in 2.4s (next.js: 675ms, proxy.ts: 27ms, application-code: 1733ms)
+[PROXY] GET /api/mis-permisos
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/usuario/sucursales 200 in 425ms (next.js: 4ms, proxy.ts: 8ms, application-code: 412ms)
+ GET /api/dashboard 200 in 458ms (next.js: 4ms, proxy.ts: 9ms, application-code: 445ms)
+ GET /api/mis-permisos 200 in 536ms (next.js: 4ms, proxy.ts: 10ms, application-code: 522ms)
+[PROXY] GET /ventas
+[PROXY] GET /ventas
+ GET /ventas 200 in 1032ms (next.js: 968ms, proxy.ts: 11ms, application-code: 53ms)
+ GET /ventas 200 in 55ms (next.js: 10ms, proxy.ts: 14ms, application-code: 31ms)
+[PROXY] GET /api/ventas
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[PROXY] GET /api/ventas
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/ventas?page=1&pageSize=10&search=&sucursalId=1&fecha_desde=2026-09-15&fecha_hasta=2026-09-15 200 in 20.8s (next.js: 474ms, proxy.ts: 13ms, application-code: 20.3s)
+ GET /api/ventas?page=1&pageSize=10&search=&sucursalId=1&fecha_desde=2026-09-15&fecha_hasta=2026-09-15 200 in 25.2s (next.js: 7ms, proxy.ts: 8ms, application-code: 25.2s)
+[PROXY] GET /ventas/nueva
+ GET /ventas/nueva?editar=37 200 in 829ms (next.js: 765ms, proxy.ts: 12ms, application-code: 52ms)
+[PROXY] GET /api/precios/cupones
+[PROXY] GET /api/tesoreria/medios-pago
+[PROXY] GET /api/monedas
+[AUTH] Using cookie token, length: 200
+[AUTH] Using cookie token, length: 200
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[AUTH] Token verified successfully for user: 2
+[AUTH] Token verified successfully for user: 2
+ GET /api/tesoreria/medios-pago?pageSize=100 200 in 10.4s (next.js: 379ms, proxy.ts: 36ms, application-code: 9.9s)
+[PROXY] GET /api/tesoreria/medios-pago
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/tesoreria/medios-pago?pageSize=100 200 in 156ms (next.js: 8ms, proxy.ts: 11ms, application-code: 138ms)
+[PROXY] GET /api/tesoreria/medios-pago
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/tesoreria/medios-pago?pageSize=100 200 in 154ms (next.js: 4ms, proxy.ts: 12ms, application-code: 138ms)
+[PROXY] GET /api/ventas
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/precios/cupones?pageSize=100 200 in 11.2s (next.js: 314ms, proxy.ts: 35ms, application-code: 10.9s)
+[PROXY] GET /api/precios/cupones
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/monedas?id=1 200 in 11.3s (next.js: 431ms, proxy.ts: 27ms, application-code: 10.8s)
+ GET /api/precios/cupones?pageSize=100 200 in 399ms (next.js: 5ms, proxy.ts: 7ms, application-code: 387ms)
+ GET /api/ventas?id=37 200 in 1348ms (next.js: 5ms, proxy.ts: 6ms, application-code: 1337ms)
+[PROXY] GET /api/tesoreria/medios-pago
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[PROXY] GET /api/comercial/clases-pedido
+ GET /api/tesoreria/medios-pago?pageSize=100 200 in 165ms (next.js: 4ms, proxy.ts: 8ms, application-code: 153ms)
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/comercial/clases-pedido?id=2 200 in 663ms (next.js: 294ms, proxy.ts: 10ms, application-code: 359ms)
+[PROXY] GET /api/esquemas-calculo
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/esquemas-calculo?id=1 200 in 589ms (next.js: 259ms, proxy.ts: 6ms, application-code: 324ms)
+[PROXY] GET /api/comercial/condiciones
+[PROXY] GET /api/comercial/condiciones
+[AUTH] Using cookie token, length: 200
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[AUTH] Token verified successfully for user: 2
+ GET /api/comercial/condiciones?material_id=null 200 in 609ms (next.js: 277ms, proxy.ts: 16ms, application-code: 316ms)
+ GET /api/comercial/condiciones?material_id=5 200 in 610ms (next.js: 265ms, proxy.ts: 15ms, application-code: 329ms)
+[PROXY] GET /api/materiales
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[materiales API] Starting stock logic, empresaId: 1
+[materiales API] POS.PEDVTA param result: [
+  {
+    id: 3,
+    nivel: 'EMPRESA',
+    tipo_dato: 'STRING',
+    valor_string: 'VTAPOS',
+    valor_number: null,
+    valor_boolean: null,
+    valor_date: null,
+    valor_json: null,
+    empresa_id: 1
+  }
+]
+[materiales API] clasePedidoCodigo: VTAPOS type: STRING
+[materiales API] clasePedido found: { estado_stock_id: 1 } estado_stock_id: 1
+[materiales API] final estadoStockId: 1
+[materiales API] Fetching stock - empresaId: 1 sucursalId: null parsed: null estadoStockId: 1
+[materiales API] No stock query - sucursalIdNum: null
+ GET /api/materiales?search=&pageSize=10&monedaId=1 200 in 14.4s (next.js: 394ms, proxy.ts: 11ms, application-code: 14.0s)
+[PROXY] GET /api/materiales
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[materiales API] Starting stock logic, empresaId: 1
+[PROXY] GET /api/materiales
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[materiales API] Starting stock logic, empresaId: 1
+[materiales API] POS.PEDVTA param result: [
+  {
+    id: 3,
+    nivel: 'EMPRESA',
+    tipo_dato: 'STRING',
+    valor_string: 'VTAPOS',
+    valor_number: null,
+    valor_boolean: null,
+    valor_date: null,
+    valor_json: null,
+    empresa_id: 1
+  }
+]
+[materiales API] clasePedidoCodigo: VTAPOS type: STRING
+[materiales API] POS.PEDVTA param result: [
+  {
+    id: 3,
+    nivel: 'EMPRESA',
+    tipo_dato: 'STRING',
+    valor_string: 'VTAPOS',
+    valor_number: null,
+    valor_boolean: null,
+    valor_date: null,
+    valor_json: null,
+    empresa_id: 1
+  }
+]
+[materiales API] clasePedidoCodigo: VTAPOS type: STRING
+[materiales API] clasePedido found: { estado_stock_id: 1 } estado_stock_id: 1
+[materiales API] final estadoStockId: 1
+[materiales API] clasePedido found: { estado_stock_id: 1 } estado_stock_id: 1
+[materiales API] final estadoStockId: 1
+[materiales API] Fetching stock - empresaId: 1 sucursalId: null parsed: null estadoStockId: 1
+[materiales API] No stock query - sucursalIdNum: null
+[materiales API] Fetching stock - empresaId: 1 sucursalId: null parsed: null estadoStockId: 1
+[materiales API] No stock query - sucursalIdNum: null
+ GET /api/materiales?search=polo&pageSize=10&monedaId=1 200 in 3.3s (next.js: 5ms, proxy.ts: 11ms, application-code: 3.3s)
+ GET /api/materiales?search=&pageSize=10&monedaId=1 200 in 5.3s (next.js: 5ms, proxy.ts: 9ms, application-code: 5.3s)
+[PROXY] GET /api/materiales
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[materiales API] Starting stock logic, empresaId: 1
+[materiales API] POS.PEDVTA param result: [
+  {
+    id: 3,
+    nivel: 'EMPRESA',
+    tipo_dato: 'STRING',
+    valor_string: 'VTAPOS',
+    valor_number: null,
+    valor_boolean: null,
+    valor_date: null,
+    valor_json: null,
+    empresa_id: 1
+  }
+]
+[materiales API] clasePedidoCodigo: VTAPOS type: STRING
+[materiales API] clasePedido found: { estado_stock_id: 1 } estado_stock_id: 1
+[materiales API] final estadoStockId: 1
+[materiales API] Fetching stock - empresaId: 1 sucursalId: null parsed: null estadoStockId: 1
+[materiales API] No stock query - sucursalIdNum: null
+ GET /api/materiales?search=&pageSize=10&monedaId=1 200 in 903ms (next.js: 3ms, proxy.ts: 8ms, application-code: 891ms)
+[PROXY] GET /api/materiales
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[materiales API] Starting stock logic, empresaId: 1
+[materiales API] POS.PEDVTA param result: [
+  {
+    id: 3,
+    nivel: 'EMPRESA',
+    tipo_dato: 'STRING',
+    valor_string: 'VTAPOS',
+    valor_number: null,
+    valor_boolean: null,
+    valor_date: null,
+    valor_json: null,
+    empresa_id: 1
+  }
+]
+[materiales API] clasePedidoCodigo: VTAPOS type: STRING
+[materiales API] clasePedido found: { estado_stock_id: 1 } estado_stock_id: 1
+[materiales API] final estadoStockId: 1
+[materiales API] Fetching stock - empresaId: 1 sucursalId: null parsed: null estadoStockId: 1
+[materiales API] No stock query - sucursalIdNum: null
+ GET /api/materiales?search=polo&pageSize=10&monedaId=1 200 in 928ms (next.js: 3ms, proxy.ts: 8ms, application-code: 917ms)
+[PROXY] GET /api/logistica/unidades
+[PROXY] GET /api/materiales/presentaciones
+[AUTH] Using cookie token, length: 200
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[AUTH] Token verified successfully for user: 2
+ GET /api/materiales/presentaciones?materialId=9&pageSize=50 200 in 838ms (next.js: 269ms, proxy.ts: 12ms, application-code: 557ms)
+ GET /api/logistica/unidades?id=1 200 in 847ms (next.js: 504ms, proxy.ts: 13ms, application-code: 329ms)
+[PROXY] GET /api/logistica/almacenes
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/logistica/almacenes?search=&pageSize=50&sucursalId=1 200 in 1332ms (next.js: 1136ms, proxy.ts: 30ms, application-code: 166ms)
+[PROXY] GET /api/pos/promociones
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[POS Promociones] empresaId: 1 materialIds: [ 5, 9 ] now: 2026-09-15T00:00:00.000Z
+[POS Promociones] raw result: []
+[POS Promociones] filtered result: []
+ GET /api/pos/promociones?materialIds=5,9&fecha=2026-09-15 200 in 742ms (next.js: 275ms, proxy.ts: 8ms, application-code: 459ms)
+[PROXY] GET /api/comercial/condiciones
+[PROXY] GET /api/comercial/condiciones
+[AUTH] Using cookie token, length: 200
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+[AUTH] Token verified successfully for user: 2
+ GET /api/comercial/condiciones?material_id=9 200 in 300ms (next.js: 7ms, proxy.ts: 15ms, application-code: 278ms)
+ GET /api/comercial/condiciones?material_id=null 200 in 301ms (next.js: 13ms, proxy.ts: 14ms, application-code: 274ms)
+[PROXY] GET /api/auth/subscription-status
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ GET /api/auth/subscription-status 200 in 1474ms (next.js: 200ms, proxy.ts: 9ms, application-code: 1265ms)
+[PROXY] GET /.well-known/appspecific/com.chrome.devtools.json
+[PROXY] PATCH /api/ventas
+[AUTH] Using cookie token, length: 200
+[AUTH] Token verified successfully for user: 2
+ERROR AL ANULAR VENTA: Error [PrismaClientValidationError]: 
+Invalid `tx.venta.update()` invocation in
+C:\Personal\Emprendimientos\StartUp_Tecnologia\ERP SaaS2\.next\dev\server\chunks\[root-of-the-server]__1xknu9d._.js:1145:47
+
+  1142         }
+  1143     }
+  1144 });
+→ 1145 const result = await tx.venta.update({
+         where: {
+           id: 37
+         },
+         data: {
+           sucursal_id: 1,
+           ~~~~~~~~~~~
+           clase_pedido_id: 2,
+           doc_identificacion_id: 2,
+           numero_identificacion: "10722847585",
+           nombre: "Mokara Cafe S.A.C.",
+           nombres_completos: null,
+           apellidos_completos: null,
+           direccion: "Av. Arenales 2248",
+           ubigeo: null,
+           departamento: "Lima",
+           provincia: "Lima",
+           distrito: "Lince",
+           estado: "borrador",
+           fecha_venta: new Date("2026-09-15T17:00:00.000Z"),
+           motivo: "Venta no registrada en POS",
+           hora_venta: "12:15",
+           fecha_regularizacion: new Date("2026-09-15T21:44:09.559Z"),
+           referencia: null,
+           moneda_id: 1,
+           subtotal: 155,
+           impuesto: 27.9,
+           descuento: 0,
+           descuento_cupon: 0,
+           descuento_promocion: 0,
+           total: 155,
+           observaciones: "5ta prueba de regularización",
+           cliente_id: 6,
+           updated_at: new Date("2026-09-15T21:44:09.627Z"),
+           updated_by: 2,
+           detalles: {
+             deleteMany: {},
+             create: [
+               {
+                 material_id: 5,
+                 almacen_id: 1,
+                 unidad_medida_id: 1,
+                 cantidad: 1,
+                 precio_unit: 120,
+                 descuento: 0,
+                 descuento_cupon: 0,
+                 descuento_promocion: 0,
+                 cupon_id: null,
+                 promocion_id: null,
+                 impuesto: 21.599999999999998,
+                 subtotal: 120,
+                 created_by: 2,
+                 condiciones: {
+                   create: [
+                     {
+                       condicion_id: 1,
+                       esquema_id: 1,
+                       valor_condicion: 120,
+                       simbolo: "S/",
+                       descripcion_corta: "Precio bruto",
+                       tipo: "Precio",
+                       importe: 120,
+                       created_by: 2
+                     },
+                     {
+                       condicion_id: 3,
+                       esquema_id: 1,
+                       valor_condicion: 0,
+                       simbolo: "%",
+                       descripcion_corta: "Descuento",
+                       tipo: "Descuento",
+                       importe: 0,
+                       created_by: 2
+                     },
+                     {
+                       condicion_id: 2,
+                       esquema_id: 1,
+                       valor_condicion: 18,
+                       simbolo: "%",
+                       descripcion_corta: "IGV",
+                       tipo: "Impuesto",
+                       importe: 21.599999999999998,
+                       created_by: 2
+                     }
+                   ]
+                 }
+               },
+               {
+                 material_id: 9,
+                 almacen_id: 1,
+                 unidad_medida_id: 1,
+                 cantidad: 1,
+                 precio_unit: 35,
+                 descuento: 0,
+                 descuento_cupon: 0,
+                 descuento_promocion: 0,
+                 cupon_id: null,
+                 promocion_id: null,
+                 impuesto: 6.3,
+                 subtotal: 35,
+                 created_by: 2,
+                 condiciones: {
+                   create: [
+                     {
+                       condicion_id: 1,
+                       esquema_id: 1,
+                       valor_condicion: 35,
+                       simbolo: "S/",
+                       descripcion_corta: "Precio bruto",
+                       tipo: "Precio",
+                       importe: 35,
+                       created_by: 2
+                     },
+                     {
+                       condicion_id: 3,
+                       esquema_id: 1,
+                       valor_condicion: 0,
+                       simbolo: "%",
+                       descripcion_corta: "Descuento",
+                       tipo: "Descuento",
+                       importe: 0,
+                       created_by: 2
+                     },
+                     {
+                       condicion_id: 2,
+                       esquema_id: 1,
+                       valor_condicion: 18,
+                       simbolo: "%",
+                       descripcion_corta: "IGV",
+                       tipo: "Impuesto",
+                       importe: 6.3,
+                       created_by: 2
+                     }
+                   ]
+                 }
+               }
+             ]
+           },
+           medios_pago: {
+             deleteMany: {},
+             create: [
+               {
+                 medio_pago_id: 2,
+                 importe: 100,
+                 numero_operacion: null
+               },
+               {
+                 medio_pago_id: 1,
+                 importe: 20,
+                 numero_operacion: null
+               }
+             ]
+           },
+       ?   caja_id?: Int | NullableIntFieldUpdateOperationsInput | Null,
+       ?   numero_pedido?: String | StringFieldUpdateOperationsInput,
+       ?   comprobante?: String | NullableStringFieldUpdateOperationsInput | Null,
+       ?   created_at?: DateTime | DateTimeFieldUpdateOperationsInput,
+       ?   created_by?: Int | NullableIntFieldUpdateOperationsInput | Null,
+       ?   cliente?: ClienteUpdateOneRequiredWithoutVentasNestedInput,
+       ?   empresa?: EmpresaUpdateOneRequiredWithoutVentasNestedInput,
+       ?   sucursal?: SucursalUpdateOneRequiredWithoutVentasNestedInput,
+       ?   moneda?: MonedaUpdateOneRequiredWithoutVentasNestedInput,
+       ?   clase_pedido?: ClasePedidoUpdateOneRequiredWithoutVentasNestedInput,
+       ?   dcto_identificacion?: DocumentoIdentificacionUpdateOneRequiredWithoutVentasNestedInput
+         },
+         include: {
+           detalles: {
+             include: {
+               condiciones: true,
+               material: true
+             }
+           },
+           medios_pago: {
+             include: {
+               medio_pago: true
+             }
+           }
+         }
+       })
+
+Unknown argument `sucursal_id`. Did you mean `sucursal`? Available options are marked with ?.
+    at <unknown> (src\app\api\ventas\route.ts:862:39)
+    at async (src\app\api\ventas\route.ts:862:24)
+    at async PATCH (src\app\api\ventas\route.ts:825:23)
+  860 |         })
+  861 |
+> 862 |         const result = await tx.venta.update({
+      |                                       ^
+  863 |           where: { id: ventaId },
+  864 |           data: {
+  865 |             sucursal_id, {
+  clientVersion: '7.10.0'
+}
+ PATCH /api/ventas?id=37 500 in 2.3s (next.js: 10ms, proxy.ts: 15ms, application-code: 2.3s)
+[PROXY] POST /api/auth/logout
+ POST /api/auth/logout 200 in 205ms (next.js: 187ms, proxy.ts: 9ms, application-code: 9ms)
+[PROXY] GET /login
+ GET /login 200 in 205ms (next.js: 11ms, proxy.ts: 9ms, application-code: 186ms)
+[PROXY] GET /api/auth/me
+[AUTH] Using cookie token, length: 0
+[AUTH] No token found
+[AUTH] No valid token found in request
+ GET /api/auth/me 200 in 32ms (next.js: 9ms, proxy.ts: 11ms, application-code: 13ms)
+[PROXY] GET /api/auth/me
+[AUTH] Using cookie token, length: 0
+[AUTH] No token found
+[AUTH] No valid token found in request
+ GET /api/auth/me 200 in 25ms (next.js: 6ms, proxy.ts: 12ms, application-code: 7ms)
+[?25h
+[ELIFECYCLE] Command failed with exit code 1.

@@ -758,6 +758,10 @@ model Venta {
   descuento_promocion   Decimal                 @default(0) @db.Decimal(12, 2)
   total                 Decimal                 @default(0) @db.Decimal(12, 2)
   fecha_venta           DateTime                @default(now())
+  motivo                String?
+  hora_venta            String?
+  fecha_regularizacion  DateTime?
+  referencia            String?
   observaciones         String?
   created_at            DateTime                @default(now())
   updated_at            DateTime                @updatedAt

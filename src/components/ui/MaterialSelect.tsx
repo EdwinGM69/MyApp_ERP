@@ -21,9 +21,10 @@ interface MaterialSelectProps {
   className?: string
   selectedLabel?: string
   excludeIds?: number[]
+  monedaId?: number | null
 }
 
-export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar material...', className, selectedLabel, excludeIds }: MaterialSelectProps) {
+export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar material...', className, selectedLabel, excludeIds, monedaId }: MaterialSelectProps) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [options, setOptions] = useState<Material[]>([])
@@ -94,7 +95,7 @@ export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar ma
       if (!open) return
       setLoading(true)
       try {
-        const res = await apiFetch(`/api/materiales?search=${search}&pageSize=10`)
+        const res = await apiFetch(`/api/materiales?search=${search}&pageSize=10${monedaId ? `&monedaId=${monedaId}` : ''}`)
         const json = await res.json()
         let fetchedData = json.data || []
         if (excludeIds && excludeIds.length > 0) {

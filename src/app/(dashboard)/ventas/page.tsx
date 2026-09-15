@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, Fragment } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { formatCurrency } from '@/lib/utils'
 import { apiFetch, useAuthStore } from '@/hooks/useAuth'
@@ -127,10 +128,11 @@ function getStatusVariant(estado: string): keyof typeof STATUS_COLORS {
 }
 
 // ── VentaCard ────────────────────────────────────────────────
-function VentaCard({ venta, monedaSimbolo, onAnular, puedeExportar, puedeAnular }: {
+function VentaCard({ venta, monedaSimbolo, onAnular, onEdit, puedeExportar, puedeAnular }: {
   venta: Venta
   monedaSimbolo: string
   onAnular: (id: string) => void
+  onEdit: (id: string) => void
   puedeExportar?: boolean
   puedeAnular?: boolean
 }) {
@@ -217,6 +219,15 @@ function VentaCard({ venta, monedaSimbolo, onAnular, puedeExportar, puedeAnular 
           {puedeExportar && (
             <button className="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 transition-all flex items-center justify-center active:scale-90" title="Imprimir">
               <span className="material-symbols-outlined text-[16px]">print</span>
+            </button>
+          )}
+          {venta.estado === 'borrador' && (
+            <button
+              onClick={() => onEdit(venta.id)}
+              className="w-7 h-7 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-400 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-500/10 transition-all flex items-center justify-center active:scale-90"
+              title="Editar"
+            >
+              <span className="material-symbols-outlined text-[16px]">edit</span>
             </button>
           )}
           {puedeAnular && (
@@ -433,6 +444,7 @@ function VentaCard({ venta, monedaSimbolo, onAnular, puedeExportar, puedeAnular 
 
 // ── VentasPage ──────────────────────────────────────────────
 export default function VentasPage() {
+  const router = useRouter()
   const { currentSucursal } = useSucursal()
   const [ventas, setVentas] = useState<Venta[]>([])
   const [loading, setLoading] = useState(true)
@@ -467,6 +479,10 @@ export default function VentasPage() {
   useEffect(() => { fetchVentas() }, [fetchVentas])
 
   const handleSearchSubmit = (e: React.FormEvent) => { e.preventDefault(); setPage(1); fetchVentas() }
+
+  const handleEdit = (id: string) => {
+    router.push(`/ventas/nueva?editar=${id}`)
+  }
 
   const handleAnular = async (id: string) => {
     if (!confirm('¿Está seguro de que desea anular esta venta?')) return
@@ -546,7 +562,7 @@ export default function VentasPage() {
                 {permisos.crear && (
                   <Link href="/ventas/nueva" className="h-11 px-6 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-[10px] font-black uppercase tracking-[0.15em] transition-all shadow-lg shadow-blue-600/20 flex items-center gap-2 active:scale-95">
                     <span className="material-symbols-outlined text-[18px]">add</span>
-                    Nueva Venta
+                    Regularizar Venta
                   </Link>
                 )}
               </div>
@@ -573,6 +589,7 @@ export default function VentasPage() {
                     venta={venta}
                     monedaSimbolo={monedaSimbolo}
                     onAnular={handleAnular}
+                    onEdit={handleEdit}
                     puedeExportar={permisos.exportar}
                     puedeAnular={permisos.borrar}
                   />
