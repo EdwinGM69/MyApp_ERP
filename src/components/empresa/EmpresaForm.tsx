@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { apiFetch, useAuthStore } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
@@ -31,6 +31,8 @@ export default function EmpresaForm() {
   const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [logoPreview, setLogoPreview] = useState<string>('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Form State
   const [formData, setFormData] = useState<Empresa>({
@@ -104,6 +106,20 @@ export default function EmpresaForm() {
     setFormData(prev => ({ ...prev, [name]: value }))
   }
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        setLogoPreview(event.target?.result as string)
+        setFormData(prev => ({ ...prev, logo_url: `/uploads/${file.name}` }))
+      }
+      reader.readAsDataURL(file)
+      toast.success('Logo cargado. Para que se vea siempre, asegúrate de poner el archivo en la carpeta "public/uploads" de tu proyecto.')
+    }
+    e.target.value = ''
+  }
+
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center p-12">
@@ -114,6 +130,8 @@ export default function EmpresaForm() {
       </div>
     )
   }
+
+  const logoDisplay = logoPreview || formData.logo_url || ''
 
   return (
     <div className="flex flex-col flex-1 bg-slate-50/50">
@@ -254,23 +272,30 @@ export default function EmpresaForm() {
               <div className="p-6">
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4">Logo de la Empresa</p>
                 <div className="group relative w-full aspect-square max-w-[200px] mx-auto bg-slate-50 dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 flex flex-col items-center justify-center p-4 transition-all hover:border-blue-500/50">
-                  {formData.logo_url ? (
-                    <img src={formData.logo_url} alt="Logo" className="max-h-full max-w-full object-contain" />
+                  {logoDisplay ? (
+                    <img src={logoDisplay} alt="Logo" className="max-h-full max-w-full object-contain" />
                   ) : (
                     <div className="flex flex-col items-center text-center">
                       <div className="size-12 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400 mb-4">
                         <span className="material-symbols-outlined text-3xl">image</span>
                       </div>
-                      <button type="button" className="text-[11px] font-black text-blue-600 uppercase tracking-tight hover:underline">Subir nuevo logo</button>
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="text-[11px] font-black text-blue-600 uppercase tracking-tight hover:underline">Subir nuevo logo</button>
                       <p className="text-[9px] text-slate-400 font-medium mt-1 uppercase tracking-tighter">PNG, JPG hasta 5MB</p>
                     </div>
                   )}
                   {/* Hidden Overlay for actions if logo exists */}
-                  {formData.logo_url && (
+                  {logoDisplay && (
                     <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-2xl">
-                       <button type="button" className="bg-white text-slate-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight shadow-lg">Cambiar</button>
+                       <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-white text-slate-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight shadow-lg">Cambiar</button>
                     </div>
                   )}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleLogoChange}
+                  />
                 </div>
                 
                 <div className="mt-8 p-4 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-500/10">
