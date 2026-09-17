@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { generateMovNumber } from '@/lib/utils'
 import { businessToday, dayRangeUtc } from '@/lib/dates'
 
+/* Comentario de prueba */
 const ventaSchema = z.object({
   numero_pedido: z.string(),
   comprobante: z.string().optional(),
@@ -993,7 +994,7 @@ export async function PATCH(req: NextRequest) {
           medios_pago: medios_pago || [],
           sucursal_id,
           moneda_id,
-clienteId: finalClienteId ?? ventaExistente.cliente_id,
+          clienteId: finalClienteId ?? ventaExistente.cliente_id,
           clasePedido,
           signoOrigen,
           materialDataMap,

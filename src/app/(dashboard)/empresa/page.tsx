@@ -1,6 +1,7 @@
 import EmpresaForm from '@/components/empresa/EmpresaForm'
 import Topbar from '@/components/layout/Topbar'
 
+/* Comentario de prueba */
 export default function EmpresaPage() {
   return (
     <div className="flex flex-col flex-1 overflow-hidden min-h-0">
