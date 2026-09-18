@@ -72,7 +72,6 @@ export async function GET(req: NextRequest) {
     if (empresaId && empresa.moneda_default) {
       moneda = await prisma.moneda.findFirst({
         where: { 
-          empresa_id: empresaId,
           abreviatura: empresa.moneda_default
         }
       })

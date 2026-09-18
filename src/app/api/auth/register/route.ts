@@ -171,14 +171,15 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      // Seed default catalogs so the onboarding dropdowns have data
+      // Seed default global catalogs so the onboarding dropdowns have data
       await tx.documentoIdentificacion.createMany({
         data: [
-          { empresa_id: empresa.id, descripcion: 'DNI', abreviatura: 'DNI', tipo: 'natural', created_by: nuevoUsuario.id },
-          { empresa_id: empresa.id, descripcion: 'RUC', abreviatura: 'RUC', tipo: 'juridica', created_by: nuevoUsuario.id },
-          { empresa_id: empresa.id, descripcion: 'Carnet de Extranjería', abreviatura: 'CE', tipo: 'natural', created_by: nuevoUsuario.id },
-          { empresa_id: empresa.id, descripcion: 'Pasaporte', abreviatura: 'PAS', tipo: 'natural', created_by: nuevoUsuario.id },
+          { descripcion: 'DNI', abreviatura: 'DNI', tipo: 'natural', created_by: nuevoUsuario.id },
+          { descripcion: 'RUC', abreviatura: 'RUC', tipo: 'juridica', created_by: nuevoUsuario.id },
+          { descripcion: 'Carnet de Extranjería', abreviatura: 'CE', tipo: 'natural', created_by: nuevoUsuario.id },
+          { descripcion: 'Pasaporte', abreviatura: 'PAS', tipo: 'natural', created_by: nuevoUsuario.id },
         ],
+        skipDuplicates: true,
       })
 
       const industriasDefault = [
@@ -196,10 +197,10 @@ export async function POST(req: NextRequest) {
 
       await tx.industria.createMany({
         data: industriasDefault.map((descripcion) => ({
-          empresa_id: empresa.id,
           descripcion,
           created_by: nuevoUsuario.id,
         })),
+        skipDuplicates: true,
       })
 
       // Create subscription for the selected plan

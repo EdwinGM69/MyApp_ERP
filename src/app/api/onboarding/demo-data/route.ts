@@ -64,12 +64,11 @@ export async function POST(req: NextRequest) {
 
       // Monedas PEN/USD (needed for the open cash session)
       let usd = await tx.moneda.findFirst({
-        where: { empresa_id: empresaId, abreviatura: 'USD' },
+        where: { abreviatura: 'USD' },
       })
       if (!usd) {
         usd = await tx.moneda.create({
           data: {
-            empresa_id: empresaId,
             descripcion: 'Dólar Americano',
             abreviatura: 'USD',
             simbolo: '$',
@@ -80,12 +79,11 @@ export async function POST(req: NextRequest) {
       }
 
       let pen = await tx.moneda.findFirst({
-        where: { empresa_id: empresaId, abreviatura: 'PEN' },
+        where: { abreviatura: 'PEN' },
       })
       if (!pen) {
         pen = await tx.moneda.create({
           data: {
-            empresa_id: empresaId,
             descripcion: 'Sol Peruano',
             abreviatura: 'PEN',
             simbolo: 'S/',

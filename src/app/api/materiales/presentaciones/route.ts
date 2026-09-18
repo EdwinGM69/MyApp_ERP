@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
   try {
-    const { empresaId } = await requireAuth(req)
+    await requireAuth(req)
     const { searchParams } = new URL(req.url)
     const materialId = searchParams.get('materialId')
     const pageSize = searchParams.get('pageSize') ? parseInt(searchParams.get('pageSize')!) : undefined

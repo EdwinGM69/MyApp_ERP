@@ -13,13 +13,13 @@ const documentoSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const { empresaId } = await requireAuth(req)
+    await requireAuth(req)
     const { searchParams } = req.nextUrl
 
     const id = searchParams.get('id')
     if (id) {
       const documento = await prisma.documentoIdentificacion.findUnique({
-        where: { id: Number(id), empresa_id: empresaId },
+        where: { id: Number(id) },
         include: {
           usuario_creador: { select: { nombre: true } },
           usuario_modificador: { select: { nombre: true } },
@@ -33,7 +33,6 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') ?? ''
 
     const where = {
-      empresa_id: empresaId,
       ...(search ? {
         OR: [
           { descripcion: { contains: search, mode: 'insensitive' as const } },
@@ -64,7 +63,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { empresaId, userId } = await requireAuth(req)
+    const { userId } = await requireAuth(req)
     const body = await req.json()
 
     const data = documentoSchema.parse(body)
@@ -72,7 +71,6 @@ export async function POST(req: NextRequest) {
     const documento = await prisma.documentoIdentificacion.create({
       data: {
         ...data,
-        empresa_id: empresaId,
         created_by: userId
       },
     })
@@ -93,13 +91,13 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { empresaId, userId } = await requireAuth(req)
+    const { userId } = await requireAuth(req)
     const body = await req.json()
     const { id, ...rest } = body
     const data = documentoSchema.parse(rest)
 
     const documento = await prisma.documentoIdentificacion.update({
-      where: { id: Number(id), empresa_id: empresaId },
+      where: { id: Number(id) },
       data: {
         ...data,
         updated_by: userId
@@ -121,12 +119,12 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { empresaId } = await requireAuth(req)
+    await requireAuth(req)
     const body = await req.json()
     const { id } = body
 
     await prisma.documentoIdentificacion.update({
-      where: { id: Number(id), empresa_id: empresaId },
+      where: { id: Number(id) },
       data: { activo: false }
     })
 

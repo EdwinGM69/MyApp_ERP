@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { apiFetch } from '@/hooks/useAuth'
 import toast from 'react-hot-toast'
@@ -36,7 +37,25 @@ interface Usuario {
 }
 
 export default function UsuariosPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-full">
+          <span className="material-symbols-outlined animate-spin text-4xl text-primary">
+            progress_activity
+          </span>
+        </div>
+      }
+    >
+      <UsuariosContent />
+    </Suspense>
+  )
+}
+
+function UsuariosContent() {
   const permisos = usePermisos()
+  const searchParams = useSearchParams()
+  const targetUserId = Number(searchParams.get('userId')) || null
   // Master List State
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [loadingMaster, setLoadingMaster] = useState(true)
@@ -63,8 +82,10 @@ export default function UsuariosPage() {
 
       // Auto-select first user if none selected and we have data
       if (json.data?.length > 0 && !selectedId) {
-        setSelectedId(json.data[0].id)
-        setSelected(json.data[0])
+        const target = targetUserId ? json.data.find((u: Usuario) => u.id === targetUserId) : null
+        const pick = target || json.data[0]
+        setSelectedId(pick.id)
+        setSelected(pick)
       } else if (!json.data?.length) {
         setSelectedId(null)
         setSelected(null)
@@ -74,7 +95,7 @@ export default function UsuariosPage() {
     } finally {
       setLoadingMaster(false)
     }
-  }, [search, selectedId])
+  }, [search, selectedId, targetUserId])
 
   useEffect(() => {
     fetchList()
@@ -85,6 +106,17 @@ export default function UsuariosPage() {
       setSelected(usuarios.find(u => u.id === selectedId) || null)
     }
   }, [selectedId, usuarios])
+
+  // Si se solicita un usuario concreto (ej: "Gestionar tu cuenta"), seleccionarlo
+  useEffect(() => {
+    if (!targetUserId) return
+    const target = usuarios.find(u => u.id === targetUserId)
+    if (target) {
+      setSelectedId(target.id)
+      setSelected(target)
+      setIsEditing(false)
+    }
+  }, [targetUserId, usuarios])
 
   const handleSelectUser = (usuario: Usuario) => {
     setSelectedId(usuario.id)

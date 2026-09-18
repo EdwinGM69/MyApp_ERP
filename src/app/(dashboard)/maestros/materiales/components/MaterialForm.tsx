@@ -37,6 +37,11 @@ interface Presentacion {
   id?: number
   unidad_medida_id: number
   unidad_control: boolean
+  venta_fraccionada?: boolean
+  cantidad_minima?: number | null
+  cantidad_maxima?: number | null
+  cantidad_incremento?: number | null
+  precision?: number
   activo: boolean
   // For display purposes
   unidad_medida?: { id: number, descripcion: string, abreviatura: string }
@@ -195,6 +200,11 @@ export default function MaterialForm({ materialToEdit }: MaterialFormProps) {
         id: p.id,
         unidad_medida_id: p.unidad_medida_id,
         unidad_control: p.unidad_control,
+        venta_fraccionada: p.venta_fraccionada ?? false,
+        cantidad_minima: p.cantidad_minima ?? null,
+        cantidad_maxima: p.cantidad_maxima ?? null,
+        cantidad_incremento: p.cantidad_incremento ?? null,
+        precision: p.precision ?? 2,
         activo: p.activo,
         unidad_medida: p.unidad_medida
       })) || [])
@@ -231,6 +241,11 @@ export default function MaterialForm({ materialToEdit }: MaterialFormProps) {
         finalPresentaciones.push({
           unidad_medida_id: unidadMedidaId,
           unidad_control: true,
+          venta_fraccionada: false,
+          cantidad_minima: null,
+          cantidad_maxima: null,
+          cantidad_incremento: null,
+          precision: 2,
           activo: true
         })
       }
@@ -270,7 +285,17 @@ export default function MaterialForm({ materialToEdit }: MaterialFormProps) {
       moneda_costo_promedio_id: monedaCostoPromedioId,
       proveedor_id: proveedorId === '' ? null : proveedorId,
       activo,
-      presentaciones: finalPresentaciones.map(p => ({ id: p.id, unidad_medida_id: p.unidad_medida_id, unidad_control: p.unidad_control, activo: p.activo })),
+      presentaciones: finalPresentaciones.map(p => ({
+        id: p.id,
+        unidad_medida_id: p.unidad_medida_id,
+        unidad_control: p.unidad_control,
+        venta_fraccionada: p.venta_fraccionada ?? false,
+        cantidad_minima: p.cantidad_minima ?? null,
+        cantidad_maxima: p.cantidad_maxima ?? null,
+        cantidad_incremento: p.cantidad_incremento ?? null,
+        precision: p.precision ?? 2,
+        activo: p.activo
+      })),
       sustitutos: sustitutos.map(s => ({ sustituto_id: s.sustituto_id })),
       componentes: componentes.map(c => ({ componente_id: c.componente_id, cantidad: c.cantidad, unidad_medida_id: c.unidad_medida_id }))
     }
@@ -294,6 +319,10 @@ export default function MaterialForm({ materialToEdit }: MaterialFormProps) {
     } finally {
       setSaving(false)
     }
+  }
+
+  const updatePresentacion = (unidadId: number, patch: Partial<Presentacion>) => {
+    setPresentaciones(prev => prev.map(p => p.unidad_medida_id === unidadId ? { ...p, ...patch } : p))
   }
 
   const tabs = [
@@ -709,6 +738,11 @@ export default function MaterialForm({ materialToEdit }: MaterialFormProps) {
                           setPresentaciones([...presentaciones, {
                             unidad_medida_id: uni.id,
                             unidad_control: false,
+                            venta_fraccionada: false,
+                            cantidad_minima: null,
+                            cantidad_maxima: null,
+                            cantidad_incremento: null,
+                            precision: 2,
                             activo: true,
                             unidad_medida: uni
                           }])
@@ -735,6 +769,70 @@ export default function MaterialForm({ materialToEdit }: MaterialFormProps) {
                       key: 'unidad_control',
                       header: 'Control de Unidad',
                       render: (p: Presentacion) => p.unidad_control ? 'Sí' : 'No'
+                    },
+                    {
+                      key: 'venta_fraccionada',
+                      header: 'Venta Fraccionada',
+                      align: 'center',
+                      render: (p: Presentacion) => (
+                        <input
+                          type="checkbox"
+                          checked={p.venta_fraccionada ?? false}
+                          onChange={e => updatePresentacion(p.unidad_medida_id, { venta_fraccionada: e.target.checked })}
+                          className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/30"
+                        />
+                      )
+                    },
+                    {
+                      key: 'cantidad_minima',
+                      header: 'Cant. Mín.',
+                      render: (p: Presentacion) => (
+                        <input
+                          type="number" step="0.001" min="0"
+                          value={p.cantidad_minima ?? ''}
+                          onChange={e => updatePresentacion(p.unidad_medida_id, { cantidad_minima: e.target.value === '' ? null : Number(e.target.value) })}
+                          className="w-24 px-2 py-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none focus:border-blue-500"
+                          placeholder="--"
+                        />
+                      )
+                    },
+                    {
+                      key: 'cantidad_maxima',
+                      header: 'Cant. Máx.',
+                      render: (p: Presentacion) => (
+                        <input
+                          type="number" step="0.001" min="0"
+                          value={p.cantidad_maxima ?? ''}
+                          onChange={e => updatePresentacion(p.unidad_medida_id, { cantidad_maxima: e.target.value === '' ? null : Number(e.target.value) })}
+                          className="w-24 px-2 py-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none focus:border-blue-500"
+                          placeholder="--"
+                        />
+                      )
+                    },
+                    {
+                      key: 'cantidad_incremento',
+                      header: 'Incremento',
+                      render: (p: Presentacion) => (
+                        <input
+                          type="number" step="0.001" min="0"
+                          value={p.cantidad_incremento ?? ''}
+                          onChange={e => updatePresentacion(p.unidad_medida_id, { cantidad_incremento: e.target.value === '' ? null : Number(e.target.value) })}
+                          className="w-24 px-2 py-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none focus:border-blue-500"
+                          placeholder="--"
+                        />
+                      )
+                    },
+                    {
+                      key: 'precision',
+                      header: 'Precisión',
+                      render: (p: Presentacion) => (
+                        <input
+                          type="number" step="1" min="0" max="6"
+                          value={p.precision ?? 2}
+                          onChange={e => updatePresentacion(p.unidad_medida_id, { precision: e.target.value === '' ? 2 : Number(e.target.value) })}
+                          className="w-16 px-2 py-1 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none focus:border-blue-500"
+                        />
+                      )
                     },
                     {
                       key: 'actions', header: 'Acciones',

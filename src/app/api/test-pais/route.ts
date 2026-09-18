@@ -10,7 +10,6 @@ export async function POST(req: NextRequest) {
         abreviatura: body.abreviatura,
         prefijo_telefonico: body.prefijo_telefonico,
         activo: true,
-        empresa_id: 1, // hardcode for test
         created_by: 1
       }
     })

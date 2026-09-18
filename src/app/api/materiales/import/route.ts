@@ -22,7 +22,8 @@ const importRowSchema = z.object({
   unidad_medida_id: z.coerce.number().optional().nullable(),
   esquema_id: z.coerce.number().optional().nullable(),
   stock_lote: z.boolean().optional(),
-  ubicacion_default_id: z.coerce.number().optional().nullable(),
+  ubicacion: z.union([z.string(), z.number()]).optional().nullable(),
+  ubicacion_default_id: z.union([z.string(), z.number()]).optional().nullable(),
 })
 
 export async function POST(req: NextRequest) {
@@ -73,9 +74,38 @@ export async function POST(req: NextRequest) {
                 })
         */
 
+        const { ubicacion: ubicacionCodigo, ubicacion_default_id: ubicacionDefault, ...materialData } = parsed
+
+        const ubicacionRef = ubicacionCodigo ?? ubicacionDefault
+        let ubicacionDefaultId: number | null = null
+
+        if (ubicacionRef !== undefined && ubicacionRef !== null && String(ubicacionRef).trim() !== '') {
+          const ubicacion = await prisma.ubicacion.findFirst({
+            where: {
+              empresa_id: empresaId,
+              ...(typeof ubicacionRef === 'number'
+                ? { id: ubicacionRef }
+                : { codigo: { equals: String(ubicacionRef).trim(), mode: 'insensitive' as const } }),
+            },
+          })
+
+          if (!ubicacion) {
+            results.errors.push({
+              row: rowNumber,
+              codigo: parsed.codigo,
+              descripcion: parsed.descripcion,
+              error: `La ubicación "${String(ubicacionRef).trim()}" no existe para la empresa.`,
+            })
+            continue
+          }
+
+          ubicacionDefaultId = ubicacion.id
+        }
+
         const materialCreado = await prisma.material.create({
           data: {
-            ...parsed,
+            ...materialData,
+            ubicacion_default_id: ubicacionDefaultId,
             empresa_id: empresaId,
             created_by: userId
           }

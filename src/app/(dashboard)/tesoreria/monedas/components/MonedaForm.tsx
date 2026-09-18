@@ -184,7 +184,7 @@ export default function MonedaForm({ monedaToEdit }: MonedaFormProps) {
               </div>
               <div>
                 <h4 className="text-sm font-black text-slate-900 dark:text-white leading-tight mb-1">Validación de Registro</h4>
-                <p className="text-xs text-slate-500 font-medium">Asegúrese que la abreviatura sea única en su empresa.</p>
+                <p className="text-xs text-slate-500 font-medium">Asegúrese que la abreviatura sea única en el sistema.</p>
               </div>
             </div>
           </div>

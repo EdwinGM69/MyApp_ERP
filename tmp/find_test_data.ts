@@ -17,8 +17,8 @@ async function main() {
   });
   const material = await prisma.material.findFirst({ where: { empresa_id: empresa.id } });
   const almacen = await prisma.almacen.findFirst({ where: { empresa_id: empresa.id } });
-  const um = await prisma.unidadMedida.findFirst({ where: { empresa_id: empresa.id } });
-  const moneda = await prisma.moneda.findFirst({ where: { empresa_id: empresa.id } });
+  const um = await prisma.unidadMedida.findFirst();
+  const moneda = await prisma.moneda.findFirst();
 
   console.log('MOCK_DATA:', JSON.stringify({
     sucursal_id: sucursal?.id,

@@ -6,8 +6,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useAuthStore, apiFetch } from '@/hooks/useAuth'
 import { useSucursal } from '@/contexts/SucursalContext'
-import toast from 'react-hot-toast'
-import UserAccountModal from './UserAccountModal'
 import {
   AREAS,
   AREA_MAP,
@@ -111,12 +109,10 @@ export default function Sidebar() {
   const [busqueda, setBusqueda] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
-  const [accountOpen, setAccountOpen] = useState(false)
 
   const searchRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
 
-  const clearAuth = useAuthStore((s) => s.clearAuth)
   const user = useAuthStore((s) => s.user)
   const { currentSucursal, hasSucursales } = useSucursal()
 
@@ -266,13 +262,6 @@ export default function Sidebar() {
       return !mejor
     }
     return false
-  }
-
-  async function handleLogout() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    clearAuth()
-    toast.success('Sesión cerrada')
-    router.push('/login')
   }
 
   // ------------------------------------------------------------------
@@ -434,45 +423,6 @@ export default function Sidebar() {
           </div>
         )}
 
-      {/* Usuario · Mi cuenta · Cerrar sesión */}
-      <div className="p-3 border-t border-slate-800">
-        <div className="flex items-center gap-3 bg-slate-800/50 border border-slate-700 rounded-xl p-3">
-          <div className="size-9 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
-            {mounted && user?.avatar_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
-            ) : (
-              <span className="material-symbols-outlined text-primary text-lg">person</span>
-            )}
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-white leading-tight truncate">
-              {mounted ? (user?.nombre || 'Usuario') : ''}
-            </p>
-            <p className="text-[11px] text-slate-400 truncate capitalize">
-              {mounted ? (user?.rol || '') : ''}
-            </p>
-          </div>
-          <button
-            onClick={() => setAccountOpen(true)}
-            className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
-            title="Mi cuenta"
-          >
-            <span className="material-symbols-outlined text-lg">manage_accounts</span>
-          </button>
-        </div>
-        <p className="px-3 pt-2 flex items-center gap-1 text-[11px] text-slate-500">
-          <button onClick={() => setAccountOpen(true)} className="hover:text-slate-300 transition-colors">
-            Mi cuenta
-          </button>
-          <span className="text-slate-600">·</span>
-          <button onClick={handleLogout} className="hover:text-slate-300 transition-colors">
-            Cerrar sesión
-          </button>
-        </p>
-      </div>
-
-      <UserAccountModal open={accountOpen} onClose={() => setAccountOpen(false)} />
     </aside>
   )
 }

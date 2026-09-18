@@ -7,23 +7,25 @@ const unidadSchema = z.object({
   id: z.number().optional(),
   descripcion: z.string().min(1),
   abreviatura: z.string().min(1),
+  tipo_unidad: z.enum(['PESO', 'VOLUMEN', 'LONGITUD', 'AREA', 'CANTIDAD']).optional(),
   unidad_multiplo: z.number().min(0.01),
   activo: z.boolean().optional(),
 })
 
 export async function GET(req: NextRequest) {
   try {
-    const { empresaId } = await requireAuth(req)
+    await requireAuth(req)
     const { searchParams } = req.nextUrl
 
     const id = searchParams.get('id')
     if (id) {
       const unidad = await prisma.unidadMedida.findUnique({
-        where: { id: Number(id), empresa_id: empresaId },
+        where: { id: Number(id) },
         select: {
           id: true,
           descripcion: true,
           abreviatura: true,
+          tipo_unidad: true,
           unidad_multiplo: true,
           activo: true,
           created_at: true,
@@ -40,7 +42,6 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') ?? ''
 
     const where = {
-      empresa_id: empresaId,
       ...(search ? {
         OR: [
           { descripcion: { contains: search, mode: 'insensitive' as const } },
@@ -60,6 +61,7 @@ export async function GET(req: NextRequest) {
           id: true,
           descripcion: true,
           abreviatura: true,
+          tipo_unidad: true,
           unidad_multiplo: true,
           activo: true,
           created_at: true,
@@ -83,7 +85,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { empresaId, userId } = await requireAuth(req)
+    const { userId } = await requireAuth(req)
     const body = await req.json()
 
     const data = unidadSchema.parse(body)
@@ -98,7 +100,6 @@ export async function POST(req: NextRequest) {
       if (orConditions.length > 0) {
         const existente = await prisma.unidadMedida.findFirst({
           where: {
-            empresa_id: empresaId,
             OR: orConditions,
           }
         })
@@ -115,7 +116,6 @@ export async function POST(req: NextRequest) {
     const unidad = await prisma.unidadMedida.create({
       data: {
         ...createData,
-        empresa_id: empresaId,
         created_by: userId
       },
     })
@@ -127,7 +127,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: err.errors.map(e => e.message).join(', ') }, { status: 400 })
     }
     if (err.code === 'P2002') {
-      return NextResponse.json({ error: 'La abreviatura ya existe para esta empresa.' }, { status: 400 })
+      return NextResponse.json({ error: 'La abreviatura ya existe.' }, { status: 400 })
     }
     return NextResponse.json({ error: 'Error al crear la unidad de medida' }, { status: 500 })
   }
@@ -135,7 +135,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { empresaId, userId } = await requireAuth(req)
+    const { userId } = await requireAuth(req)
     const body = await req.json()
 
     const { id, ...rest } = body
@@ -152,7 +152,6 @@ export async function PUT(req: NextRequest) {
       if (orConditions.length > 0) {
         const existente = await prisma.unidadMedida.findFirst({
           where: {
-            empresa_id: empresaId,
             NOT: { id: Number(id) },
             OR: orConditions,
           }
@@ -168,7 +167,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const unidad = await prisma.unidadMedida.update({
-      where: { id: Number(id), empresa_id: empresaId },
+      where: { id: Number(id) },
       data: {
         ...data,
         updated_by: userId
@@ -182,7 +181,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: err.errors.map(e => e.message).join(', ') }, { status: 400 })
     }
     if (err.code === 'P2002') {
-      return NextResponse.json({ error: 'La abreviatura ya existe para esta empresa.' }, { status: 400 })
+      return NextResponse.json({ error: 'La abreviatura ya existe.' }, { status: 400 })
     }
     return NextResponse.json({ error: 'Error al actualizar la unidad de medida' }, { status: 500 })
   }
@@ -190,14 +189,14 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { empresaId, userId } = await requireAuth(req)
+    const { userId } = await requireAuth(req)
     const { searchParams } = req.nextUrl
     const id = searchParams.get('id')
 
     if (!id) return NextResponse.json({ error: 'ID requerido' }, { status: 400 })
 
     await prisma.unidadMedida.update({
-      where: { id: Number(id), empresa_id: empresaId },
+      where: { id: Number(id) },
       data: {
         activo: false,
         updated_by: userId

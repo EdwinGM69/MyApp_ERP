@@ -27,6 +27,14 @@ enum PeriodoReinicio {
   NUNCA
 }
 
+enum TipoUnidadMedida {
+  PESO
+  VOLUMEN
+  LONGITUD
+  AREA
+  CANTIDAD
+}
+
 model Empresa {
   id                       Int                             @id @default(autoincrement())
   nombre                   String
@@ -47,11 +55,9 @@ model Empresa {
   updated_by               Int?
   industria                Industria?                      @relation("EmpresaIndustria", fields: [industria_id], references: [id])
   almacenes                Almacen[]
-  bancos                   Banco[]
   cajas                    Caja[]
   clientes                 Cliente[]
   cupones                  Cupon[]
-  documentosIdentificacion DocumentoIdentificacion[]
   esquemaMateriales        EsquemaMaterial[]
   EsquemaMaterialLog       EsquemaMaterialLog[]
   esquemaReglas            EsquemaRegla[]
@@ -59,20 +65,16 @@ model Empresa {
   esquemasValoracion       EsquemaValoracion[]
   esquemaValoracionLog     EsquemaValoracionLog[]
   impuestos                Impuesto[]
-  industrias               Industria[]                     @relation("EmpresaIndustrias")
   marcas                   Marca[]
   materiales               Material[]
   materialCategorias       MaterialCategoria[]
   materialCostos           MaterialCosto[]
   materialTipos            MaterialTipo[]
-  monedas                  Moneda[]
   movimientos              MovimientoAlmacen[]
-  paises                   Pais[]
   promociones              Promocion[]
   proveedores              Proveedor[]
   sucursales               Sucursal[]
   tiposOperacion           TipoOperacion[]
-  unidadesMedida           UnidadMedida[]
   usuarios                 Usuario[]
   ventas                   Venta[]
   ubicaciones              Ubicacion[]
@@ -92,7 +94,6 @@ model Empresa {
   esquemas_calculo         EsquemaCalculo[]
   clases_pedido            ClasePedido[]
   correlativos             Correlativo[]
-  monedas_denominacion     MonedaDenominacion[]
   transacciones_caja       TransaccionCaja[]
   flujos_documentos        FlujoDocumentos[]
   parametros_sistema       ParametroSistema[]
@@ -378,6 +379,11 @@ model MaterialPresentacion {
   material_id         Int
   unidad_medida_id    Int
   unidad_control      Boolean      @default(false)
+  venta_fraccionada   Boolean      @default(false)
+  cantidad_minima     Decimal?     @db.Decimal(12, 3)
+  cantidad_maxima     Decimal?     @db.Decimal(12, 3)
+  cantidad_incremento Decimal?     @db.Decimal(12, 3)
+  precision           Int          @default(2)
   activo              Boolean      @default(true)
   created_at          DateTime     @default(now())
   updated_at          DateTime     @updatedAt
@@ -1106,9 +1112,9 @@ model MaterialTipo {
 
 model UnidadMedida {
   id                   Int                        @id @default(autoincrement())
-  empresa_id           Int
   descripcion          String
   abreviatura          String
+  tipo_unidad          TipoUnidadMedida            @default(CANTIDAD)
   unidad_multiplo      Decimal                    @db.Decimal(12, 3)
   activo               Boolean                    @default(true)
   created_at           DateTime                   @default(now())
@@ -1120,18 +1126,16 @@ model UnidadMedida {
   stock_historial      StockMaterialHistorial[]
   componentes          MaterialComponente[]
   usuario_creador      Usuario?                   @relation("UnidadCreador", fields: [created_by], references: [id])
-  empresa              Empresa                    @relation(fields: [empresa_id], references: [id])
   usuario_modificador  Usuario?                   @relation("UnidadModificador", fields: [updated_by], references: [id])
   venta_detalles       VentaDetalle[]
   movimientos_detalles MovimientoAlmacenDetalle[]
   unidades             MaterialPresentacion[]
 
-  @@unique([empresa_id, abreviatura])
+  @@unique([abreviatura])
 }
 
 model Moneda {
   id                        Int                  @id @default(autoincrement())
-  empresa_id                Int
   descripcion               String
   abreviatura               String
   simbolo                   String
@@ -1145,7 +1149,6 @@ model Moneda {
   materiales_precio_compra  Material[]           @relation("MonedaPrecioCompra")
   material_costos           MaterialCosto[]
   usuario_creador           Usuario?             @relation("MonedaCreador", fields: [created_by], references: [id])
-  empresa                   Empresa              @relation(fields: [empresa_id], references: [id])
   usuario_modificador       Usuario?             @relation("MonedaModificador", fields: [updated_by], references: [id])
   tipos_cambio_base         TipoCambio[]         @relation("TipoCambioMonedaBase")
   tipos_cambio_cotizada     TipoCambio[]         @relation("TipoCambioMonedaCotizada")
@@ -1157,12 +1160,11 @@ model Moneda {
   cupones                   Cupon[]
   suscripcion_periodos      SuscripcionPeriodo[]
 
-  @@unique([empresa_id, abreviatura])
+  @@unique([abreviatura])
 }
 
 model Industria {
   id                  Int         @id @default(autoincrement())
-  empresa_id          Int
   descripcion         String
   activo              Boolean     @default(true)
   created_at          DateTime    @default(now())
@@ -1170,17 +1172,15 @@ model Industria {
   created_by          Int?
   updated_by          Int?
   usuario_creador     Usuario?    @relation("IndustriaCreador", fields: [created_by], references: [id])
-  empresa             Empresa     @relation("EmpresaIndustrias", fields: [empresa_id], references: [id])
   usuario_modificador Usuario?    @relation("IndustriaModificador", fields: [updated_by], references: [id])
   proveedores         Proveedor[]
   empresas            Empresa[]   @relation("EmpresaIndustria")
 
-  @@unique([empresa_id, descripcion])
+  @@unique([descripcion])
 }
 
 model DocumentoIdentificacion {
   id                  Int         @id @default(autoincrement())
-  empresa_id          Int
   descripcion         String
   abreviatura         String
   tipo                String      @default("natural")
@@ -1191,18 +1191,16 @@ model DocumentoIdentificacion {
   created_by          Int?
   updated_by          Int?
   usuario_creador     Usuario?    @relation("DocumentoCreador", fields: [created_by], references: [id])
-  empresa             Empresa     @relation(fields: [empresa_id], references: [id])
   usuario_modificador Usuario?    @relation("DocumentoModificador", fields: [updated_by], references: [id])
   proveedores         Proveedor[]
   ventas              Venta[]
 
-  @@unique([empresa_id, descripcion])
-  @@unique([empresa_id, abreviatura])
+  @@unique([descripcion])
+  @@unique([abreviatura])
 }
 
 model Pais {
   id                  Int      @id @default(autoincrement())
-  empresa_id          Int
   descripcion         String
   abreviatura         String
   prefijo_telefonico  String?
@@ -1213,15 +1211,13 @@ model Pais {
   updated_by          Int?
   bancos              Banco[]
   usuario_creador     Usuario? @relation("PaisCreador", fields: [created_by], references: [id])
-  empresa             Empresa  @relation(fields: [empresa_id], references: [id])
   usuario_modificador Usuario? @relation("PaisModificador", fields: [updated_by], references: [id])
 
-  @@unique([empresa_id, descripcion])
+  @@unique([descripcion])
 }
 
 model Banco {
   id                  Int               @id @default(autoincrement())
-  empresa_id          Int
   codigo              String
   descripcion         String
   pais_id             Int?
@@ -1232,13 +1228,12 @@ model Banco {
   created_by          Int?
   updated_by          Int?
   usuario_creador     Usuario?          @relation("BancoCreador", fields: [created_by], references: [id])
-  empresa             Empresa           @relation(fields: [empresa_id], references: [id])
   pais                Pais?             @relation(fields: [pais_id], references: [id])
   usuario_modificador Usuario?          @relation("BancoModificador", fields: [updated_by], references: [id])
   proveedores         Proveedor[]
   tipos_cuenta        TipoCuentaBanco[]
 
-  @@unique([empresa_id, codigo, descripcion])
+  @@unique([codigo, descripcion])
 }
 
 model TipoCuentaBanco {
@@ -1779,7 +1774,6 @@ model Correlativo {
 
 model MonedaDenominacion {
   id         Int      @id @default(autoincrement())
-  empresa_id Int
   moneda_id  Int
   valor      Decimal  @db.Decimal(10, 2)
   tipo       String // 'Billete' or 'Moneda'
@@ -1790,13 +1784,12 @@ model MonedaDenominacion {
   created_by Int?
   updated_by Int?
 
-  empresa           Empresa                       @relation(fields: [empresa_id], references: [id])
   moneda            Moneda                        @relation(fields: [moneda_id], references: [id])
   caja_gestion      CajaGestionDenominacion[]
   transaccion_pagos TransaccionPagoDenominacion[]
 
-  @@unique([empresa_id, moneda_id, valor])
-  @@index([empresa_id, moneda_id])
+  @@unique([moneda_id, valor])
+  @@index([moneda_id])
 }
 
 model FlujoDocumentos {

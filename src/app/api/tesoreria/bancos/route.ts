@@ -17,13 +17,13 @@ const bancoSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const { empresaId } = await requireAuth(req)
+    await requireAuth(req)
     const { searchParams } = req.nextUrl
 
     const id = searchParams.get('id')
     if (id) {
       const banco = await prisma.banco.findUnique({
-        where: { id: Number(id), empresa_id: empresaId },
+        where: { id: Number(id) },
         include: {
           pais: { select: { id: true, descripcion: true, abreviatura: true } },
           // @ts-ignore
@@ -40,7 +40,6 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') ?? ''
 
     const where = {
-      empresa_id: empresaId,
       ...(search ? {
         OR: [
           { descripcion: { contains: search, mode: 'insensitive' as const } },
@@ -74,7 +73,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { empresaId, userId } = await requireAuth(req)
+    const { userId } = await requireAuth(req)
     const body = await req.json()
     
     const validatedData = bancoSchema.parse(body)
@@ -83,7 +82,6 @@ export async function POST(req: NextRequest) {
     const banco = await prisma.banco.create({
       data: { 
         ...data, 
-        empresa_id: empresaId, 
         created_by: userId,
         tipos_cuenta: tipos_cuenta ? {
           create: tipos_cuenta.map((tc: any) => ({
@@ -108,7 +106,7 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { empresaId, userId } = await requireAuth(req)
+    const { userId } = await requireAuth(req)
     const body = await req.json()
     const { id, tipos_cuenta, ...rest } = body
     const validatedData = bancoSchema.parse(rest)
@@ -116,7 +114,7 @@ export async function PUT(req: NextRequest) {
     const banco = await prisma.$transaction(async (tx: any) => {
       const { tipos_cuenta: _, ...finalData } = validatedData
       const updated = await tx.banco.update({
-        where: { id: Number(id), empresa_id: empresaId },
+        where: { id: Number(id) },
         data: { 
           ...finalData, 
           updated_by: userId 
@@ -153,12 +151,12 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { empresaId } = await requireAuth(req)
+    await requireAuth(req)
     const body = await req.json()
     const { id } = body
     
     await prisma.banco.update({ 
-        where: { id: Number(id), empresa_id: empresaId }, 
+        where: { id: Number(id) }, 
         data: { activo: false } 
     })
     

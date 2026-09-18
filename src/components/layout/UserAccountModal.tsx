@@ -4,15 +4,69 @@ import { useAuthStore } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useRouter } from 'next/navigation'
 
 interface UserAccountModalProps {
   open: boolean
   onClose: () => void
 }
 
+interface MenuEntry {
+  id: string
+  icon: string
+  iconBg: string
+  iconColor: string
+  title: string
+  desc: string
+}
+
+const MENU: MenuEntry[] = [
+  {
+    id: 'cuenta',
+    icon: 'person',
+    iconBg: 'bg-blue-100 dark:bg-blue-500/15',
+    iconColor: 'text-blue-600 dark:text-blue-400',
+    title: 'Gestionar tu cuenta',
+    desc: 'Datos personales, rol y acceso',
+  },
+  {
+    id: 'historial',
+    icon: 'history',
+    iconBg: 'bg-purple-100 dark:bg-purple-500/15',
+    iconColor: 'text-purple-600 dark:text-purple-400',
+    title: 'Ver historial de actividad',
+    desc: 'Revisa tu actividad en el sistema',
+  },
+  {
+    id: 'preferencias',
+    icon: 'verified_user',
+    iconBg: 'bg-emerald-100 dark:bg-emerald-500/15',
+    iconColor: 'text-emerald-600 dark:text-emerald-400',
+    title: 'Preferencias',
+    desc: 'Notificaciones, idioma y apariencia',
+  },
+  {
+    id: 'ayuda',
+    icon: 'help',
+    iconBg: 'bg-violet-100 dark:bg-violet-500/15',
+    iconColor: 'text-violet-500 dark:text-violet-400',
+    title: 'Ayuda',
+    desc: 'Centro de soporte y preguntas frecuentes',
+  },
+]
+
+/** Iniciales para el avatar: "Kgabancho" → "KG", "Juan Pérez" → "JP" */
+function iniciales(nombre?: string): string {
+  if (!nombre) return '??'
+  const partes = nombre.trim().split(/\s+/).filter(Boolean)
+  if (partes.length >= 2) return (partes[0][0] + partes[1][0]).toUpperCase()
+  return partes[0].slice(0, 2).toUpperCase()
+}
+
 export default function UserAccountModal({ open, onClose }: UserAccountModalProps) {
   const user = useAuthStore((s) => s.user)
-  const clearAuth = useAuthStore((s) => s.clearAuth)
+  const forceLogout = useAuthStore((s) => s.forceLogout)
+  const router = useRouter()
   const modalRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -38,95 +92,132 @@ export default function UserAccountModal({ open, onClose }: UserAccountModalProp
 
   if (!mounted || !open) return null
 
-  const forceLogout = useAuthStore((s) => s.forceLogout)
-
   const handleLogout = async () => {
     await forceLogout()
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-4 px-4 sm:items-start sm:justify-end sm:pt-4 sm:pr-8 pointer-events-none">
-      {/* Backdrop (invisible but clickable to close) */}
-      <div className="fixed inset-0 bg-black/0 pointer-events-auto" onClick={onClose} />
+    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-4 px-4 sm:justify-end sm:pt-5 sm:pr-8 pointer-events-none">
+      {/* Fondo con degradado pastel difuminado */}
+      <div
+        className="fixed inset-0 pointer-events-auto bg-gradient-to-br from-white/50 via-sky-50/60 to-rose-50/60 backdrop-blur-sm dark:from-slate-950/60 dark:via-slate-900/70 dark:to-slate-950/60"
+        onClick={onClose}
+      />
 
       <div
         ref={modalRef}
         className={cn(
-          "relative w-full max-w-sm bg-[#f8fafd] dark:bg-slate-900 rounded-[2.5rem] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden pointer-events-auto",
-          "animate-in fade-in zoom-in duration-200 ease-out"
+          'relative w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2rem]',
+          'shadow-2xl shadow-slate-900/10 dark:shadow-black/50 border border-slate-100 dark:border-slate-800',
+          'pointer-events-auto max-h-[calc(100dvh-2rem)] overflow-y-auto',
+          'animate-in fade-in zoom-in-95 duration-200 ease-out'
         )}
       >
-        {/* Header with Close Button */}
-        <div className="flex justify-end p-4">
+        {/* Encabezado: cerrar */}
+        <div className="flex justify-end px-4 pt-4">
           <button
             onClick={onClose}
-            className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 transition-colors"
+            className="p-2 rounded-full text-blue-950 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            aria-label="Cerrar"
           >
-            <span className="material-symbols-outlined text-2xl">close</span>
+            <span className="material-symbols-outlined text-[22px] font-light">close</span>
           </button>
         </div>
 
-        {/* User Info Section */}
-        <div className="px-6 pb-6 flex flex-col items-center">
-          <div className="relative mb-4 group cursor-pointer">
-            <div className="size-20 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center overflow-hidden border-4 border-white dark:border-slate-900 ring-1 ring-slate-200 dark:ring-slate-700 shadow-sm">
+        {/* Sección de perfil */}
+        <div className="px-6 pb-5 flex items-center gap-4">
+          <div className="relative shrink-0">
+            <div className="size-20 rounded-full bg-blue-600 flex items-center justify-center overflow-hidden">
               {user?.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
-                <span className="material-symbols-outlined text-4xl text-slate-400">person</span>
+                <span className="text-white text-2xl font-bold tracking-wide">
+                  {iniciales(user?.nombre)}
+                </span>
               )}
             </div>
-            {/* Camera Overlay Icon */}
-            <div className="absolute bottom-0 right-0 size-7 bg-white dark:bg-slate-800 rounded-full flex items-center justify-center shadow-md ring-1 ring-slate-200 dark:ring-slate-700">
-              <span className="material-symbols-outlined text-sm text-slate-600 dark:text-slate-300">photo_camera</span>
-            </div>
+            <button
+              className="absolute -bottom-1 -right-1 size-7 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-center text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+              title="Cambiar foto"
+            >
+              <span className="material-symbols-outlined text-[15px]">photo_camera</span>
+            </button>
           </div>
 
-          <h3 className="text-xl font-medium text-slate-900 dark:text-white mb-6">
-            {user?.email || 'usuario@ejemplo.com'}
-          </h3>
-
-          <button className="w-full py-2.5 px-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition-all shadow-sm">
-            Gestionar tu cuenta
-          </button>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-bold text-blue-950 dark:text-white leading-tight truncate">
+              {user?.nombre || 'Usuario'}
+            </h3>
+            <p className="text-sm text-blue-900/70 dark:text-slate-400 truncate">
+              {user?.email || ''}
+            </p>
+            <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-emerald-100 dark:bg-emerald-500/15 px-2.5 py-0.5">
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
+                En línea
+              </span>
+            </span>
+          </div>
         </div>
 
-        {/* Activity Section */}
-        <div className="px-4 py-2">
-          <button className="w-full flex items-center gap-4 p-4 hover:bg-white/50 dark:hover:bg-slate-800/50 rounded-2xl transition-colors text-left group">
-            <div className="size-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300">
-              <span className="material-symbols-outlined">history</span>
-            </div>
-            <span className="flex-1 text-sm font-medium text-slate-700 dark:text-slate-200">
-              Ver historial de actividad
-            </span>
-            <span className="material-symbols-outlined text-slate-400 group-hover:translate-x-0.5 transition-transform">
-              chevron_right
-            </span>
-          </button>
+        {/* Cuerpo del menú */}
+        <div className="px-4 pb-3">
+          <div className="rounded-2xl border border-slate-100 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/20 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+            {MENU.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  if (item.id === 'cuenta') {
+                    onClose()
+                    if (user?.id) router.push(`/usuarios?userId=${user.id}`)
+                  }
+                }}
+                className="w-full flex items-center gap-3.5 px-3.5 py-3.5 hover:bg-white dark:hover:bg-slate-800/60 transition-colors text-left"
+              >
+                <span className={cn('size-10 rounded-xl flex items-center justify-center shrink-0', item.iconBg)}>
+                  <span className={cn('material-symbols-outlined text-xl', item.iconColor)}>
+                    {item.icon}
+                  </span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-sm font-bold text-blue-950 dark:text-white truncate">
+                    {item.title}
+                  </span>
+                  <span className="block text-xs text-blue-900/60 dark:text-slate-400 truncate">
+                    {item.desc}
+                  </span>
+                </span>
+                <span className="material-symbols-outlined text-lg text-blue-900/50 dark:text-slate-500 shrink-0">
+                  chevron_right
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Footer Actions */}
-        <div className="p-4 grid grid-cols-2 gap-3">
+        {/* Cerrar sesión */}
+        <div className="px-6 pb-4 pt-1">
           <button
             onClick={handleLogout}
-            className="flex items-center justify-center gap-2 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition-all shadow-sm"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-400 text-sm font-bold hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"
           >
             <span className="material-symbols-outlined text-lg">logout</span>
             Cerrar sesión
           </button>
-          <button className="flex items-center justify-center gap-2 py-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 transition-all shadow-sm">
-            <span className="material-symbols-outlined text-lg">help</span>
-            Ayuda
-          </button>
         </div>
 
-        {/* External Links */}
-        <div className="p-4 bg-slate-100/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-          <a href="#" className="hover:underline">Política de privacidad</a>
-          <span className="size-1 bg-slate-300 dark:bg-slate-600 rounded-full" />
-          <a href="#" className="hover:underline">Términos del servicio</a>
+        {/* Pie de página */}
+        <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-center gap-1.5 text-[11px] text-blue-900/60 dark:text-slate-500">
+          <span className="material-symbols-outlined text-sm">shield</span>
+          <a href="#" className="hover:text-blue-950 dark:hover:text-slate-300 transition-colors">
+            Política de privacidad
+          </a>
+          <span className="text-slate-300 dark:text-slate-600">|</span>
+          <a href="#" className="hover:text-blue-950 dark:hover:text-slate-300 transition-colors">
+            Términos del servicio
+          </a>
         </div>
       </div>
     </div>,

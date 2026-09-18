@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
         unidad_medida_rel: { select: { id: true, descripcion: true, abreviatura: true } },
         moneda_precio_compra_rel: { select: { id: true, descripcion: true, abreviatura: true } },
         moneda_costo_promedio_rel: { select: { id: true, descripcion: true, abreviatura: true } },
+        ubicacion_default: { select: { codigo: true } },
       },
     })
 
@@ -92,7 +93,7 @@ export async function GET(req: NextRequest) {
       unidad_medida: m.unidad_medida_rel?.descripcion || null,
       esquema_id: m.esquema_id,
       stock_lote: m.stock_lote,
-      ubicacion_default_id: m.ubicacion_default_id,
+      ubicacion: m.ubicacion_default?.codigo || null,
       precio_costo: Number(m.precio_costo),
       precio_venta: Number(m.precio_venta),
       activo: m.activo,

@@ -106,7 +106,6 @@ export async function POST(req: NextRequest) {
         console.log('[LOGIN] Querying moneda for empresa_id:', usuario.empresa_id, 'moneda_default:', usuario.empresa.moneda_default)
         moneda = await prisma.moneda.findFirst({
           where: { 
-            empresa_id: usuario.empresa_id,
             abreviatura: usuario.empresa.moneda_default
           }
         })

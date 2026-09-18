@@ -153,7 +153,7 @@ export default function MaterialesPage() {
           } else if (['stock_minimo', 'stock_maximo', 'costo_promedio',
                        'moneda_costo_promedio_id', 'moneda_precio_compra_id',
                        'marca_id', 'categoria_id', 'tipo_id', 'unidad_medida_id',
-                       'esquema_id', 'ubicacion_default_id'].includes(field)) {
+                       'esquema_id'].includes(field)) {
             const num = Number(val)
             item[field] = isNaN(num) ? undefined : num
           } else {
@@ -228,7 +228,7 @@ export default function MaterialesPage() {
         'costo_promedio', 'moneda_costo_promedio_id', 'moneda_precio_compra_id',
         'imagen_url', 'nivel_rotacion', 'perecible', 'compuesto', 'marca_id',
         'categoria_id', 'tipo_id', 'unidad_medida_id', 'esquema_id', 'stock_lote',
-        'ubicacion_default_id',
+        'ubicacion',
       ]
 
       const rows: any[][] = [[], [], fields]

@@ -40,7 +40,6 @@ export async function GET(req: NextRequest) {
     // Resolve moneda_id from moneda abreviatura (e.g. "USD", "PEN")
     const moneda = await prisma.moneda.findFirst({
       where: {
-        empresa_id: empresaId,
         abreviatura: empresa.moneda_default,
       },
       select: { id: true },

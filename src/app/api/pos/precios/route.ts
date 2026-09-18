@@ -117,7 +117,7 @@ export async function GET(req: NextRequest) {
     }
 
     const defaultMoneda = await prisma.moneda.findFirst({
-      where: { empresa_id: empresaId, abreviatura: empresa.moneda_default },
+      where: { abreviatura: empresa.moneda_default },
       select: { id: true, abreviatura: true }
     })
     console.log('[POS] defaultMoneda:', defaultMoneda)

@@ -78,6 +78,11 @@ const materialSchema = z.object({
     id: z.number().optional(),
     unidad_medida_id: z.number(),
     unidad_control: z.boolean().optional(),
+    venta_fraccionada: z.boolean().optional(),
+    cantidad_minima: z.coerce.number().optional().nullable(),
+    cantidad_maxima: z.coerce.number().optional().nullable(),
+    cantidad_incremento: z.coerce.number().optional().nullable(),
+    precision: z.coerce.number().int().min(0).max(6).optional(),
     activo: z.boolean().optional(),
   })).optional(),
   componentes: z.array(z.object({

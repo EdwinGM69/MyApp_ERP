@@ -13,13 +13,13 @@ const monedaSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const { empresaId } = await requireAuth(req)
+    await requireAuth(req)
     const { searchParams } = req.nextUrl
 
     const id = searchParams.get('id')
     if (id) {
       const moneda = await prisma.moneda.findUnique({
-        where: { id: Number(id), empresa_id: empresaId },
+        where: { id: Number(id) },
         include: {
           usuario_creador: { select: { nombre: true } },
           usuario_modificador: { select: { nombre: true } },
@@ -33,7 +33,6 @@ export async function GET(req: NextRequest) {
     const search = searchParams.get('search') ?? ''
 
     const where = {
-      empresa_id: empresaId,
       ...(search ? { OR: [
         { descripcion: { contains: search, mode: 'insensitive' as const } },
         { abreviatura: { contains: search, mode: 'insensitive' as const } },
@@ -58,7 +57,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { empresaId, userId } = await requireAuth(req)
+    const { userId } = await requireAuth(req)
     const body = await req.json()
     
     const data = monedaSchema.parse(body)
@@ -66,7 +65,6 @@ export async function POST(req: NextRequest) {
     const moneda = await prisma.moneda.create({
       data: { 
         ...data, 
-        empresa_id: empresaId, 
         created_by: userId 
       },
     })
@@ -80,13 +78,13 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const { empresaId, userId } = await requireAuth(req)
+    const { userId } = await requireAuth(req)
     const body = await req.json()
     const { id, ...rest } = body
     const data = monedaSchema.parse(rest)
 
     const moneda = await prisma.moneda.update({
-      where: { id, empresa_id: empresaId },
+      where: { id },
       data: { 
         ...data, 
         updated_by: userId 
@@ -101,9 +99,9 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const { empresaId } = await requireAuth(req)
+    await requireAuth(req)
     const { id } = await req.json()
-    await prisma.moneda.update({ where: { id, empresa_id: empresaId }, data: { activo: false } })
+    await prisma.moneda.update({ where: { id }, data: { activo: false } })
     return NextResponse.json({ ok: true })
   } catch {
     return NextResponse.json({ error: 'Error al desactivar la moneda' }, { status: 500 })

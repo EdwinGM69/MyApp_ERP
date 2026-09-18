@@ -12,6 +12,7 @@ interface Unidad {
   id: number
   descripcion: string
   abreviatura: string
+  tipo_unidad?: string
   unidad_multiplo: number
   activo: boolean
   created_at?: string
@@ -19,6 +20,14 @@ interface Unidad {
   usuario_creador?: { nombre: string }
   usuario_modificador?: { nombre: string }
 }
+
+const TIPOS_UNIDAD = [
+  { value: 'PESO', label: 'Peso' },
+  { value: 'VOLUMEN', label: 'Volumen' },
+  { value: 'LONGITUD', label: 'Longitud' },
+  { value: 'AREA', label: 'Área' },
+  { value: 'CANTIDAD', label: 'Cantidad' },
+]
 
 interface UnidadFormProps {
   unidadToEdit?: Unidad
@@ -31,6 +40,7 @@ export default function UnidadForm({ unidadToEdit }: UnidadFormProps) {
   // Form State
   const [descripcion, setDescripcion] = useState('')
   const [abreviatura, setAbreviatura] = useState('')
+  const [tipoUnidad, setTipoUnidad] = useState('CANTIDAD')
   const [unidadMultiplo, setUnidadMultiplo] = useState(1)
   const [activo, setActivo] = useState(true)
 
@@ -38,6 +48,7 @@ export default function UnidadForm({ unidadToEdit }: UnidadFormProps) {
     if (unidadToEdit) {
       setDescripcion(unidadToEdit.descripcion)
       setAbreviatura(unidadToEdit.abreviatura)
+      setTipoUnidad(unidadToEdit.tipo_unidad || 'CANTIDAD')
       setUnidadMultiplo(unidadToEdit.unidad_multiplo)
       setActivo(unidadToEdit.activo)
     }
@@ -51,6 +62,7 @@ export default function UnidadForm({ unidadToEdit }: UnidadFormProps) {
       id: unidadToEdit?.id,
       descripcion: descripcion.trim(),
       abreviatura: abreviatura.trim(),
+      tipo_unidad: tipoUnidad,
       unidad_multiplo: unitMultiplo,
       activo,
     }
@@ -147,6 +159,18 @@ export default function UnidadForm({ unidadToEdit }: UnidadFormProps) {
                     step="0.01"
                   />
                 </div>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-xs font-black text-slate-800 dark:text-white uppercase tracking-wider mb-4">Tipo de Unidad</label>
+                <select
+                  value={tipoUnidad} onChange={e => setTipoUnidad(e.target.value)}
+                  className="w-full px-6 py-2 bg-slate-50/50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-base font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
+                >
+                  {TIPOS_UNIDAD.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
               </div>
 
               <div>

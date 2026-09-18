@@ -224,7 +224,7 @@ export default function BancoForm({ bancoToEdit }: BancoFormProps) {
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1">Validación de Registro</label>
-                <p className="text-xs text-slate-500 font-medium">Asegúrese que el código y la descripción sean únicos para su empresa.</p>
+                <p className="text-xs text-slate-500 font-medium">Asegúrese que el código y la descripción sean únicos en el sistema.</p>
               </div>
             </div>
 

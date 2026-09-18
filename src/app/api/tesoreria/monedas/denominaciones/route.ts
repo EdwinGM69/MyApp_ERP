@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(req: NextRequest) {
   try {
-    const { empresaId } = await requireAuth(req)
+    await requireAuth(req)
     const { searchParams } = req.nextUrl
     const monedaId = searchParams.get('monedaId')
 
@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
 
     const denominations = await prisma.monedaDenominacion.findMany({
       where: {
-        empresa_id: empresaId,
         moneda_id: parseInt(monedaId),
         estado: true
       },
