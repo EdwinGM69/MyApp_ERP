@@ -4,7 +4,7 @@ import { useAuthStore } from '@/hooks/useAuth'
 import { cn } from '@/lib/utils'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { useRouter } from 'next/navigation'
+import SecurityModal from './SecurityModal'
 
 interface UserAccountModalProps {
   open: boolean
@@ -22,20 +22,20 @@ interface MenuEntry {
 
 const MENU: MenuEntry[] = [
   {
-    id: 'cuenta',
-    icon: 'person',
-    iconBg: 'bg-blue-100 dark:bg-blue-500/15',
-    iconColor: 'text-blue-600 dark:text-blue-400',
-    title: 'Gestionar tu cuenta',
-    desc: 'Datos personales, rol y acceso',
-  },
-  {
     id: 'historial',
     icon: 'history',
     iconBg: 'bg-purple-100 dark:bg-purple-500/15',
     iconColor: 'text-purple-600 dark:text-purple-400',
     title: 'Ver historial de actividad',
     desc: 'Revisa tu actividad en el sistema',
+  },
+  {
+    id: 'seguridad',
+    icon: 'shield',
+    iconBg: 'bg-red-100 dark:bg-red-500/15',
+    iconColor: 'text-red-600 dark:text-red-400',
+    title: 'Seguridad',
+    desc: 'Cambiar contraseña y más',
   },
   {
     id: 'preferencias',
@@ -66,9 +66,9 @@ function iniciales(nombre?: string): string {
 export default function UserAccountModal({ open, onClose }: UserAccountModalProps) {
   const user = useAuthStore((s) => s.user)
   const forceLogout = useAuthStore((s) => s.forceLogout)
-  const router = useRouter()
   const modalRef = useRef<HTMLDivElement>(null)
   const [mounted, setMounted] = useState(false)
+  const [isSecurityModalOpen, setIsSecurityModalOpen] = useState(false)
 
   useEffect(() => {
     setMounted(true)
@@ -90,14 +90,16 @@ export default function UserAccountModal({ open, onClose }: UserAccountModalProp
     }
   }, [open, onClose])
 
-  if (!mounted || !open) return null
+  if (!mounted) return null
 
   const handleLogout = async () => {
     await forceLogout()
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-4 px-4 sm:justify-end sm:pt-5 sm:pr-8 pointer-events-none">
+    <>
+      {open && (
+      <div className="fixed inset-0 z-[100] flex items-start justify-center pt-4 px-4 sm:justify-end sm:pt-5 sm:pr-8 pointer-events-none">
       {/* Fondo con degradado pastel difuminado */}
       <div
         className="fixed inset-0 pointer-events-auto bg-gradient-to-br from-white/50 via-sky-50/60 to-rose-50/60 backdrop-blur-sm dark:from-slate-950/60 dark:via-slate-900/70 dark:to-slate-950/60"
@@ -169,9 +171,9 @@ export default function UserAccountModal({ open, onClose }: UserAccountModalProp
                 key={item.id}
                 type="button"
                 onClick={() => {
-                  if (item.id === 'cuenta') {
+                  if (item.id === 'seguridad') {
                     onClose()
-                    if (user?.id) router.push(`/usuarios?userId=${user.id}`)
+                    setIsSecurityModalOpen(true)
                   }
                 }}
                 className="w-full flex items-center gap-3.5 px-3.5 py-3.5 hover:bg-white dark:hover:bg-slate-800/60 transition-colors text-left"
@@ -220,7 +222,14 @@ export default function UserAccountModal({ open, onClose }: UserAccountModalProp
           </a>
         </div>
       </div>
-    </div>,
+      </div>
+      )}
+
+      <SecurityModal
+        open={isSecurityModalOpen}
+        onClose={() => setIsSecurityModalOpen(false)}
+      />
+    </>,
     document.body
   )
 }

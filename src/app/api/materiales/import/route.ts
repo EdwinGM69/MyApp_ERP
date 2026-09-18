@@ -10,8 +10,8 @@ const importRowSchema = z.object({
   stock_minimo: z.coerce.number().min(0).optional(),
   stock_maximo: z.coerce.number().min(0).optional().nullable(),
   costo_promedio: z.coerce.number().min(0).optional().nullable(),
-  moneda_costo_promedio_id: z.coerce.number().optional().nullable(),
-  moneda_precio_compra_id: z.coerce.number().optional().nullable(),
+  moneda_costo_promedio_id: z.union([z.string(), z.number()]).optional().nullable(),
+  moneda_precio_compra_id: z.union([z.string(), z.number()]).optional().nullable(),
   imagen_url: z.string().optional().nullable(),
   nivel_rotacion: z.string().optional().nullable(),
   perecible: z.boolean().optional(),
@@ -19,12 +19,43 @@ const importRowSchema = z.object({
   marca_id: z.coerce.number().optional().nullable(),
   categoria_id: z.coerce.number().optional().nullable(),
   tipo_id: z.coerce.number().optional().nullable(),
-  unidad_medida_id: z.coerce.number().optional().nullable(),
+  unidad_medida_id: z.union([z.string(), z.number()]).optional().nullable(),
   esquema_id: z.coerce.number().optional().nullable(),
   stock_lote: z.boolean().optional(),
   ubicacion: z.union([z.string(), z.number()]).optional().nullable(),
   ubicacion_default_id: z.union([z.string(), z.number()]).optional().nullable(),
 })
+
+// Interpreta un valor del Excel como ID numérico o abreviatura
+function parseIdOrAbbreviation(val: unknown): { tipo: 'id'; id: number } | { tipo: 'abreviatura'; abreviatura: string } | null {
+  if (val === undefined || val === null) return null
+  const str = String(val).trim()
+  if (!str) return null
+  if (/^\d+$/.test(str)) {
+    return { tipo: 'id', id: Number(str) }
+  }
+  return { tipo: 'abreviatura', abreviatura: str }
+}
+
+async function resolveMonedaId(val: unknown): Promise<number | null> {
+  const parsed = parseIdOrAbbreviation(val)
+  if (!parsed) return null
+  if (parsed.tipo === 'id') return parsed.id
+  const moneda = await prisma.moneda.findFirst({
+    where: { abreviatura: { equals: parsed.abreviatura, mode: 'insensitive' as const } },
+  })
+  return moneda?.id ?? null
+}
+
+async function resolveUnidadMedidaId(val: unknown): Promise<number | null> {
+  const parsed = parseIdOrAbbreviation(val)
+  if (!parsed) return null
+  if (parsed.tipo === 'id') return parsed.id
+  const unidad = await prisma.unidadMedida.findFirst({
+    where: { abreviatura: { equals: parsed.abreviatura, mode: 'insensitive' as const } },
+  })
+  return unidad?.id ?? null
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -74,7 +105,14 @@ export async function POST(req: NextRequest) {
                 })
         */
 
-        const { ubicacion: ubicacionCodigo, ubicacion_default_id: ubicacionDefault, ...materialData } = parsed
+        const {
+          ubicacion: ubicacionCodigo,
+          ubicacion_default_id: ubicacionDefault,
+          moneda_costo_promedio_id,
+          moneda_precio_compra_id,
+          unidad_medida_id,
+          ...materialData
+        } = parsed
 
         const ubicacionRef = ubicacionCodigo ?? ubicacionDefault
         let ubicacionDefaultId: number | null = null
@@ -102,20 +140,65 @@ export async function POST(req: NextRequest) {
           ubicacionDefaultId = ubicacion.id
         }
 
+        let monedaCostoPromedioId: number | null = null
+        if (moneda_costo_promedio_id !== undefined && moneda_costo_promedio_id !== null) {
+          monedaCostoPromedioId = await resolveMonedaId(moneda_costo_promedio_id)
+          if (monedaCostoPromedioId === null) {
+            results.errors.push({
+              row: rowNumber,
+              codigo: parsed.codigo,
+              descripcion: parsed.descripcion,
+              error: `La moneda "${String(moneda_costo_promedio_id).trim()}" no existe en el catálogo de monedas.`,
+            })
+            continue
+          }
+        }
+
+        let monedaPrecioCompraId: number | null = null
+        if (moneda_precio_compra_id !== undefined && moneda_precio_compra_id !== null) {
+          monedaPrecioCompraId = await resolveMonedaId(moneda_precio_compra_id)
+          if (monedaPrecioCompraId === null) {
+            results.errors.push({
+              row: rowNumber,
+              codigo: parsed.codigo,
+              descripcion: parsed.descripcion,
+              error: `La moneda "${String(moneda_precio_compra_id).trim()}" no existe en el catálogo de monedas.`,
+            })
+            continue
+          }
+        }
+
+        let unidadMedidaId: number | null = null
+        if (unidad_medida_id !== undefined && unidad_medida_id !== null) {
+          unidadMedidaId = await resolveUnidadMedidaId(unidad_medida_id)
+          if (unidadMedidaId === null) {
+            results.errors.push({
+              row: rowNumber,
+              codigo: parsed.codigo,
+              descripcion: parsed.descripcion,
+              error: `La unidad de medida "${String(unidad_medida_id).trim()}" no existe en el catálogo de unidades.`,
+            })
+            continue
+          }
+        }
+
         const materialCreado = await prisma.material.create({
           data: {
             ...materialData,
+            moneda_costo_promedio_id: monedaCostoPromedioId,
+            moneda_precio_compra_id: monedaPrecioCompraId,
+            unidad_medida_id: unidadMedidaId,
             ubicacion_default_id: ubicacionDefaultId,
             empresa_id: empresaId,
             created_by: userId
           }
         })
 
-        if (parsed.unidad_medida_id) {
+        if (unidadMedidaId) {
           await prisma.materialPresentacion.create({
             data: {
               material_id: materialCreado.id,
-              unidad_medida_id: parsed.unidad_medida_id,
+              unidad_medida_id: unidadMedidaId,
               unidad_control: true,
               activo: true,
               created_by: userId

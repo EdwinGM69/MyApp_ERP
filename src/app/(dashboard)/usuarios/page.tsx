@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Topbar from '@/components/layout/Topbar'
 import { apiFetch } from '@/hooks/useAuth'
@@ -69,6 +69,9 @@ function UsuariosContent() {
   const [isEditing, setIsEditing] = useState(false)
   const [editingUser, setEditingUser] = useState<Usuario | null>(null)
 
+  // Controla que el modo edición por ?userId= se active una sola vez por navegación
+  const appliedTargetRef = useRef<number | null>(null)
+
   // Fetch List
   const fetchList = useCallback(async () => {
     setLoadingMaster(true)
@@ -107,14 +110,17 @@ function UsuariosContent() {
     }
   }, [selectedId, usuarios])
 
-  // Si se solicita un usuario concreto (ej: "Gestionar tu cuenta"), seleccionarlo
+  // Si se solicita un usuario concreto mediante ?userId=, abrir su edición
   useEffect(() => {
     if (!targetUserId) return
+    if (appliedTargetRef.current === targetUserId) return
     const target = usuarios.find(u => u.id === targetUserId)
     if (target) {
       setSelectedId(target.id)
       setSelected(target)
-      setIsEditing(false)
+      setEditingUser(target)
+      setIsEditing(true)
+      appliedTargetRef.current = targetUserId
     }
   }, [targetUserId, usuarios])
 

@@ -151,11 +151,14 @@ export default function MaterialesPage() {
               item[field] = Boolean(val)
             }
           } else if (['stock_minimo', 'stock_maximo', 'costo_promedio',
-                       'moneda_costo_promedio_id', 'moneda_precio_compra_id',
-                       'marca_id', 'categoria_id', 'tipo_id', 'unidad_medida_id',
+                       'marca_id', 'categoria_id', 'tipo_id',
                        'esquema_id'].includes(field)) {
             const num = Number(val)
             item[field] = isNaN(num) ? undefined : num
+          } else if (['moneda_costo_promedio_id', 'moneda_precio_compra_id',
+                      'unidad_medida_id'].includes(field)) {
+            const abrev = String(val).trim()
+            item[field] = abrev || undefined
           } else {
             item[field] = String(val).trim()
           }
