@@ -15,6 +15,7 @@ import {
   areaDesdeRuta,
   normalizarTexto,
 } from '@/lib/menu'
+import PlanUpgradeModal from '@/components/layout/PlanUpgradeModal'
 
 // ------------------------------------------------------------------
 // Vista de navegación: base (nivel 1) o contexto de un área (nivel 2)
@@ -109,6 +110,7 @@ export default function Sidebar() {
   const [busqueda, setBusqueda] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(0)
+  const [planUpgradeOpen, setPlanUpgradeOpen] = useState(false)
 
   const searchRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -416,12 +418,21 @@ export default function Sidebar() {
                     ? `Período de gracia: quedan ${user.subscriptionAlert.diasGraciaRestantes} día(s).`
                     : `Tu ${user.subscriptionAlert.planName || ''} vence en ${user.subscriptionAlert.diasRestantes} día(s).`}
               </p>
-              <button className="text-[10px] font-bold bg-primary text-white px-2 py-1 rounded-md hover:bg-primary-dark transition-colors uppercase">
+              <button
+                type="button"
+                onClick={() => setPlanUpgradeOpen(true)}
+                className="text-[10px] font-bold bg-primary text-white px-2 py-1 rounded-md hover:bg-primary-dark transition-colors uppercase"
+              >
                 Actualizar
               </button>
             </div>
           </div>
         )}
+
+      <PlanUpgradeModal
+        open={planUpgradeOpen}
+        onClose={() => setPlanUpgradeOpen(false)}
+      />
 
     </aside>
   )

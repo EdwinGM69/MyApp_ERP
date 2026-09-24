@@ -21,6 +21,7 @@ export default function UserSucursalSelect({ className }: UserSucursalSelectProp
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
+  const [positionReady, setPositionReady] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -29,13 +30,18 @@ export default function UserSucursalSelect({ className }: UserSucursalSelectProp
 
   // Calculate position when opening
   useEffect(() => {
-    if (open && containerRef.current) {
+    if (!open) {
+      setPositionReady(false)
+      return
+    }
+    if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
       setCoords({
         top: rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
         width: rect.width
       })
+      setPositionReady(true)
     }
   }, [open])
 
@@ -53,6 +59,18 @@ export default function UserSucursalSelect({ className }: UserSucursalSelectProp
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [open])
+
+  const handleToggle = () => {
+    if (!open && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      })
+    }
+    setOpen(!open)
+  }
 
   // Handle sucursal change
   const handleSelect = async (sucursal: Sucursal) => {
@@ -76,7 +94,7 @@ export default function UserSucursalSelect({ className }: UserSucursalSelectProp
   return (
     <div className={cn("relative w-56", className)} ref={containerRef}>
       <div
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className="w-full h-10 px-4 flex items-center justify-between bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs cursor-pointer hover:border-blue-500 transition-all group"
       >
         <span className="truncate text-slate-700 dark:text-slate-200">
@@ -87,7 +105,7 @@ export default function UserSucursalSelect({ className }: UserSucursalSelectProp
         </span>
       </div>
 
-      {open && mounted && createPortal(
+      {open && mounted && positionReady && createPortal(
         <div
           id="user-sucursal-select-portal"
           style={{

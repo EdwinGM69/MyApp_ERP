@@ -25,6 +25,7 @@ export default function EmpresaSelect({ onSelect, placeholder = 'Seleccionar emp
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
+  const [positionReady, setPositionReady] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -32,13 +33,18 @@ export default function EmpresaSelect({ onSelect, placeholder = 'Seleccionar emp
   }, [])
 
   useEffect(() => {
-    if (open && containerRef.current) {
+    if (!open) {
+      setPositionReady(false)
+      return
+    }
+    if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
       setCoords({
         top: rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
         width: rect.width
       })
+      setPositionReady(true)
     }
   }, [open])
 
@@ -76,10 +82,22 @@ export default function EmpresaSelect({ onSelect, placeholder = 'Seleccionar emp
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [open])
 
+  const handleToggle = () => {
+    if (!open && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      })
+    }
+    setOpen(!open)
+  }
+
   return (
     <div className={cn("relative", className)} ref={containerRef}>
       <div 
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className="w-full h-12 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-black cursor-pointer hover:border-primary transition-all group"
       >
         <span className={cn("truncate uppercase tracking-tight", !selectedLabel && "text-slate-400 italic font-medium")}>
@@ -87,7 +105,7 @@ export default function EmpresaSelect({ onSelect, placeholder = 'Seleccionar emp
         </span>
       </div>
 
-      {open && mounted && createPortal(
+      {open && mounted && positionReady && createPortal(
         <div 
           id="empresa-select-portal"
           style={{ 

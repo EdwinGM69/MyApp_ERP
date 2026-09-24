@@ -64,7 +64,10 @@ function toPlanCard(plan: PlanData): PlanCard {
 
 async function loadPlans(): Promise<PlanCard[]> {
   const planes = await prisma.plan.findMany({
-    where: { activo: true },
+    where: {
+      activo: true,
+      precios: { some: { activo: true } },
+    },
     orderBy: { orden_visual: 'asc' },
     include: {
       precios: {

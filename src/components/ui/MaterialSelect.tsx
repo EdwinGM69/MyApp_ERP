@@ -32,6 +32,7 @@ export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar ma
   const [showModal, setShowModal] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [coords, setCoords] = useState<{ top: number; left: number; width: number; direction?: 'up' | 'down' }>({ top: 0, left: 0, width: 0 })
+  const [positionReady, setPositionReady] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -40,7 +41,11 @@ export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar ma
 
   // Calculate position when opening
   useEffect(() => {
-    if (open && containerRef.current) {
+    if (!open) {
+      setPositionReady(false)
+      return
+    }
+    if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
       const dropdownHeight = 350 // approximate height of dropdown
       const spaceBelow = window.innerHeight - rect.bottom
@@ -57,6 +62,7 @@ export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar ma
         width: rect.width,
         direction: showAbove ? 'up' : 'down'
       })
+      setPositionReady(true)
     }
   }, [open])
 
@@ -128,6 +134,25 @@ export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar ma
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [open])
 
+  const handleToggle = () => {
+    if (!open && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      const dropdownHeight = 350
+      const spaceBelow = window.innerHeight - rect.bottom
+      const spaceAbove = rect.top
+      const showAbove = spaceBelow < 100 && spaceAbove > spaceBelow
+      setCoords({
+        top: showAbove
+          ? rect.top - dropdownHeight + window.scrollY
+          : rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width,
+        direction: showAbove ? 'up' : 'down'
+      })
+    }
+    setOpen(!open)
+  }
+
   const handleCreated = (newMaterial: any) => {
     onSelect(newMaterial)
     setOpen(false)
@@ -138,7 +163,7 @@ export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar ma
   return (
     <div className={cn("relative", className)} ref={containerRef}>
       <div 
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className="w-full h-8 px-4 flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs cursor-pointer hover:border-blue-500 transition-all group"
       >
         <span className={cn("truncate tracking-tight", !selectedLabel && "text-slate-400 font-medium italic")}>
@@ -149,7 +174,7 @@ export default function MaterialSelect({ onSelect, placeholder = 'Seleccionar ma
         </span>
       </div>
 
-      {open && mounted && createPortal(
+      {open && mounted && positionReady && createPortal(
         <div 
           id="material-select-portal"
           style={{ 

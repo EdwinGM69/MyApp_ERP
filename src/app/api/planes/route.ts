@@ -4,11 +4,14 @@ import { prisma } from '@/lib/prisma'
 export async function GET() {
   try {
     const planes = await prisma.plan.findMany({
-      where: { activo: true },
+      where: {
+        activo: true,
+        precios: { some: { activo: true, precio: { gt: 0 } } },
+      },
       orderBy: { orden_visual: 'asc' },
       include: {
         precios: {
-          where: { activo: true },
+          where: { activo: true, precio: { gt: 0 } },
           orderBy: { id: 'asc' },
         },
         caracteristicas: {

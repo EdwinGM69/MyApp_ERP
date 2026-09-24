@@ -25,6 +25,7 @@ export default function SucursalSelect({ onSelect, placeholder = 'Seleccionar su
   const [loading, setLoading] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 })
+  const [positionReady, setPositionReady] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -33,13 +34,18 @@ export default function SucursalSelect({ onSelect, placeholder = 'Seleccionar su
 
   // Calculate position when opening
   useEffect(() => {
-    if (open && containerRef.current) {
+    if (!open) {
+      setPositionReady(false)
+      return
+    }
+    if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect()
       setCoords({
         top: rect.bottom + window.scrollY,
         left: rect.left + window.scrollX,
         width: rect.width
       })
+      setPositionReady(true)
     }
   }, [open])
 
@@ -78,10 +84,22 @@ export default function SucursalSelect({ onSelect, placeholder = 'Seleccionar su
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [open])
 
+  const handleToggle = () => {
+    if (!open && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect()
+      setCoords({
+        top: rect.bottom + window.scrollY,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      })
+    }
+    setOpen(!open)
+  }
+
   return (
     <div className={cn("relative", className)} ref={containerRef}>
       <div 
-        onClick={() => setOpen(!open)}
+        onClick={handleToggle}
         className="w-full h-10 px-4 flex items-center justify-between bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs cursor-pointer hover:border-blue-500 transition-all group"
       >
         <span className={cn("truncate", !selectedLabel && "text-slate-400 italic font-medium")}>
@@ -92,7 +110,7 @@ export default function SucursalSelect({ onSelect, placeholder = 'Seleccionar su
         </span>
       </div>
 
-      {open && mounted && createPortal(
+      {open && mounted && positionReady && createPortal(
         <div 
           id="sucursal-select-portal"
           style={{ 
