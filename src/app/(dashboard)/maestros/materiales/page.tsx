@@ -14,6 +14,7 @@ import { useSucursal } from '@/contexts/SucursalContext'
 import { usePermisos } from '@/contexts/PermisosContext'
 import * as XLSX from 'xlsx'
 import { saveAs } from 'file-saver'
+import ImportingOverlay from '@/components/ui/ImportingOverlay'
 
 interface Material {
   id: number
@@ -50,6 +51,7 @@ export default function MaterialesPage() {
   const permisos = usePermisos()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
+  const [importTotal, setImportTotal] = useState(0)
   const [exporting, setExporting] = useState(false)
   const [showNewMenu, setShowNewMenu] = useState(false)
   const newMenuRef = useRef<HTMLDivElement>(null)
@@ -171,6 +173,8 @@ export default function MaterialesPage() {
         toast.error('No se encontraron datos para importar.')
         return
       }
+
+      setImportTotal(materiales.length)
 
       const res = await apiFetch('/api/materiales/import', {
         method: 'POST',
@@ -427,6 +431,13 @@ export default function MaterialesPage() {
         <Pagination page={page} totalPages={Math.ceil(total / pageSize)} onPage={setPage}
           pageSize={pageSize} onPageSize={(s) => { setPageSize(s); setPage(1) }} total={total} />
       </div>
+      {importing && (
+        <ImportingOverlay
+          label="Importando materiales"
+          count={importTotal}
+          icon="inventory_2"
+        />
+      )}
     </div>
   )
 }

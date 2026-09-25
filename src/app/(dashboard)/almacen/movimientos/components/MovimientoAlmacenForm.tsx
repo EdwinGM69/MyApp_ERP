@@ -9,6 +9,7 @@ import toast from 'react-hot-toast'
 import MaterialSelect from '@/components/ui/MaterialSelect'
 import { useSucursal } from '@/contexts/SucursalContext'
 import * as XLSX from 'xlsx'
+import ImportingOverlay from '@/components/ui/ImportingOverlay'
 
 interface Distribucion {
   id: string
@@ -67,7 +68,7 @@ export default function MovimientoAlmacenForm() {
 
   // Header state
   const [sucursalId, setSucursalId] = useState<number>(currentSucursal?.id || 1)
-  const [tipoOperacionId, setTipoOperacionId] = useState<number>(1)
+  const [tipoOperacionId, setTipoOperacionId] = useState<number | null>(null)
   const [documento, setDocumento] = useState('')
   const [fecha, setFecha] = useState('')
   const [referencia, setReferencia] = useState('')
@@ -82,6 +83,8 @@ export default function MovimientoAlmacenForm() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [showAddMenu, setShowAddMenu] = useState(false)
   const addMenuRef = useRef<HTMLDivElement>(null)
+  const [importing, setImporting] = useState(false)
+  const [importTotal, setImportTotal] = useState(0)
 
   // Close add-line dropdown on outside click
   useEffect(() => {
@@ -97,7 +100,7 @@ export default function MovimientoAlmacenForm() {
   }, [showAddMenu])
 
   // Derivados
-  const selectedTipo = tiposOperacion.find(t => t.id === Number(tipoOperacionId))
+  const selectedTipo = tiposOperacion.find(t => t.id === tipoOperacionId)
 
   // Fetch stock for a given line
   const fetchStockLinea = useCallback(async (
@@ -267,7 +270,7 @@ export default function MovimientoAlmacenForm() {
       cantidad: 1,
       valor: '0.00',
       moneda: 'PEN',
-      almacen_id: 1,
+      almacen_id: almacenes[0]?.id ?? 0,
       estado_stock_id: defaultEstadoId,
       distribuciones: [],
       expandido: false,
@@ -405,6 +408,7 @@ export default function MovimientoAlmacenForm() {
   const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setImporting(true)
 
     try {
       const buffer = await file.arrayBuffer()
@@ -471,6 +475,8 @@ export default function MovimientoAlmacenForm() {
         toast.error('No se encontraron datos para importar.')
         return
       }
+
+      setImportTotal(rawRows.length)
 
       // Look up materials by unique codigos
       const uniqueCodigos = [...new Set(rawRows.map(r => r.codigo))]
@@ -646,7 +652,7 @@ export default function MovimientoAlmacenForm() {
           cantidad: row.cantidad,
           valor: costoValue,
           moneda: 'PEN',
-          almacen_id: 1,
+          almacen_id: almacenes[0]?.id ?? 0,
           estado_stock_id: defaultEstadoId,
           stock_lote: material.stock_lote,
           esquema_id: material.esquema_id,
@@ -672,6 +678,7 @@ export default function MovimientoAlmacenForm() {
     } catch (err: any) {
       toast.error(`Error al procesar el archivo: ${err.message}`)
     } finally {
+      setImporting(false)
       if (e.target) e.target.value = ''
     }
   }
@@ -680,6 +687,16 @@ export default function MovimientoAlmacenForm() {
     if (e) e.preventDefault()
     if (lineas.length === 0) {
       toast.error('Debe agregar al menos una línea de producto')
+      return
+    }
+
+    if (!tipoOperacionId) {
+      toast.error('Debe seleccionar un tipo de operación')
+      return
+    }
+
+    if (lineas.some(l => !almacenes.some(a => a.id === Number(l.almacen_id)))) {
+      toast.error('Todas las líneas deben tener un almacén válido')
       return
     }
 
@@ -692,7 +709,7 @@ export default function MovimientoAlmacenForm() {
     try {
       const payload = {
         sucursal_id: Number(sucursalId),
-        tipo_operacion_id: Number(tipoOperacionId),
+        tipo_operacion_id: tipoOperacionId,
         documento,
         referencia,
         observaciones,
@@ -705,7 +722,7 @@ export default function MovimientoAlmacenForm() {
           sucursal_id: Number(sucursalId),
           almacen_id: Number(l.almacen_id),
           estado_stock_id: Number(l.estado_stock_id),
-          numero_lote: l.lote || null,
+          numero_lote: l.lote || l.distribuciones[0]?.numero_lote || null,
           material_id: l.material_id,
           material_codigo: l.material_codigo,
           unidad_medida_id: l.unidad_medida_id,
@@ -814,8 +831,9 @@ export default function MovimientoAlmacenForm() {
 
             <div className="space-y-2">
               <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest ml-1">TIPO DE OPERACIÓN</label>
-              <select value={tipoOperacionId} onChange={(e) => setTipoOperacionId(Number(e.target.value))}
+              <select value={tipoOperacionId ?? ''} onChange={(e) => setTipoOperacionId(e.target.value ? Number(e.target.value) : null)}
                 className="w-full px-5 py-2.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl text-[13px] font-medium focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 outline-none transition-all">
+                <option value="">- Seleccionar -</option>
                 {tiposOperacion.map(t => <option key={t.id} value={t.id}>[{t.codigo}] {t.descripcion}</option>)}
               </select>
             </div>
@@ -1237,6 +1255,14 @@ export default function MovimientoAlmacenForm() {
           </div>
         </main>
       </div>
+
+      {importing && (
+        <ImportingOverlay
+          label="Importando líneas de movimiento"
+          count={importTotal}
+          icon="inventory_2"
+        />
+      )}
 
       <style jsx global>{`
         .custom-scrollbar::-webkit-scrollbar {

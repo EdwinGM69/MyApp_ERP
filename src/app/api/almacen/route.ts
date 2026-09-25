@@ -236,7 +236,7 @@ export async function POST(req: NextRequest) {
               sucursal_id: d.sucursal_id,
               almacen_id: d.almacen_id,
               estado_stock: { connect: { id: d.estado_stock_id } },
-              numero_lote: d.numero_lote,
+              numero_lote: d.numero_lote || d.distribuciones[0]?.numero_lote || null,
               material: { connect: { id: d.material_id } },
               unidad_medida: { connect: { id: d.material.unidad_medida_id } },
               cantidad: d.cantidad,

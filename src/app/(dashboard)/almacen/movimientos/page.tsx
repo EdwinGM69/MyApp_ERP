@@ -30,6 +30,19 @@ function fmtTime(dateStr?: string | null) {
   } catch { return '' }
 }
 
+// Format a date-only value (e.g. fecha de vencimiento) using its YYYY-MM-DD part
+// to avoid the day being shifted by the user's timezone (UTC midnight -> day before).
+function fmtDia(dateStr?: string | null, fmt = 'dd MMM yyyy') {
+  try {
+    if (!dateStr) return '---'
+    const m = String(dateStr).match(/^(\d{4})-(\d{2})-(\d{2})/)
+    if (!m) return fmtDate(dateStr, fmt)
+    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12)
+    if (isNaN(d.getTime())) return '---'
+    return format(d, fmt, { locale: es })
+  } catch { return '---' }
+}
+
 // ── Status helpers ──────────────────────────────────────────
 const OP_COLORS = {
   ingreso: {
@@ -257,7 +270,12 @@ function MovimientoCard({ mov, onView }: {
                               {d.costo_unit ? Number(d.costo_unit).toFixed(2) : '---'}
                             </td>
                             <td className="text-left px-2 py-2 text-slate-500 text-[10px]">
-                              {d.numero_lote || '---'}
+                              {d.distribuciones?.[0]?.numero_lote || d.numero_lote || '---'}
+                              {d.distribuciones?.[0]?.fecha_expiracion && (
+                                <span className="block text-[9px] text-slate-400">
+                                  Vence: {fmtDia(d.distribuciones[0].fecha_expiracion)}
+                                </span>
+                              )}
                             </td>
                             <td className="text-right px-3 py-2 font-bold text-slate-600 dark:text-slate-300">
                               {d.distribuciones?.length || 0}
