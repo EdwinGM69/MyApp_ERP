@@ -4,6 +4,7 @@ import { useAuthStore } from '@/hooks/useAuth'
 import { useOfflineSync } from '@/hooks/useOfflineSync'
 import { useState, useEffect } from 'react'
 import UserAccountModal from './UserAccountModal'
+import NotificationBell from './NotificationBell'
 import UserSucursalSelect from '@/components/ui/UserSucursalSelect'
 
 interface TopbarProps {
@@ -34,10 +35,7 @@ export default function Topbar({ title }: TopbarProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <button className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors relative">
-          <span className="material-symbols-outlined">notifications</span>
-          <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-slate-900" />
-        </button>
+        <NotificationBell />
 
         <a 
           href="/empresa"

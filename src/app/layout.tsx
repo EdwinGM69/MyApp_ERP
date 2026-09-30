@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Toaster } from 'react-hot-toast'
 import { AuthRefresh } from '@/components/auth/AuthRefresh'
 import { SessionManager } from '@/components/auth/SessionManager'
+import NotificationBridge from '@/components/layout/NotificationBridge'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -21,6 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-display antialiased h-full">
         <AuthRefresh />
         <SessionManager />
+        <NotificationBridge />
         {children}
         <Toaster
           position="top-right"
