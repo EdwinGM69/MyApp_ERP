@@ -54,7 +54,7 @@ export default function FinalPage() {
       <div className="text-center mb-8">
         <h2 className="text-emerald-400 text-lg font-semibold mb-2">¡Felicidades!</h2>
         <h1 className="text-white text-3xl font-extrabold mb-3 leading-tight">
-          ¡Tu sistema comercial está listo!
+          ¡Tu sistema está listo para que inicies!
         </h1>
         <p className="text-slate-400 text-sm max-w-xl mx-auto">
           Has completado la configuración inicial. Ahora, ¿cómo te gustaría empezar a

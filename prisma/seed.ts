@@ -405,6 +405,47 @@ async function main() {
     },
   })
 
+  // Estado de stock
+  await prisma.estadoStock.upsert({
+    where: { empresa_id_codigo: { empresa_id: empresa.id, codigo: 'DISPONILE' } },
+    update: {},
+    create: {
+      empresa_id: empresa.id,
+      codigo: 'DISPONIBLE',
+      descripcion: 'Stock Disponible',
+      activo: true,
+      created_by: 1
+    }
+  })
+
+  const estadosStock = await prisma.estadoStock.findUniqueOrThrow({
+    where: { empresa_id_codigo: { empresa_id: empresa.id, codigo: 'CRGINI' } }
+  })
+
+  // Tipo de Operacion
+  await prisma.tipoOperacion.upsert({
+    where: { empresa_id_codigo: { empresa_id: empresa.id, codigo: 'CRGINI' } },
+    update: {},
+    create: {
+      empresa_id: empresa.id,
+      codigo: 'CRGINI',
+      descripcion: 'Carga Inicial',
+      categoria: 'AJUSTE',
+      afecta_stock: true,
+      signo_origen: '+',
+      requiere_proveedor: false,
+      requiere_cliente: false,
+      requiere_suc_destino: false,
+      permite_precio_costo: true,
+      actualiza_costo: true,
+      requiere_aprobacion: false,
+      requiere_pedido: false,
+      estado_stock_id: estadosStock.id,
+      activo: true,
+      created_by: 1
+    },
+  })
+
   // Create sample materials
   const materialesCount = await prisma.material.count({ where: { empresa_id: empresa.id } })
   if (materialesCount === 0) {

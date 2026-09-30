@@ -142,29 +142,29 @@ export default function EmpresaForm() {
             <p className="text-slate-500 font-medium text-sm mt-1">Gestione la información general, identidad y parámetros regionales de su organización.</p>
           </div>
           {permisos.editar && (
-          <button
-            type="submit"
-            form="empresa-form"
-            disabled={saving}
-            className="px-6 h-11 flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 active:scale-95 text-sm font-bold"
-          >
-            {saving ? (
-              <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
-            ) : (
-              <>
-                <span className="material-symbols-outlined text-[20px]">save</span>
-                Guardar Cambios
-              </>
-            )}
-          </button>
+            <button
+              type="submit"
+              form="empresa-form"
+              disabled={saving}
+              className="px-6 h-11 flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-all shadow-lg shadow-blue-500/20 disabled:opacity-50 active:scale-95 text-sm font-bold"
+            >
+              {saving ? (
+                <span className="material-symbols-outlined animate-spin text-[20px]">progress_activity</span>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-[20px]">save</span>
+                  Guardar Cambios
+                </>
+              )}
+            </button>
           )}
         </div>
 
         <form id="empresa-form" onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          
+
           {/* Main Content (Left Column) */}
           <div className="lg:col-span-8 space-y-8">
-            
+
             {/* Section: Información Básica */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm transition-all">
               <div className="px-8 py-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/30 dark:bg-slate-900/10 flex items-center gap-3">
@@ -182,7 +182,7 @@ export default function EmpresaForm() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">NIT / Tax ID</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">RUC / DNI</label>
                     <input
                       type="text" name="nif" required value={formData.nif} onChange={handleChange}
                       className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all"
@@ -191,8 +191,8 @@ export default function EmpresaForm() {
                   </div>
                   <div>
                     <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Industria</label>
-                    <IndustriaSelect 
-                      value={formData.industria_id} 
+                    <IndustriaSelect
+                      value={formData.industria_id}
                       onSelect={(industria) => setFormData(prev => ({ ...prev, industria_id: industria.id }))}
                     />
                   </div>
@@ -233,20 +233,20 @@ export default function EmpresaForm() {
                     />
                   </div>
                 </div>
-<div>
-                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Dirección Principal</label>
-                    <input
-                      type="text" name="direccion_fiscal" value={formData.direccion_fiscal || ''} onChange={handleChange}
-                      className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-300"
-                      placeholder="Calle 123 # 45-67, Ciudad"
-                    />
-                  </div>
-                  <div className="flex bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 group focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all overflow-hidden items-center">
+                <div>
+                  <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5 ml-1">Dirección Principal</label>
+                  <input
+                    type="text" name="direccion_fiscal" value={formData.direccion_fiscal || ''} onChange={handleChange}
+                    className="w-full px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-medium outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500 transition-all text-slate-700 dark:text-slate-300"
+                    placeholder="Ej: Calle 123 # 45-67, Ciudad"
+                  />
+                </div>
+                <div className="flex bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 group focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 transition-all overflow-hidden items-center">
                   <div className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-500 tracking-tighter shrink-0 select-none">
                     https://
                   </div>
                   <input
-                    type="text" name="sitio_web" value={formData.sitio_web?.replace('https://', '') || ''} 
+                    type="text" name="sitio_web" value={formData.sitio_web?.replace('https://', '') || ''}
                     onChange={(e) => setFormData(prev => ({ ...prev, sitio_web: e.target.value ? `https://${e.target.value}` : '' }))}
                     className="flex-1 bg-transparent px-4 py-2.5 text-sm font-medium outline-none placeholder:text-slate-400 text-slate-700 dark:text-slate-300"
                     placeholder="www.empresa.com"
@@ -262,7 +262,7 @@ export default function EmpresaForm() {
 
           {/* Right Column (Sidebar Widgets) */}
           <div className="lg:col-span-4 space-y-8">
-            
+
             {/* Widget: Identidad Visual */}
             <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm transition-all mb-8">
               <div className="px-6 py-4 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/30 dark:bg-slate-900/10 flex items-center gap-3">
@@ -286,7 +286,7 @@ export default function EmpresaForm() {
                   {/* Hidden Overlay for actions if logo exists */}
                   {logoDisplay && (
                     <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all rounded-2xl">
-                       <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-white text-slate-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight shadow-lg">Cambiar</button>
+                      <button type="button" onClick={() => fileInputRef.current?.click()} className="bg-white text-slate-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-tight shadow-lg">Cambiar</button>
                     </div>
                   )}
                   <input
@@ -297,7 +297,7 @@ export default function EmpresaForm() {
                     onChange={handleLogoChange}
                   />
                 </div>
-                
+
                 <div className="mt-8 p-4 bg-blue-50/50 dark:bg-blue-500/5 rounded-xl border border-blue-100 dark:border-blue-500/10">
                   <h4 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1.5 leading-none">RECOMENDACIÓN</h4>
                   <p className="text-[10px] text-slate-500 font-medium leading-relaxed tracking-tight">
@@ -316,10 +316,10 @@ export default function EmpresaForm() {
               <div className="p-6 space-y-4">
                 <div className="space-y-1.5">
                   <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Moneda Defecto</label>
-                  <MonedaSelect 
-                    value={formData.moneda_id} 
-                    onChange={(m) => setFormData(prev => ({ 
-                      ...prev, 
+                  <MonedaSelect
+                    value={formData.moneda_id}
+                    onChange={(m) => setFormData(prev => ({
+                      ...prev,
                       moneda_id: m?.id,
                       moneda_default: m?.abreviatura || 'USD'
                     }))}
@@ -355,7 +355,7 @@ export default function EmpresaForm() {
                 <p className="text-[11px] text-slate-400 font-medium leading-relaxed mb-8">
                   Configura correctamente los datos fiscales para evitar errores en la facturación electrónica y cumplimiento legal.
                 </p>
-                <button 
+                <button
                   type="button"
                   className="w-full py-3.5 bg-white/10 hover:bg-white/15 border border-white/10 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95"
                 >

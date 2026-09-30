@@ -398,20 +398,29 @@ export default function EsquemasValoracionPage() {
                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-slate-100 dark:border-slate-800 pb-2">PARÁMETROS DE CONTROL</p>
                  <div className="grid grid-cols-2 gap-8">
                      <div className="space-y-2">
-                         <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Precisión decimal</label>
-                         <div className="relative">
-                             <select 
-                                 value={editingData.decimal_precision}
-                                 onChange={(e) => setEditingData({...editingData, decimal_precision: Number(e.target.value)})}
-                                 style={{ appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }}
-                                 className="w-full h-12 px-5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl text-[10px] font-black outline-none focus:ring-2 focus:ring-primary/20 transition-all cursor-pointer uppercase tracking-widest"
-                             >
-                                 <option value={0}>0 decimales</option>
-                                 <option value={2}>2 decimales</option>
-                                 <option value={4}>4 decimales</option>
-                             </select>
-                             <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">expand_more</span>
-                         </div>
+                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Precisión decimal</label>
+                          <div className="flex items-center justify-between h-12 px-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+                              <button
+                                  type="button"
+                                  onClick={() => setEditingData({ ...editingData, decimal_precision: Math.max(0, (editingData.decimal_precision ?? 0) - 1) })}
+                                  disabled={(editingData.decimal_precision ?? 0) <= 0}
+                                  className="size-8 rounded-xl flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-800 hover:text-primary active:scale-90 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                              >
+                                  <span className="material-symbols-outlined text-lg">remove</span>
+                              </button>
+                              <div className="flex items-baseline gap-1">
+                                  <span className="text-sm font-black text-slate-800 dark:text-white tabular-nums">{editingData.decimal_precision ?? 0}</span>
+                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">decimales</span>
+                              </div>
+                              <button
+                                  type="button"
+                                  onClick={() => setEditingData({ ...editingData, decimal_precision: Math.min(6, (editingData.decimal_precision ?? 0) + 1) })}
+                                  disabled={(editingData.decimal_precision ?? 0) >= 6}
+                                  className="size-8 rounded-xl flex items-center justify-center text-slate-500 hover:bg-white dark:hover:bg-slate-800 hover:text-primary active:scale-90 transition-all disabled:opacity-30 disabled:pointer-events-none"
+                              >
+                                  <span className="material-symbols-outlined text-lg">add</span>
+                              </button>
+                          </div>
                      </div>
                      <div className="flex items-center justify-between p-3 bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl border border-slate-100/50 dark:border-slate-800 h-[68px] mt-[18px]">
                          <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">Requerir Aprobación</span>
