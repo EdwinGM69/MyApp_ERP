@@ -9,6 +9,7 @@ import Pagination from '@/components/ui/Pagination'
 import Badge from '@/components/ui/Badge'
 import toast from 'react-hot-toast'
 import { usePermisos } from '@/contexts/PermisosContext'
+import { notificarErrorImportacion } from '@/lib/importacion'
 import * as XLSX from 'xlsx'
 import ImportingOverlay from '@/components/ui/ImportingOverlay'
 
@@ -143,21 +144,7 @@ export default function MarcasPage() {
       }
 
       if (result.errors?.length > 0) {
-        const msgs = result.errors.slice(0, 5).map(
-          (e: any) => `Fila ${e.row}: ${e.error}`
-        )
-        if (result.errors.length > 5) {
-          msgs.push(`... y ${result.errors.length - 5} error(es) más.`)
-        }
-        toast.error(
-          <div>
-            <strong>Errores de importación:</strong>
-            {msgs.map((m: string, i: number) => (
-              <div key={i} className="text-sm">{m}</div>
-            ))}
-          </div>,
-          { duration: 6000 }
-        )
+        notificarErrorImportacion(result.errors)
       }
 
       fetchMarcas()

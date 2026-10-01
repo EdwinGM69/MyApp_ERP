@@ -45,6 +45,23 @@ interface MaterialRow {
   diasRestantes: number | null
 }
 
+interface VencimientoRow {
+  material_id: number
+  codigo: string
+  descripcion: string
+  unidad: string
+  fechaVencimiento: string
+  diasRestantes: number
+  stock: number
+  lotes: number
+}
+
+interface VencimientosResumen {
+  total: number
+  criticos: number
+  items: VencimientoRow[]
+}
+
 interface DashboardData {
   fechaGeneracion: string
   kpis: Kpis
@@ -53,6 +70,7 @@ interface DashboardData {
     descuadres: Array<{ id: number; caja: string; sucursal: string; fecha: string; diferencia: number; usuario: string }>
     stockBajo: { count: number; items: MaterialRow[] }
     quiebreInminente: { count: number }
+    vencimientos: VencimientosResumen & { dias: number }
     docsPendientes: { count: number; items: Array<{ id: number; numero_pedido: string; cliente: string; total: number; fecha: string }> }
     cobranzas: { vencidas: number; porVencer48h: number }
   }
@@ -63,6 +81,7 @@ interface DashboardData {
   }
   listas: {
     quiebreStock: MaterialRow[]
+    vencimientos: VencimientosResumen
     movimientosCaja: Array<{ id: number; fecha: string; concepto: string; tipoOperacion: string; persona: string | null; importe: number; monedaSimbolo: string; estado: string; esAnulacion: boolean }>
     clientesDeuda: Array<any>
   }
@@ -94,6 +113,18 @@ function fmtDias(dias: number | null, stock: number, minimo: number): string {
   if (stock <= 0) return 'Sin stock'
   if (dias == null) return 'Sin ventas (7d)'
   return `~${dias} día${dias === 1 ? '' : 's'}`
+}
+
+/** Plazo restante hasta el vencimiento: "vence hoy", "1 día", "15 días". */
+function fmtVencimiento(dias: number): string {
+  if (dias <= 0) return 'Vence hoy'
+  if (dias === 1) return '1 día'
+  return `${dias} días`
+}
+
+/** Cantidad sin decimales residuales: 12.500 → "12.5", 12.000 → "12". */
+function fmtCantidad(n: number): string {
+  return Number.isInteger(n) ? String(n) : String(Math.round(n * 1000) / 1000)
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -334,7 +365,9 @@ export default function DashboardPage() {
 
   const a = data?.alertas
   const redActive = !!a && (a.cajaSinCierre.length > 0 || a.descuadres.length > 0)
-  const orangeActive = !!a && a.stockBajo.count > 0
+  const vencimientosTotal = a?.vencimientos.total ?? 0
+  const vencimientosCriticos = a?.vencimientos.criticos ?? 0
+  const orangeActive = !!a && (a.stockBajo.count > 0 || vencimientosTotal > 0)
   const amberActive = !!a && (a.cobranzas.vencidas > 0 || a.cobranzas.porVencer48h > 0)
   const blueActive = !!a && a.docsPendientes.count > 0
   const anyAlert = redActive || orangeActive || amberActive || blueActive
@@ -423,10 +456,28 @@ export default function DashboardPage() {
                   )}
 
                   {orangeActive && (
-                    <AlertChip href="/consultas/stock" variant="orange" icon="inventory_2" title="Stock crítico">
-                      {a!.stockBajo.count} producto{a!.stockBajo.count > 1 ? 's' : ''} bajo el mínimo
+                    <AlertChip
+                      href="/consultas/stock"
+                      variant={vencimientosCriticos > 0 ? 'red' : 'orange'}
+                      icon="inventory_2"
+                      title="Stock crítico"
+                    >
+                      {a!.stockBajo.count > 0 && (
+                        <>
+                          {a!.stockBajo.count} producto{a!.stockBajo.count > 1 ? 's' : ''} bajo el mínimo
+                        </>
+                      )}
                       {a!.quiebreInminente.count > 0 && (
-                        <span className="font-bold"> · {a!.quiebreInminente.count} en quiebre</span>
+                        <span className="font-bold">
+                          {a!.stockBajo.count > 0 && ' · '}
+                          {a!.quiebreInminente.count} en quiebre
+                        </span>
+                      )}
+                      {vencimientosTotal > 0 && (
+                        <span className="font-bold">
+                          {(a!.stockBajo.count > 0 || a!.quiebreInminente.count > 0) && ' · '}
+                          {vencimientosTotal} por vencer ({a!.vencimientos.dias}d)
+                        </span>
                       )}
                     </AlertChip>
                   )}
@@ -638,7 +689,7 @@ export default function DashboardPage() {
 
           {/* ── CAPA 4 · Listas accionables ── */}
           <section aria-label="Listas de acción">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
               {/* Top quiebre de stock inminente (proyección) */}
               <CardShell>
                 <CardTitle
@@ -680,6 +731,84 @@ export default function DashboardPage() {
                         )
                       })}
                     </div>
+                  )}
+                </div>
+              </CardShell>
+
+              {/* Stock por vencer en la ventana de anticipación */}
+              <CardShell>
+                <CardTitle
+                  title="Stock por vencer"
+                  subtitle={`Lotes que vencen en ${a?.vencimientos.dias ?? 15} días`}
+                  action={
+                    <Link href="/consultas/stock" className="text-sm text-primary hover:underline font-medium shrink-0">
+                      Ver stock
+                    </Link>
+                  }
+                />
+                <div className="mt-4 flex-1">
+                  {loading ? (
+                    <Skeleton className="h-48 w-full" />
+                  ) : !data?.listas.vencimientos.items.length ? (
+                    <EmptyList text="Sin stock por vencer en la ventana" />
+                  ) : (
+                    <>
+                      <div className="flex items-baseline gap-2 pb-2.5 mb-1 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white leading-none">
+                          {data.listas.vencimientos.total}
+                        </span>
+                        <span className="text-xs text-slate-500">
+                          producto{data.listas.vencimientos.total > 1 ? 's' : ''} ·{' '}
+                          {fmtCantidad(
+                            data.listas.vencimientos.items.reduce((acc, v) => acc + v.stock, 0)
+                          )}{' '}
+                          unidades
+                        </span>
+                        {data.listas.vencimientos.criticos > 0 && (
+                          <span className="ml-auto text-[11px] font-bold text-red-600 dark:text-red-400">
+                            {data.listas.vencimientos.criticos} crítico
+                            {data.listas.vencimientos.criticos > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+                      <div className="divide-y divide-slate-100 dark:divide-slate-800">
+                        {data.listas.vencimientos.items.map((v) => {
+                          const critico = v.diasRestantes <= 3
+                          const atencion = !critico && v.diasRestantes <= 7
+                          return (
+                            <div key={v.material_id} className="py-2.5 flex items-center gap-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                                  {v.descripcion}
+                                </p>
+                                <p className="text-xs text-slate-500">
+                                  {v.codigo} · {fmtCantidad(v.stock)} {v.unidad} · vence{' '}
+                                  {shortFecha(v.fechaVencimiento)}
+                                  {v.lotes > 1 && ` · ${v.lotes} lotes`}
+                                </p>
+                              </div>
+                              <span
+                                className={cn(
+                                  'shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold',
+                                  critico
+                                    ? 'bg-red-500/10 text-red-600 dark:text-red-400'
+                                    : atencion
+                                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                                      : 'bg-slate-500/10 text-slate-500'
+                                )}
+                              >
+                                {fmtVencimiento(v.diasRestantes)}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      {data.listas.vencimientos.total > data.listas.vencimientos.items.length && (
+                        <p className="pt-2.5 text-xs text-slate-400">
+                          y {data.listas.vencimientos.total - data.listas.vencimientos.items.length} más
+                        </p>
+                      )}
+                    </>
                   )}
                 </div>
               </CardShell>

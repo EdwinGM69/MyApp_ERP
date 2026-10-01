@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { businessToday, dayRangeUtc } from '@/lib/dates'
+import {
+  consultarVencimientos,
+  DIAS_VENCIMIENTO,
+  type VencimientosResumen,
+} from '@/lib/vencimientos'
 
 function num(v: any): number {
   if (v == null) return 0
@@ -238,6 +243,9 @@ export async function GET(req: NextRequest) {
       })
       .slice(0, 5)
 
+    // ── Stock por vencer en la ventana de anticipación ──
+    const vencimientos: VencimientosResumen = await consultarVencimientos(empresaId, 6)
+
     const totalVentasDia = num(ventasDia._sum?.total)
     const totalVentasSemPasada = num(ventasDiaSemanaPasada._sum?.total)
     const variacionVentas =
@@ -291,6 +299,11 @@ export async function GET(req: NextRequest) {
         quiebreInminente: {
           count: quiebreFlags.filter((r) => r.enQuiebre).length,
         },
+        vencimientos: {
+          dias: DIAS_VENCIMIENTO,
+          total: vencimientos.total,
+          criticos: vencimientos.criticos,
+        },
         docsPendientes: {
           count: cotizacionesCount,
           items: cotizaciones.map((c: any) => ({
@@ -323,6 +336,11 @@ export async function GET(req: NextRequest) {
           minimo: r.minimo,
           diasRestantes: r.diasRestantes,
         })),
+        vencimientos: {
+          total: vencimientos.total,
+          criticos: vencimientos.criticos,
+          items: vencimientos.items,
+        },
         movimientosCaja: movimientosCaja.map((t) => ({
           id: t.id,
           fecha: t.created_at.toISOString(),

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { businessToday, dayRangeUtc } from '@/lib/dates'
+import { consultarVencimientos, DIAS_VENCIMIENTO } from '@/lib/vencimientos'
 
 function num(v: unknown): number {
   if (v == null) return 0
@@ -114,6 +115,10 @@ export async function GET(req: NextRequest) {
     const stockBajo = Number(inventario?.stock_bajo ?? 0) || 0
     const agotados = Number(inventario?.agotados ?? 0) || 0
 
+    // El vencimiento se consulta aparte para no inflar el conteo de inventario:
+    // el cruce lote ↔ stock es más caro que un simple filtro sobre "Material".
+    const vencimientos = await consultarVencimientos(empresaId, 3)
+
     const alertas: Record<string, unknown> = {}
 
     if (cajasSinCierre.length > 0) {
@@ -151,6 +156,19 @@ export async function GET(req: NextRequest) {
           descripcion: m.descripcion,
           stock: num(m.stock_actual),
           minimo: num(m.stock_minimo),
+        })),
+      }
+    }
+
+    if (vencimientos.total > 0) {
+      alertas.porVencer = {
+        total: vencimientos.total,
+        criticos: vencimientos.criticos,
+        dias: DIAS_VENCIMIENTO,
+        items: vencimientos.items.map((v) => ({
+          descripcion: v.descripcion,
+          stock: v.stock,
+          dias: v.diasRestantes,
         })),
       }
     }

@@ -3,10 +3,11 @@
 import { useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { apiFetch, getAuthStore } from '@/hooks/useAuth'
+import { mapearAlertas } from '@/lib/alertas'
 import {
   useNotificaciones,
   textoPlano,
-  type AlertaNegocio,
+  SIN_NOTIFICAR,
   type TipoNotificacion,
 } from '@/lib/notificaciones'
 
@@ -35,6 +36,12 @@ function parchearToast() {
     (tipo: TipoNotificacion, original: ToastHandler): ToastHandler =>
     (message, options) => {
       const id = original(message, options)
+
+      // Un toast marcado así ya se registró a mano con más detalle del que cabe
+      // acá: copiarlo otra vez duplicaría la entrada en el centro.
+      const opciones = options as Record<string, unknown> | undefined
+      if (opciones?.[SIN_NOTIFICAR]) return id
+
       const texto = textoPlano(message)
       if (texto) {
         useNotificaciones.getState().registrar(tipo, texto)
@@ -45,106 +52,6 @@ function parchearToast() {
   api.success = envolver('success', toast.success)
   api.error = envolver('error', toast.error)
   api[MARCA_PATCH] = true
-}
-
-interface ResumenAlertas {
-  total: number
-  items?: Array<Record<string, unknown>>
-}
-
-function lista(
-  items: Array<Record<string, unknown>> | undefined,
-  campo: string,
-  limite = 3
-): string {
-  if (!items?.length) return ''
-  return items
-    .slice(0, limite)
-    .map((i) => String(i[campo] ?? ''))
-    .filter(Boolean)
-    .join(' · ')
-}
-
-function plural(total: number, singular: string, pluralForma: string): string {
-  return `${total} ${total === 1 ? singular : pluralForma}`
-}
-
-/**
- * Traduce el snapshot del endpoint a un máximo de 5 alertas. La clave es estable
- * por categoría y no por ítem, para que un mismo estado no genere una entrada
- * nueva cada sondeo y para que al resolverse se retire sola del panel.
- */
-function mapearAlertas(data: Record<string, unknown> | undefined): AlertaNegocio[] {
-  const alertas: AlertaNegocio[] = []
-  if (!data) return alertas
-
-  const resumen = (clave: string): ResumenAlertas | undefined =>
-    data[clave] as ResumenAlertas | undefined
-
-  const cajas = resumen('cajasSinCierre')
-  if (cajas) {
-    alertas.push({
-      clave: 'negocio:cajas-sin-cierre',
-      tipo: 'error',
-      titulo: `${plural(cajas.total, 'caja sigue abierta', 'cajas siguen abiertas')} desde ayer`,
-      detalle: lista(cajas.items, 'caja'),
-      href: '/gestion-caja',
-    })
-  }
-
-  const descuadres = resumen('descuadres')
-  if (descuadres) {
-    alertas.push({
-      clave: 'negocio:descuadres',
-      tipo: 'error',
-      titulo: plural(
-        descuadres.total,
-        'arqueo con descuadre',
-        'arqueos con descuadre'
-      ),
-      detalle: lista(descuadres.items, 'caja'),
-      href: '/gestion-caja',
-    })
-  }
-
-  const agotados = resumen('materialesAgotados')
-  if (agotados) {
-    alertas.push({
-      clave: 'negocio:materiales-agotados',
-      tipo: 'warning',
-      titulo: plural(agotados.total, 'material agotado', 'materiales agotados'),
-      detalle: 'Stock en cero con mínimo configurado',
-      href: '/consultas/stock',
-    })
-  }
-
-  const stockBajo = resumen('stockBajo')
-  if (stockBajo) {
-    alertas.push({
-      clave: 'negocio:stock-bajo',
-      tipo: 'warning',
-      titulo: plural(stockBajo.total, 'material bajo el mínimo', 'materiales bajo el mínimo'),
-      detalle: lista(stockBajo.items, 'descripcion'),
-      href: '/consultas/stock',
-    })
-  }
-
-  const pendientes = resumen('documentosPendientes')
-  if (pendientes) {
-    alertas.push({
-      clave: 'negocio:documentos-pendientes',
-      tipo: 'info',
-      titulo: plural(
-        pendientes.total,
-        'documento por confirmar',
-        'documentos por confirmar'
-      ),
-      detalle: lista(pendientes.items, 'numero'),
-      href: '/ventas',
-    })
-  }
-
-  return alertas
 }
 
 export default function NotificationBridge() {

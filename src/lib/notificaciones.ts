@@ -34,6 +34,38 @@ export const TTL_POR_TIPO: Record<TipoNotificacion, number> = {
 
 export const TTL_NEGOCIO_MS = 24 * 60 * 60_000
 
+/**
+ * Red de seguridad, no decisión de diseño.
+ *
+ * El texto se guarda completo: quien recorta es la vista, con `line-clamp` o el
+ * diálogo de detalle, porque un mensaje cortado en el store es un mensaje
+ * perdido para siempre. Este único corte solo evita que un texto patológico
+ * del servidor (ver `LIMITE_EXPANDIBLE`) se lleve la memoria del panel.
+ */
+export const LIMITE_SEGURIDAD_TEXTO = 4_000
+
+/**
+ * A partir de aquí el mensaje no se expande dentro de la fila sino que se abre
+ * en el diálogo de detalle: 700 caracteres ocupan más de una pantalla del panel
+ * y expandirlos en línea deja la lista inutilizable.
+ */
+export const LIMITE_EXPANDIBLE = 700
+
+/** ¿El mensaje necesita el diálogo de detalle en lugar de expandirse en la fila? */
+export function esTextoLargo(texto: string | undefined | null): boolean {
+  return normalizar(texto ?? '').length > LIMITE_EXPANDIBLE
+}
+
+/**
+ * Opción de toast para los avisos que ya se registran a mano.
+ *
+ * El bridge copia al centro *todo* lo que pasa por `toast.error`, así que un
+ * helper que además llama a `registrar` —porque necesita guardar más detalle del
+ * que cabe en el toast— terminaría creando dos entradas: una con el resumen y
+ * otra con la lista completa. Marcar el toast evita el par.
+ */
+export const SIN_NOTIFICAR = 'erpNotificar'
+
 // ── Presentación por severidad ────────────────────────────────────────────────
 export const ESTILO_NOTIFICACION: Record<
   TipoNotificacion,
@@ -77,21 +109,49 @@ function nuevoId(): string {
 }
 
 /**
+ * Elementos cuyo salto de línea es significativo. Solo entre estos se inserta un
+ * `\n` al aplanar JSX: unir siempre con `\n` partiría en dos renglones los
+ * mensajes cortos con JSX inline, que son la gran mayoría.
+ */
+const ETIQUETAS_BLOQUE = new Set([
+  'address', 'article', 'aside', 'blockquote', 'br', 'dd', 'div', 'dl', 'dt',
+  'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2', 'h3',
+  'h4', 'h5', 'h6', 'header', 'hr', 'li', 'main', 'nav', 'ol', 'p', 'pre',
+  'section', 'table', 'tr', 'ul',
+])
+
+function esBloque(valor: unknown): boolean {
+  const tipo = (valor as { type?: unknown })?.type
+  return typeof tipo === 'string' && ETIQUETAS_BLOQUE.has(tipo)
+}
+
+/**
  * Convierte a texto plano el mensaje de un toast. La mayoría de llamadas usan
  * strings, pero hay 5 sitios de importación de datos que pasan JSX anidado.
+ *
+ * Los hijos de bloque se unen con salto de línea para que una lista de errores
+ * siga leyéndose como lista y no como un muro de prosa.
  */
 export function textoPlano(valor: unknown): string {
   if (valor == null || valor === false) return ''
   if (typeof valor === 'string') return valor
   if (typeof valor === 'number') return String(valor)
   if (Array.isArray(valor)) {
-    // Los hijos JSX son fragmentos de la misma frase: se unen y se colapsan los
-    // espacios sobrantes que deja el corte entre nodos ("Errores de " + "importación").
-    return valor
-      .map(textoPlano)
-      .filter(Boolean)
-      .join(' ')
-      .replace(/\s+/g, ' ')
+    const partes = valor
+      .map((hijo) => ({ texto: textoPlano(hijo), bloque: esBloque(hijo) }))
+      .map((p) => ({ ...p, texto: p.texto.replace(/[^\S\n]+/g, ' ').trim() }))
+      .filter((p) => p.texto)
+
+    // El interior lleva salto solo si el vecino es un bloque: así "A" + "B"
+    // inline siguen siendo una sola línea, y una lista de <div> mantiene sus
+    // renglones.
+    return partes
+      .map((p, i) => {
+        if (i === partes.length - 1) return p.texto
+        const salto = p.bloque || partes[i + 1].bloque
+        return salto ? `${p.texto}\n` : `${p.texto} `
+      })
+      .join('')
   }
 
   const elemento = valor as { props?: Record<string, unknown> }
@@ -104,9 +164,21 @@ export function textoPlano(valor: unknown): string {
   return ''
 }
 
-/** Recorta a la primera línea para no romper el layout del panel. */
-function resumir(texto: string, max = 160): string {
-  const limpio = texto.replace(/\s+/g, ' ').trim()
+/**
+ * Saneo de entrada, no truncado.
+ *
+ * Colapsa espacios horizontales, quita renglones vacíos y conserva los saltos que
+ * `textoPlano` reconstruyó. Devuelve el mensaje completo salvo la red de
+ * seguridad: quien recorta para mostrar es la vista, no el store.
+ */
+export function normalizar(texto: string, max = LIMITE_SEGURIDAD_TEXTO): string {
+  const limpio = texto
+    .replace(/\r\n/g, '\n')
+    .split('\n')
+    .map((linea) => linea.replace(/[^\S\n]+/g, ' ').trim())
+    .filter(Boolean)
+    .join('\n')
+
   return limpio.length > max ? `${limpio.slice(0, max - 1)}…` : limpio
 }
 
@@ -152,7 +224,7 @@ export const useNotificaciones = create<NotificacionesState>((set, get) => ({
   sinLeer: 0,
 
   registrar: (tipo, mensaje, opciones = {}) => {
-    const titulo = resumir(opciones.titulo || mensaje)
+    const titulo = normalizar(opciones.titulo || mensaje)
     if (!titulo) return
 
     set((state) => {
@@ -176,7 +248,7 @@ export const useNotificaciones = create<NotificacionesState>((set, get) => ({
         id: nuevoId(),
         tipo,
         titulo,
-        detalle: opciones.detalle ? resumir(opciones.detalle, 300) : undefined,
+        detalle: opciones.detalle ? normalizar(opciones.detalle) : undefined,
         creado_en: ahora,
         leida: false,
         veces: 1,
@@ -209,8 +281,8 @@ export const useNotificaciones = create<NotificacionesState>((set, get) => ({
         .map((a) => ({
           id: nuevoId(),
           tipo: a.tipo,
-          titulo: resumir(a.titulo),
-          detalle: a.detalle ? resumir(a.detalle, 300) : undefined,
+          titulo: normalizar(a.titulo),
+          detalle: a.detalle ? normalizar(a.detalle) : undefined,
           creado_en: ahora,
           leida: opciones.silencioso === true,
           veces: 1,

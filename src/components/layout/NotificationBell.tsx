@@ -4,9 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
+import NotificationDetalle from '@/components/layout/NotificationDetalle'
 import {
   useNotificaciones,
   tiempoRelativo,
+  esTextoLargo,
   ESTILO_NOTIFICACION,
   type Notificacion,
   type TipoNotificacion,
@@ -24,6 +26,27 @@ const FILTROS: Array<{ id: Filtro; etiqueta: string }> = [
   { id: 'info', etiqueta: 'Avisos' },
   { id: 'success', etiqueta: 'Éxitos' },
 ]
+
+/**
+ * Detecta si un texto recortado con `line-clamp` tiene contenido oculto.
+ *
+ * Se mide en el DOM en lugar de estimar por longitud: el mismo mensaje ocupa
+ * una línea o cinco según el ancho del panel, y un contador de caracteres
+ * mostraría "Ver más" en mensajes que no lo necesitan.
+ */
+function useDesborde<T extends HTMLElement>(medir: boolean) {
+  const [desborda, setDesborda] = useState(false)
+
+  const ref = useCallback(
+    (elemento: T | null) => {
+      if (!elemento || !medir) return
+      setDesborda(elemento.scrollHeight > elemento.clientHeight + 1)
+    },
+    [medir]
+  )
+
+  return { ref, desborda }
+}
 
 interface Props {
   className?: string
@@ -43,6 +66,10 @@ export default function NotificationBell({ className }: Props) {
   const [coords, setCoords] = useState<{ top: number; right: number } | null>(null)
   const [filtro, setFiltro] = useState<Filtro>('todas')
   const [ahora, setAhora] = useState(0)
+  const [detalle, setDetalle] = useState<{
+    notificacion: Notificacion
+    origen: HTMLElement | null
+  } | null>(null)
   const botonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -75,6 +102,10 @@ export default function NotificationBell({ className }: Props) {
       if (botonRef.current?.contains(objetivo)) return
       const panel = document.getElementById('notification-panel-portal')
       if (panel?.contains(objetivo)) return
+      // El diálogo vive en otro portal: interactuar con él no cierra el panel,
+      // que queda detrás esperando a que se cierre el mensaje.
+      const dialogo = document.getElementById('notification-detail-portal')
+      if (dialogo?.contains(objetivo)) return
       cerrar()
     }
     function escape(event: KeyboardEvent) {
@@ -116,12 +147,8 @@ export default function NotificationBell({ className }: Props) {
     [items, filtro]
   )
 
-  function handleItemClick(notificacion: Notificacion) {
-    marcarLeida(notificacion.id)
-    if (notificacion.href) {
-      cerrar()
-      router.push(notificacion.href)
-    }
+  function abrirDetalle(notificacion: Notificacion, origen: HTMLElement) {
+    setDetalle({ notificacion, origen })
   }
 
   return (
@@ -233,97 +260,177 @@ export default function NotificationBell({ className }: Props) {
                     </p>
                   </div>
                 ) : (
-                  visibles.map((n) => {
-                    const estilo = ESTILO_NOTIFICACION[n.tipo]
-                    return (
-                      <div
-                        key={n.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => handleItemClick(n)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault()
-                            handleItemClick(n)
-                          }
-                        }}
-                        className={cn(
-                          'group flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors',
-                          estilo.fila
-                        )}
-                      >
-                        <div
-                          className={cn(
-                            'size-8 rounded-xl flex items-center justify-center shrink-0',
-                            estilo.fondoIcono
-                          )}
-                        >
-                          <span className={cn('material-symbols-outlined text-lg', estilo.texto)}>
-                            {estilo.icono}
-                          </span>
-                        </div>
-
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className={cn(
-                              'text-xs leading-snug',
-                              n.leida
-                                ? 'font-medium text-slate-500 dark:text-slate-400'
-                                : 'font-bold text-slate-900 dark:text-white'
-                            )}
-                          >
-                            {n.titulo}
-                          </p>
-                          {n.detalle && (
-                            <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                              {n.detalle}
-                            </p>
-                          )}
-                          <div className="flex items-center gap-2 mt-1 text-[10px] text-slate-400 font-medium">
-                            <span>{ahora ? tiempoRelativo(n.creado_en, ahora) : ''}</span>
-                            {n.veces > 1 && (
-                              <span className="px-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 font-black tabular-nums">
-                                ×{n.veces}
-                              </span>
-                            )}
-                            {n.origen === 'negocio' && (
-                              <span className="px-1.5 rounded-md bg-blue-50 dark:bg-blue-500/10 text-blue-500 font-black uppercase tracking-tight">
-                                Alerta
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="relative z-10 flex items-center gap-1 shrink-0 pt-0.5">
-                          {!n.leida && (
-                            <span
-                              className={cn(
-                                'size-2 rounded-full',
-                                estilo.punto
-                              )}
-                            />
-                          )}
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              eliminar(n.id)
-                            }}
-                            title="Descartar"
-                            aria-label="Descartar notificación"
-                            className="p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 opacity-0 group-hover:opacity-100 transition-all"
-                          >
-                            <span className="material-symbols-outlined text-base">close</span>
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })
+                  visibles.map((n) => (
+                    <NotificationRow
+                      key={n.id}
+                      notificacion={n}
+                      ahora={ahora}
+                      onAbrirDetalle={abrirDetalle}
+                    />
+                  ))
                 )}
               </div>
             </div>,
             document.body
           )
         : null}
+
+      {detalle && (
+        <NotificationDetalle
+          notificacion={detalle.notificacion}
+          origen={detalle.origen}
+          onCerrar={() => setDetalle(null)}
+        />
+      )}
     </>
+  )
+}
+
+const ETIQUETA_ACCION =
+  'inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[10px] font-black uppercase tracking-tight text-primary hover:bg-primary/10 transition-colors'
+
+/**
+ * Una notificación del panel.
+ *
+ * Leer es la tarea principal, así que el texto es el control: si hay algo
+ * escondido detrás del recorte, la fila lo despliega. Navegar es secundario y
+ * por eso vive en un enlace explícito, no en el clic sobre toda la fila.
+ */
+function NotificationRow({
+  notificacion: n,
+  ahora,
+  onAbrirDetalle,
+}: {
+  notificacion: Notificacion
+  ahora: number
+  onAbrirDetalle: (n: Notificacion, origen: HTMLElement) => void
+}) {
+  const router = useRouter()
+  const eliminar = useNotificaciones((s) => s.eliminar)
+  const marcarLeida = useNotificaciones((s) => s.marcarLeida)
+  const [expandida, setExpandida] = useState(false)
+  const estilo = ESTILO_NOTIFICACION[n.tipo]
+
+  // Un mensaje enorme no se expande en línea: hundiría la lista entera.
+  const largo = esTextoLargo(n.detalle ?? n.titulo)
+  const colapsado = !expandida && !largo
+
+  const titulo = useDesborde<HTMLSpanElement>(colapsado)
+  const detalle = useDesborde<HTMLSpanElement>(colapsado)
+  const desbordado = !largo && (titulo.desborda || detalle.desborda)
+
+  const contenido = (
+    <>
+      <span
+        ref={titulo.ref}
+        className={cn(
+          'block text-xs leading-snug break-words',
+          colapsado && 'line-clamp-2',
+          n.leida
+            ? 'font-medium text-slate-500 dark:text-slate-400'
+            : 'font-bold text-slate-900 dark:text-white'
+        )}
+      >
+        {n.titulo}
+      </span>
+      {n.detalle && (
+        <span
+          ref={detalle.ref}
+          className={cn(
+            'block text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 whitespace-pre-line break-words',
+            colapsado && 'line-clamp-2'
+          )}
+        >
+          {n.detalle}
+        </span>
+      )}
+    </>
+  )
+
+  function alternar() {
+    marcarLeida(n.id)
+    setExpandida((v) => !v)
+  }
+
+  return (
+    <div className={cn('group relative px-4 py-3 transition-colors', estilo.fila)}>
+      <div className="flex items-start gap-3">
+        <div className={cn('size-8 rounded-xl flex items-center justify-center shrink-0', estilo.fondoIcono)}>
+          <span className={cn('material-symbols-outlined text-lg', estilo.texto)}>{estilo.icono}</span>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          {desbordado ? (
+            <button
+              type="button"
+              onClick={alternar}
+              aria-expanded={expandida}
+              className="block w-full text-left rounded-md -mx-1 px-1 py-0.5 hover:bg-slate-900/[0.03] dark:hover:bg-white/[0.04] transition-colors"
+            >
+              {contenido}
+            </button>
+          ) : (
+            <span className="block">{contenido}</span>
+          )}
+
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-[10px] text-slate-400 font-medium">
+            <span>{ahora ? tiempoRelativo(n.creado_en, ahora) : ''}</span>
+            {n.veces > 1 && (
+              <span className="px-1.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 font-black tabular-nums">
+                ×{n.veces}
+              </span>
+            )}
+            {n.origen === 'negocio' && (
+              <span className="px-1.5 rounded-md bg-blue-50 dark:bg-blue-500/10 text-blue-500 font-black uppercase tracking-tight">
+                Alerta
+              </span>
+            )}
+            {desbordado && (
+              <button type="button" onClick={alternar} aria-expanded={expandida} className={ETIQUETA_ACCION}>
+                {expandida ? 'Ver menos' : 'Ver más'}
+              </button>
+            )}
+            {largo && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  marcarLeida(n.id)
+                  onAbrirDetalle(n, e.currentTarget)
+                }}
+                className={ETIQUETA_ACCION}
+              >
+                Ver mensaje completo
+              </button>
+            )}
+            {n.href && (
+              <button
+                type="button"
+                onClick={() => {
+                  marcarLeida(n.id)
+                  router.push(n.href!)
+                }}
+                className={ETIQUETA_ACCION}
+              >
+                Ver detalle
+                <span className="material-symbols-outlined text-[13px]">chevron_right</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="relative z-10 flex items-center gap-1 shrink-0 pt-0.5">
+          {!n.leida && <span className={cn('size-2 rounded-full', estilo.punto)} />}
+          <button
+            type="button"
+            onClick={() => eliminar(n.id)}
+            title="Descartar"
+            aria-label="Descartar notificación"
+            className="p-1 rounded-lg text-slate-300 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-all"
+          >
+            <span className="material-symbols-outlined text-base">close</span>
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
