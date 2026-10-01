@@ -50,6 +50,7 @@
     "seed": "npx ts-node prisma/seed.ts"
   },
   "devDependencies": {
+    "@types/pg": "^8.23.1",
     "eslint": "^9.0.0",
     "eslint-config-next": "^16.1.6",
     "tsx": "^4.21.0",

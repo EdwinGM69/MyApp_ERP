@@ -2,7 +2,7 @@
 
 import { createElement } from 'react'
 import toast from 'react-hot-toast'
-import { useNotificaciones, SIN_NOTIFICAR } from '@/lib/notificaciones'
+import { useNotificaciones, SIN_NOTIFICAR, type OpcionesToast } from '@/lib/notificaciones'
 
 /** Cuántos errores caben en el toast antes de resumir. */
 const MAX_EN_TOAST = 5
@@ -45,6 +45,14 @@ export function notificarErrorImportacion(errores: ErrorImportacion[]): number {
     resumen.push(`... y ${lineas.length - MAX_EN_TOAST} error(es) más.`)
   }
 
+  const opciones: OpcionesToast = {
+    duration: 6000,
+    // La entrada del centro se crea abajo, con la lista completa. Sin esta
+    // marca el bridge copiaría también este resumen y el usuario vería el
+    // mismo aviso dos veces.
+    [SIN_NOTIFICAR]: true,
+  }
+
   toast.error(
     createElement(
       'div',
@@ -52,13 +60,7 @@ export function notificarErrorImportacion(errores: ErrorImportacion[]): number {
       createElement('strong', null, 'Errores de importación:'),
       ...resumen.map((m, i) => createElement('div', { key: i, className: 'text-sm' }, m))
     ),
-    {
-      duration: 6000,
-      // La entrada del centro se crea abajo, con la lista completa. Sin esta
-      // marca el bridge copiaría también este resumen y el usuario vería el
-      // mismo aviso dos veces.
-      [SIN_NOTIFICAR]: true,
-    }
+    opciones
   )
 
   useNotificaciones.getState().registrar('error', 'Errores de importación', {

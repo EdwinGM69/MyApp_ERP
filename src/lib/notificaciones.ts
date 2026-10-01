@@ -1,5 +1,6 @@
 'use client'
 
+import type { ToastOptions } from 'react-hot-toast'
 import { create } from 'zustand'
 
 export type TipoNotificacion = 'success' | 'error' | 'warning' | 'info'
@@ -65,6 +66,16 @@ export function esTextoLargo(texto: string | undefined | null): boolean {
  * otra con la lista completa. Marcar el toast evita el par.
  */
 export const SIN_NOTIFICAR = 'erpNotificar'
+
+/**
+ * Opciones de toast admitiendo la marca de arriba.
+ *
+ * `react-hot-toast` declara sus opciones como un `Pick` cerrado, así que el
+ * objeto literal que lleva `[SIN_NOTIFICAR]` dispara el chequeo de propiedades
+ * sobrantes. Ensanchar con un índice deja pasar la marca sin renunciar al
+ * chequeo de `duration`, `position` o `style`, que un `as any` sí perdería.
+ */
+export type OpcionesToast = ToastOptions & Record<string, unknown>
 
 // ── Presentación por severidad ────────────────────────────────────────────────
 export const ESTILO_NOTIFICACION: Record<
